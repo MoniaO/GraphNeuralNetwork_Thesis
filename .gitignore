@@ -216,3 +216,31 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# =============================================
+# ML PROJECT: Hydra + Weights & Biases + PyG
+# =============================================
+
+# Hydra outputs
+outputs/
+multirun/
+
+# Weights & Biases
+wandb/
+wandb-debug.log
+
+# Dane (zazwyczaj zbyt duże do repo)
+data/raw/
+data/processed/
+*.h5
+*.hdf5
+
+# Wagi modeli
+*.pt
+*.ckpt
+*.pth
+*.pkl
+*.npy
+
+# macOS
+.DS_Store
