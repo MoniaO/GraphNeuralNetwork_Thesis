@@ -1,3 +1,4 @@
+import torch
 from omegaconf import DictConfig
 from torch_geometric.data import DataLoader
 from torch_geometric.data.data import DataEdgeAttr, DataTensorAttr, GlobalStorage
