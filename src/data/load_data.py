@@ -1,7 +1,10 @@
 from omegaconf import DictConfig
 from torch_geometric.data import DataLoader
+from torch_geometric.data.data import DataEdgeAttr, DataTensorAttr, GlobalStorage
 from ogb.linkproppred import PygLinkPropPredDataset
 from ogb.nodeproppred import PygNodePropPredDataset
+
+torch.serialization.add_safe_globals([DataEdgeAttr, DataTensorAttr, GlobalStorage])
 
 def load_dataset(cfg: DictConfig):
     if cfg.data.name.startswith("ogb"):
