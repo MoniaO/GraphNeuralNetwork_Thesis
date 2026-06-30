@@ -1,7 +1,7 @@
 from omegaconf import DictConfig
 from torch_geometric.data import DataLoader
 from ogb.linkproppred import PygLinkPropPredDataset
-    from ogb.nodeproppred import PygNodePropPredDataset
+from ogb.nodeproppred import PygNodePropPredDataset
 
 def load_dataset(cfg: DictConfig):
     if cfg.data.name.startswith("ogb"):
