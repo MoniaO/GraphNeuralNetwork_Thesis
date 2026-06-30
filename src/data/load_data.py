@@ -1,4 +1,13 @@
 import torch
+import torch.serialization
+
+# monkey-patch dla PyTorch 2.6+ / OGB compatibility
+_original_torch_load = torch.load
+def _patched_torch_load(*args, **kwargs):
+    kwargs.setdefault('weights_only', False)
+    return _original_torch_load(*args, **kwargs)
+torch.load = _patched_torch_load
+
 from omegaconf import DictConfig
 from torch_geometric.data import DataLoader
 from torch_geometric.data.data import DataEdgeAttr, DataTensorAttr, GlobalStorage
