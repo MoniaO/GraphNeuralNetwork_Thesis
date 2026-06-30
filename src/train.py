@@ -15,8 +15,8 @@ def train(cfg: DictConfig):
     )
 
     dataset, split_idx = load_dataset(cfg)
-    train_loader, val_loader = get_loaders(
-        dataset, split_idx, cfg.training.batch_size
+    graph, train_loader, val_loader = get_loaders(
+        dataset, split_idx, cfg
     )
 
     # TODO: model
