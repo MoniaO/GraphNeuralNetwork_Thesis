@@ -1,0 +1,14 @@
+defaults:
+  - data: dataset1
+  - model: gcn
+  - _self_
+
+training:
+  lr: 0.001
+  epochs: 100
+  batch_size: 32
+  optimizer: adam
+
+wandb:
+  project: "politechnika-gnn-thesis"
+  entity: "politechnika-gnn-thesis"

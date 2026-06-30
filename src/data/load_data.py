@@ -1,0 +1,35 @@
+from omegaconf import DictConfig
+from torch_geometric.data import DataLoader
+
+def load_dataset(cfg: DictConfig):
+    if cfg.data.name.startswith("ogb"):
+        return load_ogb(cfg)
+    else:
+        return load_synthetic(cfg)
+    
+def load_ogb(cfg: DictConfig):
+    from ogb.nodeproppred import PygNodePropPredDataset
+    dataset = PygNodePropPredDataset(
+        name=cfg.data.name,    
+        root=cfg.data.root     
+    )
+    split_idx = dataset.get_idx_split()
+    return dataset, split_idx
+
+def load_synthetic(cfg: DictConfig):
+    # TODO: do dodanaia pozniej
+    pass
+
+
+def get_loaders(dataset, split_idx, batch_size: int):
+    train_loader = DataLoader(
+        dataset[split_idx["train"]],
+        batch_size=batch_size,
+        shuffle=True
+    )
+    val_loader = DataLoader(
+        dataset[split_idx["valid"]],
+        batch_size=batch_size,
+        shuffle=False
+    )
+    return train_loader, val_loader
