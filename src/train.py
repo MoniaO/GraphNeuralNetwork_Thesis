@@ -1,7 +1,7 @@
 import hydra
 import wandb
 from omegaconf import DictConfig, OmegaConf
-from src.data.load_data import load_dataset, get_loaders
+from data.load_data import load_dataset, get_loaders
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
 def train(cfg: DictConfig):
