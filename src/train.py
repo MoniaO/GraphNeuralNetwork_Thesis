@@ -33,7 +33,7 @@ def evaluate(model, graph, evaluator, split_idx, device):
     model.eval()
     z = model(graph.edge_index.to(device))
     results = {}
-    for split in ['train', 'valid', 'test']:
+    for split in ['valid', 'test']:
         pos_edge = split_idx[split]['edge'].to(device)
         neg_edge = split_idx[split]['edge_neg'].to(device)
         pos_score = model.predict(z, pos_edge)
@@ -70,13 +70,12 @@ def train(cfg: DictConfig):
         results = evaluate(model, graph, evaluator, split_idx, device)
 
         print(f"Epoch {epoch:03d} | Loss: {loss:.4f} "
-              f"| Train hits@20: {results['train']:.4f} "
+              f"| Test hits@20: {results['test']:.4f} "
               f"| Val hits@20: {results['valid']:.4f}")
 
         wandb.log({
             "epoch": epoch,
             "loss": loss,
-            "train/hits@20": results['train'],
             "val/hits@20":   results['valid'],
             "test/hits@20":  results['test'],
         })
