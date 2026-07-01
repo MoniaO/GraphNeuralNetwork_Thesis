@@ -4,31 +4,29 @@ This thesis investigates the oversmoothing phenomenon in Graph Neural Networks
 synthetic heterogeneous graph with a controlled causal structure, enabling 
 precise evaluation of model behavior under known ground truth. Using this graph, 
 we benchmark selected GNN architectures on a link prediction task, with emphasis 
-on three research dimensions: (1) model robustness to oversmoothing as network 
-depth increases, (2) ability to detect rare causal relations under class 
-imbalance, and (3) prediction stability under distribution shift caused by 
-spurious correlations and varying data-generating environments.
----
+on three research dimensions: 
+1. model robustness to oversmoothing as network depth increases, 
+2. ability to detect rare causal relations under class imbalance, 
+3. prediction stability under distribution shift caused by spurious correlations and varying data-generating environments.
 
 ## Project Overview
 
 Experiments are conducted on two datasets:
 1. **`ogbl-ddi`** — drug-drug interaction network (Open Graph Benchmark)
-2. **Synthetic dataset** — medical data with rare edges
+2. **Synthetic dataset** — medical data with rare edges and casuality
 
 ---
 
 ## Repository Structure
+```
 GraphNeuralNetwork_Thesis/
 ├── configs/ #Hydra
 │ ├── config.yaml # main Hydra config
 │ ├── data/
 │ │ ├── ogb_dataset.yaml # ogbl-ddi configuration
 │ │ └── synthetic.yaml # synthetic dataset configuration
-│ └── model/
-│ ├── gcn.yaml
-│ ├── sage.yaml
-│ └── gat.yaml
+│ └── model/ 
+│  └──  gcn.yaml #simple GCN model, new models will be added further in the process
 ├── src/ #Python codes
 │ ├── train.py # main training loop
 │ ├── data/
@@ -52,16 +50,16 @@ GraphNeuralNetwork_Thesis/
 ├── .gitignore
 └── README.md
 └── train_setup_colab.ipynb #training instruction in colab
-
+```
 
 ---
 
 ## Installation
 
-1. copy git structure https://github.com/MoniaO/GraphNeuralNetwork_Thesis.git to your local computer
-2. VSCode for code updates
+1. Copy git structure https://github.com/MoniaO/GraphNeuralNetwork_Thesis.git to your local computer
+2. Use VSCode for code updates
 3. Any changes push into develop branch
-4. Use Google colab train_setup_colab.ipynb for training
+4. train.py - main code responsible for training, use Google colab train_setup_colab.ipynb for execute training. More details in Usage. 
 
 ## Data
 
@@ -70,15 +68,15 @@ Downloaded automatically via OGB on first run.
 
 ### Synthetic dataset
 CSV files placed in `data/raw/` (not committed — there will be stored as WandB Artifact once we create a stable dataset).
-
-To generate the PyG graph from CSV files:
-```bash
-python src/data/preprocess/csv_to_pyg.py
-```
+Code for generating dataset data/raw/synthetic_dataset_generate.py
 
 ---
 
 ## Usage
+
+Train_setup_colab.ipynb allows to execute default training via Hydra + override parameters in Hydra. 
+Structure for Hydra is defined yaml files in configs/. 
+Below there are included examples how training can be executed: 
 
 ```bash
 # default training on ogbl-ddi
@@ -92,12 +90,6 @@ python src/train.py data=synthetic model=gcn
 
 # quick test (3 epochs)
 python src/train.py training.epochs=3 training.batch_size=64
-```
-
-**Google Colab:**
-```bash
-!PYTHONPATH=/content/GraphNeuralNetwork_Thesis \
-  python src/train.py model=gcn data=ogb_dataset training.epochs=100
 ```
 
 ---
@@ -120,8 +112,9 @@ To add a new model: create a file in `src/models/`, register it in
 | `ogbl-ddi` | Hits@20 | ROC-AUC |
 | Synthetic | AUPRC | ROC-AUC, Hits@20 |
 
-AUPRC is the primary metric for the synthetic dataset due to strong
-class imbalance (rare edges).
+AUPRC is the primary metric for dataset with class imbalance (rare edges).
+To add metrics update codes in evalution/ folder.
+Metric used by specific dataset is registered in datasets yaml files in configs/data.
 
 ---
 
@@ -138,27 +131,5 @@ Each run logs:
 
 ---
 
-## References
-
-```bibtex
-@inproceedings{kipf2017semi,
-  title={Semi-Supervised Classification with Graph Convolutional Networks},
-  author={Kipf, Thomas N. and Welling, Max},
-  booktitle={ICLR},
-  year={2017}
-}
-
-@inproceedings{fey2019fast,
-  title={Fast Graph Representation Learning with {PyTorch Geometric}},
-  author={Fey, Matthias and Lenssen, Jan E.},
-  booktitle={ICLR Workshop},
-  year={2019}
-}
-
-@article{hu2020open,
-  title={Open Graph Benchmark: Datasets for Machine Learning on Graphs},
-  author={Hu, Weihua and others},
-  journal={NeurIPS},
-  year={2020}
 }
 ```
