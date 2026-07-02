@@ -47,7 +47,6 @@ class OGBEvaluator:
                 })["hits@20"]
                 results[f"{split}/hits@20"] = float(hits)
 
-            results[f'{split}/hits@20'] = float(hits)
             results[f'{split}/auc']     = float(auc)
             results[f'{split}/auprc']   = float(auprc)
 
