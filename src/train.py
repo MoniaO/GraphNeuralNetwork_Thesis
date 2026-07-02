@@ -35,12 +35,14 @@ def train_epoch(model, graph, train_edges, optimizer, device):
 def train(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
 
+    run_name = 
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     wandb.init(
         project=cfg.wandb.project,
         entity=cfg.wandb.entity,
-        name=cfg.wandb.run_name if "run_name" in cfg.wandb else f"{cfg.model.name}_{cfg.data.name}",
+        name=cfg.wandb.run_name if "run_name" in cfg.wandb else f"{cfg.model.name}_{cfg.data.name}_epochs{cfg.training.epochs}_lr{cfg.training.lr}_{cfg.training.optimizer}",
         config=OmegaConf.to_container(cfg, resolve=True),
     )
 
