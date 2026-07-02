@@ -1,11 +1,11 @@
 defaults:
-  - data: dataset1
+  - data: ogb_dataset
   - model: gcn
   - _self_
 
 training:
   lr: 0.001
-  epochs: 100
+  epochs: 20
   batch_size: 32
   optimizer: adam
 
