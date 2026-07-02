@@ -47,8 +47,8 @@ def train(cfg: DictConfig):
     dataset, split_idx = load_dataset(cfg)
     graph, train_loader, val_loader = get_loaders(dataset, split_idx, cfg)
 
-    in_channels = graph.x.shape[1] if graph.x is not None else None
-    model = build_model(cfg, num_nodes=graph.num_nodes, in_channels=in_channels).to(device)
+    #in_channels = graph.x.shape[1] if graph.x is not None else None
+    model = build_model(cfg, num_nodes=graph.num_nodes).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.lr)
 
     evaluator = build_evaluator(cfg)
