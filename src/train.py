@@ -1,85 +1,98 @@
-import torch
-import torch.nn.functional as F
 import hydra
+import torch
 import wandb
 from omegaconf import DictConfig, OmegaConf
-from ogb.linkproppred import Evaluator
+
 from data.load_data import load_dataset, get_loaders
 from models import build_model
+from evaluation import build_evaluator
 
-def train_epoch(model, graph, train_loader, optimizer, device):
+
+def train_epoch(model, graph, train_edges, optimizer, device):
     model.train()
-    total_loss = 0
-    for batch in train_loader:
-        optimizer.zero_grad()
-        z = model(graph.edge_index.to(device))
+    optimizer.zero_grad()
 
-        pos_edge = batch.to(device)
-        neg_edge = torch.randint(0, graph.num_nodes, pos_edge.shape, device=device)
+    x = graph.x.to(device) if graph.x is not None else None
+    edge_index = graph.edge_index.to(device)
+    z = model(x, edge_index)
 
-        pos_score = model.predict(z, pos_edge)
-        neg_score = model.predict(z, neg_edge)
+    pos_edge = train_edges.to(device)
+    neg_edge = torch.randint(0, graph.num_nodes, pos_edge.shape, device=device)
 
-        loss = -torch.log(pos_score.sigmoid() + 1e-15).mean() \
-               -torch.log(1 - neg_score.sigmoid() + 1e-15).mean()
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item()
-    return total_loss / len(train_loader)
+    pos_score = model.predict(z, pos_edge)
+    neg_score = model.predict(z, neg_edge)
 
+    loss = -torch.log(pos_score.sigmoid() + 1e-15).mean() \
+           -torch.log(1 - neg_score.sigmoid() + 1e-15).mean()
 
-@torch.no_grad()
-def evaluate(model, graph, evaluator, split_idx, device):
-    model.eval()
-    z = model(graph.edge_index.to(device))
-    results = {}
-    for split in ['valid', 'test']:
-        pos_edge = split_idx[split]['edge'].to(device)
-        neg_edge = split_idx[split]['edge_neg'].to(device)
-        pos_score = model.predict(z, pos_edge)
-        neg_score = model.predict(z, neg_edge)
-        results[split] = evaluator.eval({
-            'y_pred_pos': pos_score,
-            'y_pred_neg': neg_score,
-        })['hits@20']
-    return results
+    loss.backward()
+    optimizer.step()
+
+    return loss.item()
 
 
-@hydra.main(config_path="../configs", config_name="config", version_base=None)
+@hydra.main(version_base=None, config_path="../configs", config_name="config")
 def train(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     wandb.init(
         project=cfg.wandb.project,
         entity=cfg.wandb.entity,
-        name=f"{cfg.model.name}_{cfg.data.name}",
-        config=OmegaConf.to_container(cfg, resolve=True)
+        name=cfg.wandb.run_name if "run_name" in cfg.wandb else f"{cfg.model.name}_{cfg.data.name}",
+        config=OmegaConf.to_container(cfg, resolve=True),
     )
 
     dataset, split_idx = load_dataset(cfg)
     graph, train_loader, val_loader = get_loaders(dataset, split_idx, cfg)
-    graph = graph.to(device)
 
-    evaluator = Evaluator(name=cfg.data.name)
-    model = build_model(cfg, num_nodes=graph.num_nodes).to(device)
+    in_channels = graph.x.shape[1] if graph.x is not None else None
+    model = build_model(cfg, num_nodes=graph.num_nodes, in_channels=in_channels).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.lr)
 
+    evaluator = build_evaluator(cfg)
+
+    best_valid = -1
+    best_epoch = -1
+    best_state = None
+
     for epoch in range(1, cfg.training.epochs + 1):
-        loss = train_epoch(model, graph, train_loader, optimizer, device)
-        results = evaluate(model, graph, evaluator, split_idx, device)
+        loss = train_epoch(model, graph, split_idx["train"]["edge"], optimizer, device)
+        metrics = evaluator.evaluate(model, graph, split_idx, device)
 
-        print(f"Epoch {epoch:03d} | Loss: {loss:.4f} "
-              f"| Test hits@20: {results['test']:.4f} "
-              f"| Val hits@20: {results['valid']:.4f}")
-
-        wandb.log({
+        log_dict = {
             "epoch": epoch,
             "loss": loss,
-            "val/hits@20":   results['valid'],
-            "test/hits@20":  results['test'],
-        })
+            "lr": optimizer.param_groups[0]["lr"],
+            **metrics,
+        }
+        wandb.log(log_dict, step=epoch)
 
+        valid_score = metrics.get("valid/auprc", metrics.get("valid/hits@20", -1))
+        if valid_score > best_valid:
+            best_valid = valid_score
+            best_epoch = epoch
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+
+        print(
+            f"Epoch {epoch:03d} | "
+            f"loss {loss:.4f} | "
+            f"train AUC {metrics.get('train/auc', float('nan')):.4f} | "
+            f"train AUPRC {metrics.get('train/auprc', float('nan')):.4f} | "
+            f"valid AUC {metrics.get('valid/auc', float('nan')):.4f} | "
+            f"valid AUPRC {metrics.get('valid/auprc', float('nan')):.4f}"
+            f"valid hits@20 {metrics.get('valid/hits@20', float('nan')):.4f}"
+            f"test AUC {metrics.get('test/auc', float('nan')):.4f} | "
+            f"test AUPRC {metrics.get('test/auprc', float('nan')):.4f}"
+            f"test hits@20 {metrics.get('test/hits@20', float('nan')):.4f}"
+        )
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
+
+    wandb.summary["best_epoch"] = best_epoch
+    wandb.summary["best_valid"] = best_valid
     wandb.finish()
 
 
