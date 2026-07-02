@@ -14,7 +14,7 @@ def train_epoch(model, graph, train_edges, optimizer, device):
 
     x = graph.x.to(device) if graph.x is not None else None
     edge_index = graph.edge_index.to(device)
-    z = model(x, edge_index)
+    z = model(edge_index)
 
     pos_edge = train_edges.to(device)
     neg_edge = torch.randint(0, graph.num_nodes, pos_edge.shape, device=device)
