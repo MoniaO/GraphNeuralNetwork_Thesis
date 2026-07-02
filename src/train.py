@@ -35,8 +35,6 @@ def train_epoch(model, graph, train_edges, optimizer, device):
 def train(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
 
-    run_name = 
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     wandb.init(
