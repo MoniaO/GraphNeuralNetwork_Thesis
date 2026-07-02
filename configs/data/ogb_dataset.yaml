@@ -1,4 +1,6 @@
+# @package _group_
 name: "ogbl-ddi"
 task_type: "link_prediction"
 metric: "hits@20"
 root: "data/"
+evaluator_type: ogb
