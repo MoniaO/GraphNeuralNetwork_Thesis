@@ -1,6 +1,7 @@
 from omegaconf import OmegaConf
 
 from evaluation.ogb_evaluator import OGBEvaluator
+from evaluation.syntetic_evaluator import SynEvaluator
 
 
 def build_evaluator(cfg):
@@ -15,6 +16,7 @@ def build_evaluator(cfg):
 
     evaluators = {
         "ogb": OGBEvaluator,
+        "synthetic_evaluator": SynEvaluator
     }
 
     if evaluator_type not in evaluators:

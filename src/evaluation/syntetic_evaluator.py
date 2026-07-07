@@ -4,7 +4,7 @@ from ogb.linkproppred import Evaluator
 from sklearn.metrics import roc_auc_score, average_precision_score
 
 
-class OGBEvaluator:
+class SynEvaluator:
     def __init__(self, cfg):
         self.evaluator = Evaluator(name=cfg.data.name)
 
