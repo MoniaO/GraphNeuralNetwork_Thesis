@@ -35,12 +35,12 @@ def load_ogb(cfg: DictConfig):
     return dataset, split_idx
 
 def load_synthetic(cfg: DictConfig):
-    root = Path(cfg.dataset.root_dir)
+    root = Path(cfg.data.dataset.root_dir)
 
-    nodes = pd.read_csv(root / cfg.dataset.nodes_file)
+    nodes = pd.read_csv(root / cfg.data.dataset.nodes_file)
     edges = pd.read_csv(root / cfg.dataset.edges_file)
 
-    samples_file = cfg.dataset.samples[cfg.dataset.scenario]
+    samples_file = cfg.dataset.samples[cfg.data.scenario]
     samples = pd.read_csv(root / samples_file)
 
     return nodes, edges, samples
