@@ -1,5 +1,8 @@
 import torch
 import torch.serialization
+from pathlib import Path
+import pandas as pd
+
 
 # monkey-patch dla PyTorch 2.6+ / OGB compatibility
 _original_torch_load = torch.load
@@ -32,26 +35,14 @@ def load_ogb(cfg: DictConfig):
     return dataset, split_idx
 
 def load_synthetic(cfg: DictConfig):
-    # TODO: do dodanaia pozniej
+    root = Path(cfg.dataset.root_dir)
+
+    nodes = pd.read_csv(root / cfg.dataset.nodes_file)
+    edges = pd.read_csv(root / cfg.dataset.edges_file)
+
+    samples_file = cfg.dataset.samples[cfg.dataset.scenario]
+    samples = pd.read_csv(root / samples_file)
+
+    return nodes, edges, samples
     pass
 
-
-def get_loaders(dataset, split_idx, cfg):
-    graph = dataset[0]  
-
-    train_edges = split_idx["train"]["edge"]   # tensor krawędzi treningowych
-    val_edges   = split_idx["valid"]["edge"]
-
-    # DataLoader iteruje po krawędziach, nie po grafach
-    train_loader = TorchDataLoader(
-        train_edges,
-        batch_size=cfg.training.batch_size,
-        shuffle=True
-    )
-    val_loader = TorchDataLoader(
-        val_edges,
-        batch_size=cfg.training.batch_size,
-        shuffle=False
-    )
-
-    return graph, train_loader, val_loader
