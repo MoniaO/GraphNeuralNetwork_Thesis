@@ -9,6 +9,9 @@ training:
   batch_size: 32
   optimizer: adam
   to_undirected: true
+  seed: 42
+  val_size: 0.1
+  test_size: 0.1
 
 meta:
   owner_initials: "mo"
