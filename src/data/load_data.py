@@ -40,7 +40,7 @@ def load_synthetic(cfg: DictConfig):
     nodes = pd.read_csv(root / cfg.data.dataset.nodes_file)
     edges = pd.read_csv(root / cfg.data.dataset.edges_file)
 
-    samples_file = cfg.dataset.samples[cfg.data.scenario]
+    samples_file = cfg.data.dataset.samples[cfg.data.dataset.scenario]
     samples = pd.read_csv(root / samples_file)
 
     return nodes, edges, samples

@@ -7,10 +7,10 @@ dataset:
   nodes_file: "synthetic_pharmacotherapy_v2_nodes.csv"
   edges_file: "synthetic_pharmacotherapy_v2_edges.csv"
 
-samples:
-    clean: "synthetic_pharmacotherapy_v2_samples_clean.csv"
-    nooverlap: "synthetic_pharmacotherapy_v2_samples_nooverlap.csv"
-    multihospital: "synthetic_pharmacotherapy_v2_samples_multihospital.csv"
+  samples:
+      clean: "synthetic_pharmacotherapy_v2_samples_clean.csv"
+      nooverlap: "synthetic_pharmacotherapy_v2_samples_nooverlap.csv"
+      multihospital: "synthetic_pharmacotherapy_v2_samples_multihospital.csv"
   
-scenario: "clean" #choose key from samples to select the scenario for training and evaluation
+  scenario: "clean" #choose key from samples to select the scenario for training and evaluation
 
