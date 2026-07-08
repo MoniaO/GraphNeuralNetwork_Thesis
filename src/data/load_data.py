@@ -17,6 +17,7 @@ from torch_geometric.data.data import DataEdgeAttr, DataTensorAttr, GlobalStorag
 from ogb.linkproppred import PygLinkPropPredDataset
 from ogb.nodeproppred import PygNodePropPredDataset
 from torch.utils.data import DataLoader as TorchDataLoader
+from .syn_transform_gnn_inputs import build_synthetic_graph_dataset
 
 torch.serialization.add_safe_globals([DataEdgeAttr, DataTensorAttr, GlobalStorage])
 
@@ -24,7 +25,7 @@ def load_dataset(cfg: DictConfig):
     if cfg.data.name.startswith("ogb"):
         return load_ogb(cfg)
     else:
-        return load_synthetic(cfg)
+        return build_synthetic_graph_dataset(cfg)
     
 def load_ogb(cfg: DictConfig):
     dataset = PygLinkPropPredDataset(
@@ -33,16 +34,4 @@ def load_ogb(cfg: DictConfig):
     )
     split_idx = dataset.get_edge_split()
     return dataset, split_idx
-
-def load_synthetic(cfg: DictConfig):
-    root = Path(cfg.data.dataset.root_dir)
-
-    nodes = pd.read_csv(root / cfg.data.dataset.nodes_file)
-    edges = pd.read_csv(root / cfg.data.dataset.edges_file)
-
-    samples_file = cfg.data.dataset.samples[cfg.data.dataset.scenario]
-    samples = pd.read_csv(root / samples_file)
-
-    return nodes, edges, samples
-    pass
 

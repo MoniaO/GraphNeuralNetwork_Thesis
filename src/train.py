@@ -103,75 +103,69 @@
 import hydra
 import torch
 import wandb
-import torch.nn.functional as F
-import torch_geometric.transforms as T
+import numpy as np
 
 from omegaconf import DictConfig, OmegaConf
 from sklearn.metrics import roc_auc_score, average_precision_score
-from torch_geometric.utils import negative_sampling, to_undirected
+from sklearn.model_selection import train_test_split
+from torch_geometric.loader import DataLoader
 
 from data.load_data import load_dataset
 from models import build_model
 
 
-def train_epoch(model, train_data, optimizer, device):
+def train_epoch(model, loader, optimizer, criterion, device):
     model.train()
-    optimizer.zero_grad()
+    total_loss = 0.0
+    total_graphs = 0
 
-    edge_index = train_data.edge_index.to(device)
-    z = model(edge_index)
+    for batch in loader:
+        batch = batch.to(device)
 
-    pos_edge = train_data.edge_label_index.t().to(device)
+        optimizer.zero_grad()
+        logits = model(batch.x, batch.edge_index, batch.batch)
+        loss = criterion(logits, batch.y.float())
+        loss.backward()
+        optimizer.step()
 
-    neg_edge = negative_sampling(
-        edge_index=edge_index,
-        num_nodes=train_data.num_nodes,
-        num_neg_samples=pos_edge.size(0),
-        method="sparse",
-    ).t()
+        total_loss += loss.item() * batch.num_graphs
+        total_graphs += batch.num_graphs
 
-    pos_score = model.predict(z, pos_edge)
-    neg_score = model.predict(z, neg_edge)
-
-    scores = torch.cat([pos_score, neg_score], dim=0)
-    labels = torch.cat(
-        [
-            torch.ones(pos_score.size(0), device=device),
-            torch.zeros(neg_score.size(0), device=device),
-        ],
-        dim=0,
-    )
-
-    loss = F.binary_cross_entropy_with_logits(scores, labels)
-    loss.backward()
-    optimizer.step()
-
-    return loss.item()
+    return total_loss / total_graphs
 
 
 @torch.no_grad()
-def evaluate(model, data, device):
+def evaluate(model, loader, criterion, device):
     model.eval()
 
-    edge_index = data.edge_index.to(device)
-    z = model(edge_index)
+    total_loss = 0.0
+    total_graphs = 0
+    y_true_all = []
+    y_score_all = []
 
-    edge = data.edge_label_index.t().to(device)
-    y_true = data.edge_label.float().to(device)
+    for batch in loader:
+        batch = batch.to(device)
 
-    logits = model.predict(z, edge)
-    y_score = torch.sigmoid(logits)
+        logits = model(batch.x, batch.edge_index, batch.batch)
+        loss = criterion(logits, batch.y.float())
 
-    y_true_np = y_true.cpu().numpy()
-    y_score_np = y_score.cpu().numpy()
+        probs = torch.sigmoid(logits)
 
-    auc = roc_auc_score(y_true_np, y_score_np)
-    ap = average_precision_score(y_true_np, y_score_np)
+        total_loss += loss.item() * batch.num_graphs
+        total_graphs += batch.num_graphs
 
-    return {
-        "auc": auc,
-        "ap": ap,
+        y_true_all.append(batch.y.cpu())
+        y_score_all.append(probs.cpu())
+
+    y_true = torch.cat(y_true_all).numpy()
+    y_score = torch.cat(y_score_all).numpy()
+
+    metrics = {
+        "loss": total_loss / total_graphs,
+        "auc": roc_auc_score(y_true, y_score),
+        "ap": average_precision_score(y_true, y_score),
     }
+    return metrics
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
@@ -185,59 +179,74 @@ def train(cfg: DictConfig):
         entity=cfg.wandb.entity,
         name=cfg.wandb.run_name
         if "run_name" in cfg.wandb and cfg.wandb.run_name is not None
-        else f"{cfg.model.name}_{cfg.data.name}",
+        else f"{cfg.model.name}_{cfg.data.name}_{cfg.data.target}_epochs{cfg.training.epochs}_lr{cfg.training.lr}_{cfg.training.optimizer}",
         config=OmegaConf.to_container(cfg, resolve=True),
     )
 
-    data = load_dataset(cfg)
+    dataset = load_dataset(cfg)
 
-    if cfg.training.to_undirected:
-        data.edge_index = to_undirected(data.edge_index)
+    indices = np.arange(len(dataset))
+    labels = np.array([int(d.y.item()) for d in dataset])
 
-    transform = T.RandomLinkSplit(
-        num_val=cfg.training.num_val,
-        num_test=cfg.training.num_test,
-        is_undirected=cfg.training.to_undirected,
-        add_negative_train_samples=False,
-        neg_sampling_ratio=1.0,
+    train_idx, temp_idx = train_test_split(
+        indices,
+        test_size=cfg.training.val_size + cfg.training.test_size,
+        random_state=cfg.training.seed,
+        stratify=labels,
     )
 
-    train_data, val_data, test_data = transform(data)
+    temp_labels = labels[temp_idx]
+    relative_test_size = cfg.training.test_size / (cfg.training.val_size + cfg.training.test_size)
 
-    model = build_model(cfg, num_nodes=train_data.num_nodes).to(device)
+    val_idx, test_idx = train_test_split(
+        temp_idx,
+        test_size=relative_test_size,
+        random_state=cfg.training.seed,
+        stratify=temp_labels,
+    )
+
+    train_dataset = [dataset[i] for i in train_idx]
+    val_dataset = [dataset[i] for i in val_idx]
+    test_dataset = [dataset[i] for i in test_idx]
+
+    train_loader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=cfg.training.batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, shuffle=False)
+
+    in_channels = dataset[0].x.size(-1)
+    model = build_model(cfg, in_channels=in_channels).to(device)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.lr)
+    criterion = torch.nn.BCEWithLogitsLoss()
 
     best_val_auc = -1.0
     best_epoch = -1
     best_state = None
 
     for epoch in range(1, cfg.training.epochs + 1):
-        loss = train_epoch(model, train_data, optimizer, device)
-        val_metrics = evaluate(model, val_data, device)
-        test_metrics = evaluate(model, test_data, device)
+        train_loss = train_epoch(model, train_loader, optimizer, criterion, device)
+        val_metrics = evaluate(model, val_loader, criterion, device)
+        test_metrics = evaluate(model, test_loader, criterion, device)
 
-        log_dict = {
+        wandb.log({
             "epoch": epoch,
-            "train/loss": loss,
+            "train/loss": train_loss,
+            "val/loss": val_metrics["loss"],
             "val/auc": val_metrics["auc"],
             "val/ap": val_metrics["ap"],
+            "test/loss": test_metrics["loss"],
             "test/auc": test_metrics["auc"],
             "test/ap": test_metrics["ap"],
-            "lr": optimizer.param_groups[0]["lr"],
-        }
-        wandb.log(log_dict, step=epoch)
+        }, step=epoch)
 
         if val_metrics["auc"] > best_val_auc:
             best_val_auc = val_metrics["auc"]
             best_epoch = epoch
-            best_state = {
-                k: v.detach().cpu().clone()
-                for k, v in model.state_dict().items()
-            }
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
 
         print(
             f"Epoch {epoch:03d} | "
-            f"loss {loss:.4f} | "
+            f"train loss {train_loss:.4f} | "
             f"val AUC {val_metrics['auc']:.4f} | "
             f"val AP {val_metrics['ap']:.4f} | "
             f"test AUC {test_metrics['auc']:.4f} | "
@@ -249,7 +258,6 @@ def train(cfg: DictConfig):
 
     wandb.summary["best_epoch"] = best_epoch
     wandb.summary["best_val_auc"] = best_val_auc
-
     wandb.finish()
 
 

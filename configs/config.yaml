@@ -10,6 +10,10 @@ training:
   optimizer: adam
   to_undirected: true
 
+meta:
+  owner_initials: "mo"
+
 wandb:
   project: "politechnika-gnn-thesis"
   entity: "politechnika-gnn-thesis"
+  run_name: "${meta.owner_initials}_${cfg.model.name}_${cfg.data.name}_{cfg.data.target}_${data.dataset.scenario}_ep${training.epochs}"

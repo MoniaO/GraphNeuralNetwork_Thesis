@@ -1,20 +1,25 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch.nn import Linear
+from torch_geometric.nn import GCNConv, global_mean_pool
+
 
 class GCN(torch.nn.Module):
-    def __init__(self, cfg, num_nodes):
+    def __init__(self, cfg, in_channels):
         super().__init__()
-        self.embedding = torch.nn.Embedding(num_nodes, cfg.model.hidden_dim)
-        self.conv1 = GCNConv(cfg.model.hidden_dim, cfg.model.hidden_dim)
-        self.conv2 = GCNConv(cfg.model.hidden_dim, cfg.model.hidden_dim)
+        hidden_dim = cfg.model.hidden_dim
 
-    def forward(self, edge_index):
-        x = self.embedding.weight
+        self.conv1 = GCNConv(in_channels, hidden_dim)
+        self.conv2 = GCNConv(hidden_dim, hidden_dim)
+        self.lin = Linear(hidden_dim, 1)
+
+    def forward(self, x, edge_index, batch):
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         x = self.conv2(x, edge_index)
-        return x
+        x = F.relu(x)
 
-    def predict(self, z, edge):
-        return (z[edge[:, 0]] * z[edge[:, 1]]).sum(dim=-1)
+        x = global_mean_pool(x, batch)
+        x = self.lin(x).view(-1)
+
+        return x

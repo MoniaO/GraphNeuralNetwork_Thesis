@@ -66,13 +66,19 @@ import pandas as pd
 import torch
 from torch_geometric.data import Data
 from omegaconf import DictConfig
-from data.load_data import load_dataset, load_synthetic
+#from data.load_data import load_dataset, load_synthetic
 
-ENDPOINTS = [
-    "AKI", "DILI", "Depression", "Falls", "Delirium",
-    "GI_bleeding", "Hyponatremia", "Hyperkalemia",
-    "QT_arrhythmia", "Hospitalization"
-]
+def load_synthetic(cfg: DictConfig):
+    root = Path(cfg.data.dataset.root_dir)
+
+    nodes = pd.read_csv(root / cfg.data.dataset.nodes_file)
+    edges = pd.read_csv(root / cfg.data.dataset.edges_file)
+
+    samples_file = cfg.data.dataset.samples[cfg.data.dataset.scenario]
+    samples = pd.read_csv(root / samples_file)
+
+    return nodes, edges, samples
+    pass
 
 def build_synthetic_graph_dataset(cfg: DictConfig):
     nodes, edges, samples = load_synthetic(cfg)
@@ -94,17 +100,22 @@ def build_synthetic_graph_dataset(cfg: DictConfig):
         dtype=torch.long
     )
 
-    feature_nodes = [n for n in node_names if n in samples.columns]
-    target_nodes = [t for t in ENDPOINTS if t in samples.columns]
+    target_name = cfg.data.target
+    if target_name not in samples.columns:
+        raise ValueError(f"Target column '{target_name}' not found in samples.csv")
 
     dataset = []
 
     for _, row in samples.iterrows():
-        x_vals = row[feature_nodes].astype(float).values
-        x = torch.tensor(x_vals, dtype=torch.float).view(-1, 1)
+        x_vals = []
+        for node in node_names:
+            if node in samples.columns:
+                x_vals.append(float(row[node]))
+            else:
+                x_vals.append(0.0)
 
-        y_vals = row[target_nodes].astype(float).values
-        y = torch.tensor(y_vals, dtype=torch.float)
+        x = torch.tensor(x_vals, dtype=torch.float).view(-1, 1)
+        y = torch.tensor(float(row[target_name]), dtype=torch.float)
 
         data = Data(
             x=x,
@@ -113,4 +124,4 @@ def build_synthetic_graph_dataset(cfg: DictConfig):
         )
         dataset.append(data)
 
-    return dataset, feature_nodes, target_nodes
+    return dataset
