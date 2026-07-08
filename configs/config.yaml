@@ -8,6 +8,7 @@ training:
   epochs: 20
   batch_size: 32
   optimizer: adam
+  to_undirected: true
 
 wandb:
   project: "politechnika-gnn-thesis"
