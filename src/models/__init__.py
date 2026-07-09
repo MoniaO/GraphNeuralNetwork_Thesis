@@ -14,7 +14,7 @@ def build_model(cfg, in_channels):
 
     if cfg.model.name == "gcn":
         return GCN(cfg, in_channels)
-    elif cfg.model.name == "graphsage":
+    elif cfg.model.name == "sage":
         return GraphSAGE(cfg, in_channels)
     elif cfg.model.name == "gin":
         return GINNet(cfg, in_channels)
