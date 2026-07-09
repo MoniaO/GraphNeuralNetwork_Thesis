@@ -1,7 +1,12 @@
 import torch
 import numpy as np
 from ogb.linkproppred import Evaluator
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import (
+    roc_auc_score,
+    precision_recall_curve,
+    auc,
+    brier_score_loss
+)
 
 
 class SynEvaluator:
@@ -11,43 +16,47 @@ class SynEvaluator:
     @torch.no_grad()
     def evaluate(self, model, graph, split_idx, device):
         model.eval()
-        x = graph.x.to(device) if graph.x is not None else None
         edge_index = graph.edge_index.to(device)
-        z = model(edge_index)
+        batch = graph.batch.to(device) if hasattr(graph, 'batch') else None
+        z = model(graph.x.to(device), edge_index, batch)
 
         results = {}
-        for split in ['train', 'valid', 'test']:
-            pos_edge = split_idx[split]['edge'].to(device)
-            
+
+        for split in ["train", "valid", "test"]:
+            pos_edge = split_idx[split]["edge"].to(device)
+
             if "edge_neg" in split_idx[split]:
                 neg_edge = split_idx[split]["edge_neg"].to(device)
             else:
-                neg_edge = torch.randint(0, graph.num_nodes, pos_edge.shape, device=device)
+                neg_edge = torch.randint(
+                    0, graph.num_nodes, pos_edge.shape, device=device
+                )
 
-            pos_score = model.predict(z, pos_edge).cpu()
-            neg_score = model.predict(z, neg_edge).cpu()
+            pos_score = model.predict(z, pos_edge).view(-1)
+            neg_score = model.predict(z, neg_edge).view(-1)
 
-            # etykiety i score
-            scores = torch.cat([pos_score, neg_score]).numpy()
+            scores = torch.cat([pos_score, neg_score], dim=0)
+            probs = torch.sigmoid(scores).cpu().numpy()
+
             labels = torch.cat([
                 torch.ones(pos_score.size(0)),
                 torch.zeros(neg_score.size(0))
-            ]).numpy()
+            ]).cpu().numpy()
 
-            # ROC-AUC
-            auc = roc_auc_score(labels, scores)
+            if len(np.unique(labels)) < 2:
+                auc_roc = np.nan
+                auprc = np.nan
+                brier = np.nan
+            else:
+                auc_roc = roc_auc_score(labels, probs)
 
-            # AUPRC
-            auprc = average_precision_score(labels, scores)
+                precision, recall, _ = precision_recall_curve(labels, probs)
+                auprc = auc(recall, precision)
 
-            # if split != "train":
-            #     hits = self.evaluator.eval({
-            #         "y_pred_pos": pos_score,
-            #         "y_pred_neg": neg_score,
-            #     })["hits@20"]
-            #     results[f"{split}/hits@20"] = float(hits)
+                brier = brier_score_loss(labels, probs)
 
-            results[f'{split}/auc']     = float(auc)
-            results[f'{split}/auprc']   = float(auprc)
+            results[f"{split}/auc"] = float(auc_roc) if not np.isnan(auc_roc) else np.nan
+            results[f"{split}/auprc"] = float(auprc) if not np.isnan(auprc) else np.nan
+            results[f"{split}/brier"] = float(brier) if not np.isnan(brier) else np.nan
 
         return results
