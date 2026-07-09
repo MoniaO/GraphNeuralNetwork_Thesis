@@ -112,6 +112,7 @@ from torch_geometric.loader import DataLoader
 
 from data.load_data import load_dataset
 from models import build_model
+from evaluation import build_evaluator
 
 
 def train_epoch(model, loader, optimizer, criterion, device):
@@ -132,40 +133,6 @@ def train_epoch(model, loader, optimizer, criterion, device):
         total_graphs += batch.num_graphs
 
     return total_loss / total_graphs
-
-
-@torch.no_grad()
-def evaluate(model, loader, criterion, device):
-    model.eval()
-
-    total_loss = 0.0
-    total_graphs = 0
-    y_true_all = []
-    y_score_all = []
-
-    for batch in loader:
-        batch = batch.to(device)
-
-        logits = model(batch.x, batch.edge_index, batch.batch)
-        loss = criterion(logits, batch.y.float())
-
-        probs = torch.sigmoid(logits)
-
-        total_loss += loss.item() * batch.num_graphs
-        total_graphs += batch.num_graphs
-
-        y_true_all.append(batch.y.cpu())
-        y_score_all.append(probs.cpu())
-
-    y_true = torch.cat(y_true_all).numpy()
-    y_score = torch.cat(y_score_all).numpy()
-
-    metrics = {
-        "loss": total_loss / total_graphs,
-        "auc": roc_auc_score(y_true, y_score),
-        "ap": average_precision_score(y_true, y_score),
-    }
-    return metrics
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
@@ -219,28 +186,40 @@ def train(cfg: DictConfig):
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.lr)
     criterion = torch.nn.BCEWithLogitsLoss()
 
+    #evaluation
+    evaluator = build_evaluator(cfg)
+
     best_val_auc = -1.0
+    best_val_auprc = -1.0
     best_epoch = -1
     best_state = None
 
     for epoch in range(1, cfg.training.epochs + 1):
         train_loss = train_epoch(model, train_loader, optimizer, criterion, device)
-        val_metrics = evaluate(model, val_loader, criterion, device)
-        test_metrics = evaluate(model, test_loader, criterion, device)
+
+        #metrics calculation
+        train_metrics = evaluator.evaluate(model, train_loader, criterion, device)
+        val_metrics = evaluator.evaluate(model, val_loader, criterion, device)
+        test_metrics = evaluator.evaluate(model, test_loader, criterion, device)
 
         wandb.log({
             "epoch": epoch,
             "train/loss": train_loss,
+            "train/auc": train_metrics["auc"],
+            "train/auprc": train_metrics["auprc"],
+            "train/brier": train_metrics["brier"],      
             "val/loss": val_metrics["loss"],
             "val/auc": val_metrics["auc"],
-            "val/ap": val_metrics["ap"],
+            "val/auprc": val_metrics["auprc"],
+            "val/brier": val_metrics["brier"],
             "test/loss": test_metrics["loss"],
             "test/auc": test_metrics["auc"],
-            "test/ap": test_metrics["ap"],
+            "test/auprc": test_metrics["auprc"],
+            "test/brier": test_metrics["brier"]
         }, step=epoch)
 
-        if val_metrics["auc"] > best_val_auc:
-            best_val_auc = val_metrics["auc"]
+        if val_metrics["auprc"] > best_val_auprc:
+            best_val_auprc = val_metrics["auprc"]
             best_epoch = epoch
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
 
@@ -258,6 +237,7 @@ def train(cfg: DictConfig):
 
     wandb.summary["best_epoch"] = best_epoch
     wandb.summary["best_val_auc"] = best_val_auc
+    wandb.summary["best_val_auprc"] = best_val_auprc
     wandb.finish()
 
 
