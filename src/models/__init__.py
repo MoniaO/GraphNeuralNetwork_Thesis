@@ -8,7 +8,7 @@ def build_model(cfg, in_channels):
     models = {
         "gcn":  GCN ,
         "sage": GraphSAGE,
-        "gat":  GAT,
+        "gat":  GATNet,
         "gin":  GINNet
     }
 
