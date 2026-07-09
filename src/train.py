@@ -226,10 +226,12 @@ def train(cfg: DictConfig):
         print(
             f"Epoch {epoch:03d} | "
             f"train loss {train_loss:.4f} | "
+            f"train AUC {train_metrics['auc']:.4f} | "
+            f"train AUPRC {train_metrics['auprc']:.4f} | "
             f"val AUC {val_metrics['auc']:.4f} | "
-            f"val AP {val_metrics['ap']:.4f} | "
+            f"val AUPRC {val_metrics['auprc']:.4f} | "
             f"test AUC {test_metrics['auc']:.4f} | "
-            f"test AP {test_metrics['ap']:.4f}"
+            f"test AUPRC {test_metrics['auprc']:.4f}"
         )
 
     if best_state is not None:
