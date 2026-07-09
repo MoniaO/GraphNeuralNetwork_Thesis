@@ -19,4 +19,4 @@ meta:
 wandb:
   project: "politechnika-gnn-thesis"
   entity: "politechnika-gnn-thesis"
-  run_name: "${meta.owner_initials}_${model.name}_${data.name}_${data.target}_${data.dataset.scenario}_ep${training.epochs}"
+  run_name: "${meta.owner_initials}_${model.name}_${data.name}_${data.target}_${data.dataset.scenario}_ep${training.epochs}_layer${model.num_layers}_hidden${model.hidden_dim}_lr${training.lr}_bs${training.batch_size}"
