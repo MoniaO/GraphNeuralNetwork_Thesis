@@ -1,6 +1,6 @@
 name: "syn"
 target: "DILI"
-evaluator_type: syntetic_evaluator
+evaluator_type: synthetic_evaluator
 
 dataset:
   root_dir: ${oc.env:PHARMA_DATA_ROOT}
