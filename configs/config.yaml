@@ -15,7 +15,7 @@ training:
   heads: 4
   dropout: 0.0
   pooling: mean
-  norm: true
+  batch_norm: true
 
 meta:
   owner_initials: "mo"

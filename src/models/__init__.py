@@ -1,15 +1,24 @@
 from models.gcn import GCN
-#from models.sage import GraphSAGE
-#from models.gat import GAT
+from models.sage import GraphSAGE
+from models.gat import GAT
+from models.gin import GINNet
+
 
 def build_model(cfg, in_channels):
     models = {
-        "gcn":  GCN #,
-        #"sage": GraphSAGE,
-        #"gat":  GAT,
+        "gcn":  GCN ,
+        "sage": GraphSAGE,
+        "gat":  GAT,
+        "gin":  GINNet
     }
-    if cfg.model.name not in models:
-        raise ValueError(f"Uknown model: {cfg.model.name}")
-    return models[cfg.model.name](cfg, in_channels)
 
-
+    if cfg.model.name == "gcn":
+        return GCN(cfg, in_channels)
+    elif cfg.model.name == "graphsage":
+        return GraphSAGE(cfg, in_channels)
+    elif cfg.model.name == "gin":
+        return GINNet(cfg, in_channels)
+    elif cfg.model.name == "gat":
+        return GATNet(cfg, in_channels)
+    else:
+        raise ValueError(f"Unknown model: {cfg.model.name}")

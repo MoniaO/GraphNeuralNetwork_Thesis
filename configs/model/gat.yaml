@@ -1,0 +1,7 @@
+name: gat
+hidden_dim: 64
+num_layers: 2
+dropout: 0.2
+batch_norm: true
+activation: relu
+heads: 4

@@ -1,0 +1,6 @@
+name: sage
+hidden_dim: 64
+num_layers: 3
+dropout: 0.2
+batch_norm: true
+activation: relu

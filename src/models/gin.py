@@ -4,7 +4,7 @@ from torch.nn import Linear, Sequential, ReLU, ModuleList
 from torch_geometric.nn import GINConv, global_mean_pool
 
 
-class GIN(torch.nn.Module):
+class GINNet(torch.nn.Module):
     def __init__(self, cfg, in_channels):
         super().__init__()
         hidden_dim = cfg.model.hidden_dim
