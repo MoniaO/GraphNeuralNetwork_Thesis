@@ -1,6 +1,8 @@
-import torch
+from __future__ import annotations
+
 import numpy as np
-from sklearn.metrics import roc_auc_score, precision_recall_curve, auc, brier_score_loss
+import torch
+from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
 
 
 class SynEvaluator:
@@ -8,44 +10,28 @@ class SynEvaluator:
         self.cfg = cfg
 
     @torch.no_grad()
-    def evaluate(self, model, loader, criterion, device):
+    def evaluate(self, model, data, criterion, device):
         model.eval()
+        data = data.to(device)
 
-        total_loss = 0.0
-        total_graphs = 0
-        y_true_all = []
-        y_prob_all = []
+        logits = model(data)
+        labels = data[("patient", "has_adr", "variable")].edge_label.float()
+        probs = torch.sigmoid(logits)
 
-        for batch in loader:
-            batch = batch.to(device)
-
-            logits = model(batch.x, batch.edge_index, batch.batch)
-            loss = criterion(logits, batch.y.float())
-
-            probs = torch.sigmoid(logits)
-
-            total_loss += loss.item() * batch.num_graphs
-            total_graphs += batch.num_graphs
-
-            y_true_all.append(batch.y.detach().cpu())
-            y_prob_all.append(probs.detach().cpu())
-
-        y_true = torch.cat(y_true_all).numpy()
-        y_prob = torch.cat(y_prob_all).numpy()
+        loss = criterion(logits, labels).item()
+        y_true = labels.detach().cpu().numpy()
+        y_prob = probs.detach().cpu().numpy()
 
         metrics = {
-            "loss": total_loss / total_graphs,
-            "auc": np.nan,
-            "auprc": np.nan,
-            "brier": np.nan,
+            "loss": float(loss),
+            "auc": float("nan"),
+            "auprc": float("nan"),
+            "brier": float("nan"),
         }
 
         if len(np.unique(y_true)) > 1:
-            metrics["auc"] = roc_auc_score(y_true, y_prob)
-
-            precision, recall, _ = precision_recall_curve(y_true, y_prob)
-            metrics["auprc"] = auc(recall, precision)
-
-            metrics["brier"] = brier_score_loss(y_true, y_prob)
+            metrics["auc"] = float(roc_auc_score(y_true, y_prob))
+            metrics["auprc"] = float(average_precision_score(y_true, y_prob))
+            metrics["brier"] = float(brier_score_loss(y_true, y_prob))
 
         return metrics
