@@ -9,9 +9,9 @@ import torch
 import wandb
 from omegaconf import DictConfig, OmegaConf
 
-from data.load_split_benchmark_data_with_heterodata import load_split_benchmark_heterodata
-from gnn_simple import SimpleHeteroGNN
-from synthetic_evaluator import SynEvaluator
+from data.load_split_benchmark_data import load_split_benchmark_heterodata
+from models.gnn_lp import SimpleHeteroGNN
+from evaluation.syntetic_evaluator import SynEvaluator
 
 
 def set_seed(seed: int) -> None:
