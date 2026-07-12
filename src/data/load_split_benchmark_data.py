@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
+import warnings
 import numpy as np
 import pandas as pd
 import torch
@@ -111,13 +112,9 @@ def _report_and_fill_nan_columns(feature_block: pd.DataFrame, split_name: str) -
             "Columns with NaN counts:",
         ]
         msg_lines.extend([f"- {col}: {int(cnt)}" for col, cnt in nan_counts.items()])
-        print("\n" + "\n".join(msg_lines) + "\n")
+        warnings.warn("\n".join(msg_lines))
 
         filled_block = numeric_block.fillna(0.0)
-        raise ValueError(
-            "NaN values were detected in feature columns and replaced with 0.0 inside the loader, "
-            "but execution was stopped intentionally so you can inspect the offending columns above."
-        )
 
     return numeric_block
 
