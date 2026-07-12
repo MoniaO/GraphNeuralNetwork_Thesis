@@ -100,7 +100,7 @@ def load_structural_graph(cfg: DictConfig) -> Dict[str, pd.DataFrame]:
 
     if edges_file is None:
         audited = root / "synthetic_pharmacotherapy_v2_1_edges_audited.csv"
-        base = root / "synthetic_pharmacotherapy_v2_edges.csv"
+        base = root / "synthetic_pharmacotherapy_v2_1_edges_audited.csv"
         edges_path = audited if audited.exists() else base
     else:
         edges_path = root / str(edges_file)
