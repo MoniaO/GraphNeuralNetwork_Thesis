@@ -5,7 +5,7 @@ evaluator_type: synthetic_evaluator
 dataset:
   root_dir: ${oc.env:PHARMA_DATA_ROOT}
   nodes_file: "synthetic_pharmacotherapy_v2_nodes.csv"
-  edges_file: "synthetic_pharmacotherapy_v2_edges_audited.csv"
+  edges_file: "synthetic_pharmacotherapy_v2_1_edges_audited.csv"
 
   samples:
       clean: "synthetic_pharmacotherapy_v2_samples_clean.csv"
