@@ -67,11 +67,25 @@ def _read_scenario(root: Path, scenario: str, filename: str) -> pd.DataFrame:
 def _get_scenario_files(cfg: DictConfig) -> Dict[str, str]:
     dataset_cfg = cfg.data.dataset
 
-    if "scenarios" in dataset_cfg and dataset_cfg.scenarios is not None:
-        return {str(k): str(v) for k, v in dataset_cfg.scenarios.items()}
-
     if "samples" in dataset_cfg and dataset_cfg.samples is not None:
-        return {str(k): str(v) for k, v in dataset_cfg.samples.items()}
+        samples = {str(k): str(v) for k, v in dataset_cfg.samples.items()}
+        scenario = getattr(dataset_cfg, "scenario", None)
+        if scenario is not None:
+            scenario = str(scenario)
+            if scenario not in samples:
+                raise ValueError(f"Scenario '{scenario}' not found in dataset.samples. Available: {sorted(samples.keys())}")
+            return {scenario: samples[scenario]}
+        return samples
+
+    if "scenarios" in dataset_cfg and dataset_cfg.scenarios is not None:
+        scenarios = {str(k): str(v) for k, v in dataset_cfg.scenarios.items()}
+        scenario = getattr(dataset_cfg, "scenario", None)
+        if scenario is not None:
+            scenario = str(scenario)
+            if scenario not in scenarios:
+                raise ValueError(f"Scenario '{scenario}' not found in dataset.scenarios. Available: {sorted(scenarios.keys())}")
+            return {scenario: scenarios[scenario]}
+        return scenarios
 
     if "scenario" in dataset_cfg and dataset_cfg.scenario is not None:
         scenario_name = str(dataset_cfg.scenario)
@@ -82,8 +96,30 @@ def _get_scenario_files(cfg: DictConfig) -> Dict[str, str]:
         return {scenario_name: str(dataset_cfg.scenario_file)}
 
     raise ValueError(
-        "No scenario files configured. Use cfg.data.dataset.scenarios or cfg.data.dataset.samples."
+        "No scenario files configured. Use cfg.data.dataset.samples or cfg.data.dataset.scenarios."
     )
+
+
+def _report_and_fill_nan_columns(feature_block: pd.DataFrame, split_name: str) -> pd.DataFrame:
+    numeric_block = feature_block.apply(pd.to_numeric, errors="coerce")
+    nan_counts = numeric_block.isna().sum()
+    nan_counts = nan_counts[nan_counts > 0].sort_values(ascending=False)
+
+    if len(nan_counts) > 0:
+        msg_lines = [
+            f"NaN detected in split='{split_name}' for {len(nan_counts)} feature columns.",
+            "Columns with NaN counts:",
+        ]
+        msg_lines.extend([f"- {col}: {int(cnt)}" for col, cnt in nan_counts.items()])
+        print("\n" + "\n".join(msg_lines) + "\n")
+
+        filled_block = numeric_block.fillna(0.0)
+        raise ValueError(
+            "NaN values were detected in feature columns and replaced with 0.0 inside the loader, "
+            "but execution was stopped intentionally so you can inspect the offending columns above."
+        )
+
+    return numeric_block
 
 
 def load_structural_graph(cfg: DictConfig) -> Dict[str, pd.DataFrame]:
@@ -100,7 +136,7 @@ def load_structural_graph(cfg: DictConfig) -> Dict[str, pd.DataFrame]:
 
     if edges_file is None:
         audited = root / "synthetic_pharmacotherapy_v2_1_edges_audited.csv"
-        base = root / "synthetic_pharmacotherapy_v2_1_edges_audited.csv"
+        base = root / "synthetic_pharmacotherapy_v2_edges.csv"
         edges_path = audited if audited.exists() else base
     else:
         edges_path = root / str(edges_file)
@@ -177,6 +213,7 @@ def build_patient_graph_for_split(
     df: pd.DataFrame,
     node_to_idx: Dict[str, int],
     target_endpoints: List[str],
+    split_name: str,
     exclude_cols: Iterable[str] = tuple(ID_COLS) + tuple(META_COLS),
 ) -> Dict[str, pd.DataFrame]:
     df = df.reset_index(drop=True).copy()
@@ -200,10 +237,11 @@ def build_patient_graph_for_split(
     if not feature_cols:
         raise ValueError("No usable feature columns found after filtering metadata and targets.")
 
-    feature_block = df[feature_cols].astype(float)
-    node_idx_map = np.array([node_to_idx[c] for c in feature_cols])
+    feature_block = _report_and_fill_nan_columns(df[feature_cols], split_name=split_name)
+    feature_block = feature_block.fillna(0.0)
 
-    values = feature_block.to_numpy()
+    node_idx_map = np.array([node_to_idx[c] for c in feature_cols])
+    values = feature_block.to_numpy(dtype=float)
     patient_rep = np.repeat(np.arange(n), len(feature_cols))
     node_rep = np.tile(node_idx_map, n)
     values_flat = values.reshape(-1)
@@ -259,6 +297,7 @@ def build_gnn_link_prediction_inputs(cfg: DictConfig) -> Dict[str, Dict[str, pd.
             df=splits[split_name],
             node_to_idx=node_to_idx,
             target_endpoints=target_endpoints,
+            split_name=split_name,
         )
         out[split_name]["frame"] = splits[split_name]
 
@@ -284,7 +323,7 @@ def _build_variable_node_features(node_index_df: pd.DataFrame) -> torch.Tensor:
 def _build_patient_node_features(frame_df: pd.DataFrame, feature_cols: List[str]) -> torch.Tensor:
     if not feature_cols:
         raise ValueError("feature_cols is empty; cannot build patient node features.")
-    x = frame_df[feature_cols].astype(float).to_numpy(dtype=np.float32)
+    x = frame_df[feature_cols].apply(pd.to_numeric, errors="coerce").fillna(0.0).to_numpy(dtype=np.float32)
     return torch.from_numpy(x)
 
 
@@ -294,21 +333,6 @@ def to_heterodata(
     include_reverse_structural: bool = False,
     include_reverse_patient_has: bool = True,
 ) -> HeteroData:
-    """
-    Convert one split returned by load_split_benchmark_data/build_gnn_link_prediction_inputs
-    into a PyG HeteroData object suitable for heterogenous GNN link prediction.
-
-    Node types:
-    - patient
-    - variable
-
-    Edge types:
-    - (variable, causes, variable): structural DAG edges
-    - optionally (variable, rev_causes, variable)
-    - (patient, has, variable): observed patient features/exposures/comorbidities
-    - optionally (variable, rev_has, patient)
-    - (patient, has_adr, variable): edge_label_index + edge_label only (supervision)
-    """
     data = HeteroData()
 
     frame_df = split_block["frame"]
@@ -368,7 +392,9 @@ def to_heterodata(
         link_labels_df[["patient_local_idx", "target_node_idx"]].to_numpy().T,
         dtype=torch.long,
     ) if len(link_labels_df) else torch.empty((2, 0), dtype=torch.long)
-    edge_label = torch.tensor(link_labels_df["label"].to_numpy(), dtype=torch.float32) if len(link_labels_df) else torch.empty((0,), dtype=torch.float32)
+    edge_label = torch.tensor(
+        link_labels_df["label"].to_numpy(), dtype=torch.float32
+    ) if len(link_labels_df) else torch.empty((0,), dtype=torch.float32)
 
     data[("patient", "has_adr", "variable")].edge_label_index = edge_label_index
     data[("patient", "has_adr", "variable")].edge_label = edge_label
