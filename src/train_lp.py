@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import random
 from pathlib import Path
 
@@ -10,8 +11,8 @@ import wandb
 from omegaconf import DictConfig, OmegaConf
 
 from data.load_split_benchmark_data import load_split_benchmark_heterodata
-from models.gnn_lp import SimpleHeteroGNN
 from evaluation.syntetic_evaluator import SynEvaluator
+from models.gnn_lp import SimpleHeteroGNN
 
 
 def set_seed(seed: int) -> None:
@@ -40,17 +41,25 @@ def build_run_name(cfg: DictConfig) -> str:
     )
 
 
+def get_labels(data) -> torch.Tensor:
+    return data[("patient", "has_adr", "variable")].edge_label.float()
+
+
 def train_epoch(model, data, optimizer, criterion, device: torch.device) -> float:
     model.train()
     data = data.to(device)
+    labels = get_labels(data)
 
     optimizer.zero_grad()
     logits = model(data)
-    labels = data[("patient", "has_adr", "variable")].edge_label.float()
     loss = criterion(logits, labels)
     loss.backward()
-    optimizer.step()
 
+    grad_clip = getattr(model, "grad_clip", None)
+    if grad_clip is not None and grad_clip > 0:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+
+    optimizer.step()
     return float(loss.item())
 
 
@@ -92,7 +101,7 @@ def main(cfg: DictConfig) -> None:
     best_metric_name = str(getattr(cfg.training, "selection_metric", "auprc"))
     best_valid = -float("inf")
     best_epoch = -1
-    best_state = None
+    best_state = copy.deepcopy(model.state_dict())
 
     epochs = int(cfg.training.epochs)
     for epoch in range(1, epochs + 1):
@@ -106,7 +115,7 @@ def main(cfg: DictConfig) -> None:
         if not np.isnan(current_valid) and current_valid > best_valid:
             best_valid = current_valid
             best_epoch = epoch
-            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+            best_state = copy.deepcopy(model.state_dict())
 
         log_dict = {
             "epoch": epoch,
@@ -140,17 +149,19 @@ def main(cfg: DictConfig) -> None:
             f"test AUPRC {test_metrics['auprc']:.4f}"
         )
 
-    if best_state is not None:
-        model.load_state_dict(best_state)
+    model.load_state_dict(best_state)
 
     output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
     ckpt_path = output_dir / "best_model.pt"
-    torch.save({
-        "model_state_dict": model.state_dict(),
-        "cfg": OmegaConf.to_container(cfg, resolve=True),
-        "best_epoch": best_epoch,
-        "best_valid": best_valid,
-    }, ckpt_path)
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "cfg": OmegaConf.to_container(cfg, resolve=True),
+            "best_epoch": best_epoch,
+            "best_valid": best_valid,
+        },
+        ckpt_path,
+    )
 
     if use_wandb:
         wandb.summary["best_epoch"] = best_epoch

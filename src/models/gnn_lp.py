@@ -9,14 +9,18 @@ from torch_geometric.data import HeteroData
 from torch_geometric.nn import HeteroConv, SAGEConv
 
 
-class SimpleEdgeDecoder(nn.Module):
+class EdgeDecoder(nn.Module):
     def __init__(self, hidden_dim: int):
         super().__init__()
-        self.lin = nn.Linear(hidden_dim * 2, 1)
+        self.mlp = nn.Sequential(
+            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1),
+        )
 
     def forward(self, src_z: torch.Tensor, dst_z: torch.Tensor) -> torch.Tensor:
-        pair = torch.cat([src_z, dst_z], dim=-1)
-        return self.lin(pair).view(-1)
+        pair_z = torch.cat([src_z, dst_z], dim=-1)
+        return self.mlp(pair_z).view(-1)
 
 
 class SimpleHeteroGNN(nn.Module):
@@ -24,28 +28,29 @@ class SimpleHeteroGNN(nn.Module):
         super().__init__()
         hidden_dim = int(cfg.model.hidden_dim)
         num_layers = int(cfg.model.num_layers)
+        dropout = float(getattr(cfg.model, "dropout", 0.0))
         aggr = str(getattr(cfg.model, "aggr", "sum"))
 
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        self.dropout = dropout
         self.node_types = list(metadata[0])
         self.edge_types = list(metadata[1])
 
         self.input_proj = nn.ModuleDict({
-            node_type: nn.Linear(in_dims[node_type], hidden_dim)
+            node_type: nn.Linear(int(in_dims[node_type]), hidden_dim)
             for node_type in self.node_types
         })
 
         self.convs = nn.ModuleList()
         for _ in range(num_layers):
-            conv = HeteroConv(
-                {
-                    edge_type: SAGEConv((-1, -1), hidden_dim)
-                    for edge_type in self.edge_types
-                },
-                aggr=aggr,
-            )
-            self.convs.append(conv)
+            conv_dict = {
+                edge_type: SAGEConv((hidden_dim, hidden_dim), hidden_dim)
+                for edge_type in self.edge_types
+            }
+            self.convs.append(HeteroConv(conv_dict, aggr=aggr))
 
-        self.decoder = SimpleEdgeDecoder(hidden_dim)
+        self.decoder = EdgeDecoder(hidden_dim)
 
     def encode(self, data: HeteroData) -> Dict[str, torch.Tensor]:
         x_dict = {
@@ -55,7 +60,10 @@ class SimpleHeteroGNN(nn.Module):
 
         for conv in self.convs:
             x_dict = conv(x_dict, data.edge_index_dict)
-            x_dict = {node_type: F.relu(x) for node_type, x in x_dict.items()}
+            x_dict = {
+                node_type: F.dropout(F.relu(x), p=self.dropout, training=self.training)
+                for node_type, x in x_dict.items()
+            }
 
         return x_dict
 
