@@ -17,9 +17,10 @@ training:
   pooling: mean
   batch_norm: true
   conv_type: gcn
+  eval_per_endpoint: true
 
 meta:
-  owner_initials: "mo"
+  owner_initials: "MO"
 
 wandb:
   project: "politechnika-gnn-thesis"
