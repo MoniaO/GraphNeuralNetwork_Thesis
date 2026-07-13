@@ -110,7 +110,8 @@ def main(cfg: DictConfig) -> None:
 
     eval_criterion = torch.nn.BCEWithLogitsLoss()
 
-    evaluator = SynEvaluator(cfg)
+    evaluator = SynEvaluator(cfg, node_to_idx=node_to_idx)
+    
 
     use_wandb = bool(getattr(cfg.wandb, "enabled", True)) if "wandb" in cfg else False
     if use_wandb:
@@ -159,6 +160,15 @@ def main(cfg: DictConfig) -> None:
             "best/epoch": best_epoch,
             "lr": optimizer.param_groups[0]["lr"],
         }
+
+        for split_name, metrics_dict in [
+            ("train", train_metrics),
+            ("valid", valid_metrics),
+            ("test", test_metrics),
+            ]:
+            for key, value in metrics_dict.items():
+                if key.startswith(("auc_", "auprc_")):
+                    log_dict[f"{split_name}/{key}"] = value
 
         if use_wandb:
             wandb.log(log_dict, step=epoch)
