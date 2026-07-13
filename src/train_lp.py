@@ -8,7 +8,7 @@ import hydra
 import numpy as np
 import torch
 import wandb
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, OmegaConf, ListConfig
 
 from data.load_split_benchmark_data import load_split_benchmark_heterodata
 from evaluation.syntetic_evaluator import SynEvaluator
@@ -35,10 +35,22 @@ def build_model(cfg: DictConfig, train_data) -> SimpleHeteroGNN:
 def build_run_name(cfg: DictConfig) -> str:
     if "wandb" in cfg and getattr(cfg.wandb, "run_name", None):
         return str(cfg.wandb.run_name)
+    
+    target = cfg.data.target
+    if isinstance(target, (list, tuple, ListConfig)):
+        targets_str = "multitarget" if len(target) > 5 else "-".join(target)
+    else:
+        targets_str = str(target)
+
+    scenario = getattr(cfg.data.dataset, "scenario", None)
+    scenario_str = str(scenario) if scenario is not None else "default"
+
     return (
-        f"{cfg.model.name}_{cfg.data.name}_{cfg.data.target}"
-        f"_hd{cfg.model.hidden_dim}_L{cfg.model.num_layers}"
-        f"_lr{cfg.training.lr}_seed{cfg.training.seed}"
+        f"{cfg.meta.owner_initials}_{cfg.model.name}_{cfg.data.name}"
+        f"_{targets_str}_{scenario_str}"
+        f"_ep{cfg.training.epochs}_layer{cfg.model.num_layers}"
+        f"_hidden{cfg.model.hidden_dim}_lr{cfg.training.lr}"
+        f"_bs{cfg.training.batch_size}"
     )
 
 
@@ -93,7 +105,7 @@ def main(cfg: DictConfig) -> None:
     [pos_weight_map[int(t)] for t in target_idx_per_row],
     dtype=torch.float32,
     device=device)
-    
+
     criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
 
     eval_criterion = torch.nn.BCEWithLogitsLoss()
