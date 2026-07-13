@@ -87,12 +87,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torch_geometric.data import HeteroData
-from torch_geometric.nn import HeteroConv, SAGEConv, GCNConv, GATv2Conv, TransformerConv
+from torch_geometric.nn import HeteroConv, SAGEConv, GCNConv, GATv2Conv, TransformerConv, GraphConv
 
 
 CONV_REGISTRY = {
     "sage": SAGEConv,
-    "gcn": GCNConv,
+    "gcn": GraphConv,
     "gat": GATv2Conv,
     "transformer": TransformerConv,
 }
