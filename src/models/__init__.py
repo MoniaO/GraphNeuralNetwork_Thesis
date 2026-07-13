@@ -1,9 +1,9 @@
 from models.gcn import GCN
 from models.sage import GraphSAGE
+from models.sage import SAGEConv
 from models.gat import GATNet
 from models.gin import GINNet
 from models.gnn_lp import SimpleHeteroGNN
-
 
 def build_model(cfg, in_channels):
     models = {
