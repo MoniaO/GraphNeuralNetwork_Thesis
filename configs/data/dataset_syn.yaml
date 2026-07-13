@@ -25,5 +25,5 @@ dataset:
       doc: "synthetic_pharmacotherapy_v2_samples_noisy_documentation.csv"
       bias: "synthetic_pharmacotherapy_v2_samples_selection_bias.csv"
   
-  scenario: null #choose key from samples to select the scenario for training and evaluation
+  scenario: clean #choose key from samples to select the scenario for training and evaluation
 
