@@ -47,7 +47,7 @@ def build_run_name(cfg: DictConfig) -> str:
 
     return (
         f"{cfg.meta.owner_initials}_{cfg.model.name}_{cfg.data.name}"
-        f"_{targets_str}_{scenario_str}"
+        f"_{targets_str}_{cfg.model.conv_type}"
         f"_ep{cfg.training.epochs}_layer{cfg.model.num_layers}"
         f"_hidden{cfg.model.hidden_dim}_lr{cfg.training.lr}"
         f"_bs{cfg.training.batch_size}"
@@ -166,6 +166,10 @@ def main(cfg: DictConfig) -> None:
         print(
             f"Epoch {epoch:03d} | "
             f"train loss {train_loss:.4f} | "
+            f"train AUC {train_metrics['auc']:.4f} | "
+            f"train AUPRC {train_metrics['auprc']:.4f} | "
+            f"valid loss {valid_metrics['loss']:.4f} | "
+            f"test loss {test_metrics['loss']:.4f} | "
             f"valid AUC {valid_metrics['auc']:.4f} | "
             f"valid AUPRC {valid_metrics['auprc']:.4f} | "
             f"test AUC {test_metrics['auc']:.4f} | "
@@ -188,7 +192,7 @@ def main(cfg: DictConfig) -> None:
 
     if use_wandb:
         wandb.summary["best_epoch"] = best_epoch
-        wandb.summary[f"best_valid_{best_metric_name}"] = best_valid
+        wandb.summary[f"best_valid_AUPRC"] = best_valid
         wandb.summary["checkpoint_path"] = str(ckpt_path)
         wandb.finish()
 
