@@ -1,5 +1,15 @@
 name: "syn"
-target: "DILI"
+target: 
+    - AKI
+    - DILI
+    - Depression
+    - Falls
+    - Delirium
+    - GI_bleeding
+    - Hyponatremia
+    - Hyperkalemia
+    - QT_arrhythmia
+    - Hospitalization
 evaluator_type: synthetic_evaluator
 
 dataset:

@@ -13,6 +13,7 @@ from omegaconf import DictConfig, OmegaConf
 from data.load_split_benchmark_data import load_split_benchmark_heterodata
 from evaluation.syntetic_evaluator import SynEvaluator
 from models.gnn_lp import SimpleHeteroGNN
+from training.class_weights import compute_pos_weights
 
 
 def set_seed(seed: int) -> None:
@@ -69,7 +70,7 @@ def main(cfg: DictConfig) -> None:
     set_seed(int(cfg.training.seed))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_data, valid_data, test_data = load_split_benchmark_heterodata(cfg)
+    train_data, valid_data, test_data, node_to_idx = load_split_benchmark_heterodata(cfg)
 
     model = build_model(cfg, train_data).to(device)
 
@@ -82,10 +83,20 @@ def main(cfg: DictConfig) -> None:
     else:
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
-    pos_weight = float(getattr(cfg.training, "pos_weight", 1.0))
-    criterion = torch.nn.BCEWithLogitsLoss(
-        pos_weight=torch.tensor([pos_weight], dtype=torch.float32, device=device)
-    )
+    #for just singlelabel
+    #pos_weight = float(getattr(cfg.training, "pos_weight", 1.0))
+
+    pos_weight_map = compute_pos_weights(train_data, node_to_idx)
+
+    target_idx_per_row = train_data[("patient", "has_adr", "variable")].edge_label_target_idx
+    pos_weight_tensor = torch.tensor(
+    [pos_weight_map[int(t)] for t in target_idx_per_row],
+    dtype=torch.float32,
+    device=device)
+    
+    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
+
+    eval_criterion = torch.nn.BCEWithLogitsLoss()
 
     evaluator = SynEvaluator(cfg)
 
@@ -107,9 +118,9 @@ def main(cfg: DictConfig) -> None:
     for epoch in range(1, epochs + 1):
         train_loss = train_epoch(model, train_data, optimizer, criterion, device)
 
-        train_metrics = evaluator.evaluate(model, train_data, criterion, device)
-        valid_metrics = evaluator.evaluate(model, valid_data, criterion, device)
-        test_metrics = evaluator.evaluate(model, test_data, criterion, device)
+        train_metrics = evaluator.evaluate(model, train_data, eval_criterion, device)
+        valid_metrics = evaluator.evaluate(model, valid_data, eval_criterion, device)
+        test_metrics = evaluator.evaluate(model, test_data, eval_criterion, device)
 
         current_valid = valid_metrics.get(best_metric_name, float("nan"))
         if not np.isnan(current_valid) and current_valid > best_valid:

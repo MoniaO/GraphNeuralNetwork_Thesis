@@ -7,7 +7,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import torch
-from omegaconf import DictConfig
+from omegaconf import DictConfig, ListConfig
 from torch_geometric.data import HeteroData
 
 DEFAULT_ENDPOINTS = [
@@ -275,8 +275,9 @@ def build_patient_graph_for_split(
 
 
 def build_gnn_link_prediction_inputs(cfg: DictConfig) -> Dict[str, Dict[str, pd.DataFrame]]:
-    target = str(cfg.data.target)
-    target_endpoints = [target]
+    target = cfg.data.target
+    target_endpoints = list(target) if isinstance(target, (list, tuple, ListConfig)) else [str(target)]
+    
 
     splits = build_combined_splits(cfg)
     structural = load_structural_graph(cfg)
@@ -393,6 +394,9 @@ def to_heterodata(
         link_labels_df["label"].to_numpy(), dtype=torch.float32
     ) if len(link_labels_df) else torch.empty((0,), dtype=torch.float32)
 
+    data[("patient", "has_adr", "variable")].edge_label_target_idx = torch.tensor(
+    link_labels_df["target_node_idx"].to_numpy(), dtype=torch.long)
+
     data[("patient", "has_adr", "variable")].edge_label_index = edge_label_index
     data[("patient", "has_adr", "variable")].edge_label = edge_label
 
@@ -416,7 +420,11 @@ def load_split_benchmark_heterodata(cfg: DictConfig) -> Tuple[HeteroData, Hetero
     train_data = to_heterodata(gnn_inputs["train"], structural)
     valid_data = to_heterodata(gnn_inputs["valid"], structural)
     test_data = to_heterodata(gnn_inputs["test"], structural)
-    return train_data, valid_data, test_data
+    node_to_idx = {
+        row.node: row.node_idx
+        for row in structural["node_index"].itertuples()
+    }
+    return train_data, valid_data, test_data, node_to_idx
 
 
 def summarize_loaded_data(cfg: DictConfig) -> pd.DataFrame:
