@@ -29,6 +29,7 @@ GraphNeuralNetwork_Thesis/
 │  └──  gcn.yaml #simple GCN model, new models will be added further in the process
 ├── src/ #Python codes
 │ ├── train.py # main training loop
+│ ├── train_lp.py #main training loop for synthethic dataset (link prediction)
 │ ├── data/
 │ │ ├── load_data.py # OGB dataset loader
 │ │ ├── synthetic_dataset.py # synthetic dataset loader
@@ -37,21 +38,29 @@ GraphNeuralNetwork_Thesis/
 │ ├── models/
 │ │ ├── _init_.py # build_model() factory
 │ │ └── gcn.py
+│ │ └── gat.py
+│ │ └── gcn_link_prediction.py
+│ │ └── gin.py
+│ │ └── gnn_lp.py #the most updates - GNN architecture with option to change conv_type in Hydra parameter
+│ │ └── sage.py
 │ └── evaluation/
 │ ├── _init_.py # build_evaluator() factory
 │ ├── ogb_evaluator.py # hits@20
 │ └── synthetic_evaluator.py # AUPRC, ROC-AUC
 ├── notebooks/
-│ └── train_colab.ipynb # Google Colab notebook
+│ └── train_setup_colab.ipynb # Google Colab notebook
 ├── data/
 │ ├── raw/
 │ │ └── README.md # instructions for obtaining raw data
 │ └── processed/ # auto-generated (gitignored)
+│ └── get_loaders.py
+│ └── load_data.py
+│ └── load_split_benchmark_data.py #preparation of hetero structure data
+│ └── syn_transform_gnn_inputs.py #data preparation for graph classification
 ├── .gitignore
 └── README.md
 └── train_setup_colab.ipynb #training instruction in colab
 ```
-
 ---
 
 ## Installation
