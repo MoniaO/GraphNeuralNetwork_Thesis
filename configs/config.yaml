@@ -20,7 +20,7 @@ training:
   eval_per_endpoint: true
 
 meta:
-  owner_initials: "MO"
+  owner_initials: "MO" #our names initials to recognize the experiments in wandb
 
 wandb:
   project: "politechnika-gnn-thesis"

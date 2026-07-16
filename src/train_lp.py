@@ -14,6 +14,7 @@ from data.load_split_benchmark_data import load_split_benchmark_heterodata
 from evaluation.syntetic_evaluator import SynEvaluator
 from models.gnn_lp import SimpleHeteroGNN
 from training.class_weights import compute_pos_weights
+from models.linear import LinearHeteroLP
 
 
 def set_seed(seed: int) -> None:
@@ -29,7 +30,12 @@ def build_model(cfg: DictConfig, train_data) -> SimpleHeteroGNN:
         node_type: int(train_data[node_type].x.size(-1))
         for node_type in train_data.node_types
     }
-    return SimpleHeteroGNN(cfg=cfg, metadata=metadata, in_dims=in_dims)
+    model_name = str(cfg.model.name).lower()
+    if model_name in {"linear", "linear_lp", "linear_hetero_lp"}:
+        return LinearHeteroLP(cfg=cfg, metadata=metadata, in_dims=in_dims)
+
+    if model_name in {"gnn", "heterognn", "simple_hetero_gnn"}:
+        return SimpleHeteroGNN(cfg=cfg, metadata=metadata, in_dims=in_dims)
 
 
 def build_run_name(cfg: DictConfig) -> str:
