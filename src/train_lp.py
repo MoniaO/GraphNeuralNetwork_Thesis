@@ -43,7 +43,7 @@ def build_run_name(cfg: DictConfig) -> str:
         f"{cfg.meta.owner_initials}_{cfg.model.name}_{cfg.data.name}"
         f"_{targets_str}_{cfg.training.conv_type}_{scenario_str}"
         f"_ep{cfg.training.epochs}_layer{cfg.model.num_layers}"
-        f"_hidden{cfg.model.hidden_dim}_lr{cfg.training.lr}"
+        f"_lr{cfg.training.lr}"
         f"_bs{cfg.training.batch_size}"
     )
 
