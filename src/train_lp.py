@@ -23,7 +23,21 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
+def build_model(cfg: DictConfig, train_data):
+    metadata = train_data.metadata()
+    in_dims = {
+        node_type: int(train_data[node_type].x.size(-1))
+        for node_type in train_data.node_types
+    }
+    model_name = str(cfg.model.name).lower()
 
+    if model_name in {"linear", "linear_lp", "linear_hetero_lp"}:
+        return LinearHeteroLP(cfg=cfg, metadata=metadata, in_dims=in_dims)
+
+    if model_name in {"gnn", "heterognn", "simple_hetero_gnn"}:
+        return SimpleHeteroGNN(cfg=cfg, metadata=metadata, in_dims=in_dims)
+
+    raise ValueError(f"Unknown model.name='{cfg.model.name}'")
 
 def build_run_name(cfg: DictConfig) -> str:
     if "wandb" in cfg and getattr(cfg.wandb, "run_name", None):
