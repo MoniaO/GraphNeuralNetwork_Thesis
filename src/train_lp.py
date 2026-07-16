@@ -38,6 +38,7 @@ def build_run_name(cfg: DictConfig) -> str:
     scenario = getattr(cfg.data.dataset, "scenario", None)
     scenario_str = str(scenario) if scenario is not None else "default"
 
+
     return (
         f"{cfg.meta.owner_initials}_{cfg.model.name}_{cfg.data.name}"
         f"_{targets_str}_{cfg.training.conv_type}_{scenario_str}"

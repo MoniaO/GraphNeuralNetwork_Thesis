@@ -16,7 +16,7 @@ training:
   dropout: 0.2
   pooling: mean
   batch_norm: true
-  conv_type: gcn
+  conv_type: null
   eval_per_endpoint: true
 
 meta:
