@@ -12,5 +12,5 @@ def compute_pos_weights(train_data: HeteroData, node_to_idx: Dict[str, int]) -> 
         mask = target_idx == t_idx
         positives = edge_label[mask].sum().item()
         negatives = mask.sum().item() - positives
-        weights[t_idx] = min(negatives / max(positives, 1.0), 5.0)
+        weights[t_idx] = (negatives / max(positives, 1.0))
     return weights
