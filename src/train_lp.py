@@ -114,7 +114,7 @@ def main(cfg: DictConfig) -> None:
     dtype=torch.float32,
     device=device)
 
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
 
     eval_criterion = torch.nn.BCEWithLogitsLoss()
 
