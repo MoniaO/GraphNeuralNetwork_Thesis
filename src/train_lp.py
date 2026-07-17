@@ -34,7 +34,7 @@ def build_model(cfg: DictConfig, train_data):
     if model_name in {"linear", "linear_lp", "linear_hetero_lp"}:
         return LinearHeteroLP(cfg=cfg, metadata=metadata, in_dims=in_dims)
 
-    if model_name in {"gnn_lp", "heterognn", "simple_hetero_gnn"}:
+    if model_name in {"gnn_lp", "gnn_lp_attr", "heterognn", "simple_hetero_gnn"}:
         return SimpleHeteroGNN(cfg=cfg, metadata=metadata, in_dims=in_dims)
 
     raise ValueError(f"Unknown model.name='{cfg.model.name}'")
