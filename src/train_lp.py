@@ -143,6 +143,8 @@ def main(cfg: DictConfig) -> None:
         valid_metrics = evaluator.evaluate(model, valid_data, eval_criterion, device)
         test_metrics = evaluator.evaluate(model, test_data, eval_criterion, device)
 
+        print([k for k in train_metrics if k.startswith("oversmoothing/")])
+
         current_valid = valid_metrics.get(best_metric_name, float("nan"))
         if not np.isnan(current_valid) and current_valid > best_valid:
             best_valid = current_valid
