@@ -195,7 +195,7 @@ def main(cfg: DictConfig) -> None:
             ("test", test_metrics),
             ]:
             for key, value in metrics_dict.items():
-                if key.startswith(("auc_", "auprc_")):
+                if key.startswith(("auc_", "auprc_", "oversmoothing/")):
                     log_dict[f"{split_name}/{key}"] = value
 
         if use_wandb:
