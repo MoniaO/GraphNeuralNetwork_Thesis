@@ -149,21 +149,41 @@ def main(cfg: DictConfig) -> None:
             best_epoch = epoch
             best_state = copy.deepcopy(model.state_dict())
 
+
         log_dict = {
             "epoch": epoch,
             "train/optim_loss": train_loss,
+
             "train/loss": train_metrics["loss"],
             "train/auc": train_metrics["auc"],
             "train/auprc": train_metrics["auprc"],
             "train/brier": train_metrics["brier"],
+            "train/f1": train_metrics["f1"],
+            "train/precision": train_metrics["precision"],
+            "train/recall": train_metrics["recall"],
+            "train/auprc_baseline": train_metrics["auprc_baseline"],
+            "train/auprc_lift": train_metrics["auprc_lift"],
+
             "valid/loss": valid_metrics["loss"],
             "valid/auc": valid_metrics["auc"],
             "valid/auprc": valid_metrics["auprc"],
             "valid/brier": valid_metrics["brier"],
+            "valid/f1": valid_metrics["f1"],
+            "valid/precision": valid_metrics["precision"],
+            "valid/recall": valid_metrics["recall"],
+            "valid/auprc_baseline": valid_metrics["auprc_baseline"],
+            "valid/auprc_lift": valid_metrics["auprc_lift"],
+
             "test/loss": test_metrics["loss"],
             "test/auc": test_metrics["auc"],
             "test/auprc": test_metrics["auprc"],
             "test/brier": test_metrics["brier"],
+            "test/f1": test_metrics["f1"],
+            "test/precision": test_metrics["precision"],
+            "test/recall": test_metrics["recall"],
+            "test/auprc_baseline": test_metrics["auprc_baseline"],
+            "test/auprc_lift": test_metrics["auprc_lift"],
+
             "best/valid_metric": best_valid,
             "best/epoch": best_epoch,
             "lr": optimizer.param_groups[0]["lr"],
