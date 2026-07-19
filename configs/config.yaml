@@ -18,6 +18,8 @@ training:
   batch_norm: true
   conv_type: null
   eval_per_endpoint: true
+  early_stopping_patience: 50
+  early_stopping_min_delta: 0.0
 
 meta:
   owner_initials: "MO" #our names initials to recognize the experiments in wandb
