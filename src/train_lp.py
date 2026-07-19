@@ -119,7 +119,8 @@ def main(cfg: DictConfig) -> None:
     eval_criterion = torch.nn.BCEWithLogitsLoss()
 
     evaluator = SynEvaluator(cfg, node_to_idx=node_to_idx)
-    
+
+    threshold = evaluator.select_threshold(model, valid_data, device)
 
     use_wandb = bool(getattr(cfg.wandb, "enabled", True)) if "wandb" in cfg else False
     if use_wandb:
@@ -144,9 +145,9 @@ def main(cfg: DictConfig) -> None:
     for epoch in range(1, epochs + 1):
         train_loss = train_epoch(model, train_data, optimizer, criterion, device)
 
-        train_metrics = evaluator.evaluate(model, train_data, eval_criterion, device)
-        valid_metrics = evaluator.evaluate(model, valid_data, eval_criterion, device)
-        test_metrics = evaluator.evaluate(model, test_data, eval_criterion, device)
+        train_metrics = evaluator.evaluate(model, train_data, eval_criterion, device, threshold=threshold)
+        valid_metrics = evaluator.evaluate(model, valid_data, eval_criterion, device, threshold=threshold)
+        test_metrics = evaluator.evaluate(model, test_data, eval_criterion, device, threshold=threshold)
 
         print({k: v for k, v in train_metrics.items() if k.startswith("oversmoothing/")})
 
