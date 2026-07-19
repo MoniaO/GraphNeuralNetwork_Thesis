@@ -164,6 +164,7 @@ def main(cfg: DictConfig) -> None:
         log_dict = {
             "epoch": epoch,
             "train/optim_loss": train_loss,
+            "classification_threshold": threshold,
 
             "train/loss": train_metrics["loss"],
             "train/auc": train_metrics["auc"],
