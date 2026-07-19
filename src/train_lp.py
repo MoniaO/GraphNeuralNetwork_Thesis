@@ -135,6 +135,11 @@ def main(cfg: DictConfig) -> None:
     best_epoch = -1
     best_state = copy.deepcopy(model.state_dict())
 
+    patience = int(getattr(cfg.training, "early_stopping_patience", 20))
+    min_delta = float(getattr(cfg.training, "early_stopping_min_delta", 0.0))
+    epochs_without_improvement = 0
+
+
     epochs = int(cfg.training.epochs)
     for epoch in range(1, epochs + 1):
         train_loss = train_epoch(model, train_data, optimizer, criterion, device)
@@ -146,10 +151,13 @@ def main(cfg: DictConfig) -> None:
         print({k: v for k, v in train_metrics.items() if k.startswith("oversmoothing/")})
 
         current_valid = valid_metrics.get(best_metric_name, float("nan"))
-        if not np.isnan(current_valid) and current_valid > best_valid:
+        if not np.isnan(current_valid) and current_valid > best_valid + min_delta:
             best_valid = current_valid
             best_epoch = epoch
             best_state = copy.deepcopy(model.state_dict())
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
 
 
         log_dict = {
@@ -215,6 +223,16 @@ def main(cfg: DictConfig) -> None:
             f"test AUC {test_metrics['auc']:.4f} | "
             f"test AUPRC {test_metrics['auprc']:.4f}"
         )
+
+        if epochs_without_improvement >= patience:
+            print(
+                f"Early stopping triggered at epoch {epoch}: "
+                f"no improvement in valid/{best_metric_name} for {patience} epochs."
+            )
+            if use_wandb:
+                wandb.summary["early_stopped"] = True
+                wandb.summary["early_stopped_epoch"] = epoch
+            break
 
     model.load_state_dict(best_state)
 
