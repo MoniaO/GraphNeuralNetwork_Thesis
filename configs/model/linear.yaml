@@ -1,3 +1,4 @@
 name: linear
 num_layers: null
 hidden_dim: null
+conv_type: NA
