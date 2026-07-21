@@ -1,4 +1,6 @@
 name: "syn"
+negative_ratio: 3
+edge_repeat: 1
 target: 
     - AKI
     - DILI

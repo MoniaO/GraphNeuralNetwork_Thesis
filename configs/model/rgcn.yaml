@@ -1,0 +1,7 @@
+# configs/model/rgcn.yaml
+# Task A architecture: colleague's Explicit R-GCN encoder + LinkDecoder.
+name: rgcn
+conv_type: rgcn
+hidden_channels: 32
+num_layers: 2
+num_bases: 8
