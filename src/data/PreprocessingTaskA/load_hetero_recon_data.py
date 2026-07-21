@@ -27,7 +27,7 @@ import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
 
-from data.hetero_data_v2_2 import load_native_heterodata
+from data.PreprocessingTaskA.hetero_data_v2_2 import load_native_heterodata
 
 
 def _global_layout(data) -> dict[str, int]:
