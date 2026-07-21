@@ -5,7 +5,7 @@ reconstruction (Hetero GraphSAGE / R-GCN), following the same Hydra + wandb
 
 Task A predicts `edge_label` (does this (source, target) pair exist in the
 audited causal graph)
-"""
+""" 
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from data.PreprocessingTaskA.load_hetero_recon_data import load_recon_heterodata
 from evaluation.syntetic_evaluator import SynEvaluator
-from models.TaskA.hetero_recon_gnn import HeteroReconGNN
+from models.TaskA.hetero_gnn import HeteroReconGNN
 
 
 def set_seed(seed: int) -> None:
