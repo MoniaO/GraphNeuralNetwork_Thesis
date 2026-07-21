@@ -38,11 +38,21 @@ def set_seed(seed: int) -> None:
 
 class ReconEvaluator(SynEvaluator):
     """SynEvaluator is hardcoded to the ('patient','has_adr','variable') edge
-    type used in train_lp.py (Task B). Task A candidates are stored directly
-    on the HeteroData object as data.edge_label / link_source_idx /
-    link_target_idx, so only the label-extraction step needs to change.
-    All ranking/calibration/oversmoothing logic is reused unchanged.
+    type used in train_lp.py (Task B), in two places:
+      1. _forward_probs() reads labels from that edge type.
+      2. evaluate()'s per-endpoint branch reads edge_label_target_idx from
+         that same edge type, to break metrics down by endpoint.
+
+    Task A has a single, uniform target (edge_label: does this node pair
+    form an edge), not multiple endpoints -- there is no per-endpoint
+    breakdown to compute. So per_endpoint is forced off here, regardless of
+    cfg.training.eval_per_endpoint (which stays True for Task B runs).
+    All ranking/calibration/oversmoothing logic is otherwise reused unchanged.
     """
+
+    def __init__(self, cfg, node_to_idx=None):
+        super().__init__(cfg, node_to_idx=node_to_idx)
+        self.per_endpoint = False
 
     @torch.no_grad()
     def _forward_probs(self, model, data, criterion, device):
