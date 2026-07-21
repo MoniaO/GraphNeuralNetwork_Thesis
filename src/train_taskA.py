@@ -24,9 +24,9 @@ import torch
 import wandb
 from omegaconf import DictConfig, OmegaConf
 
-from data.load_hetero_recon_data import load_recon_heterodata
+from data.PreprocessingTaskA.load_hetero_recon_data import load_recon_heterodata
 from evaluation.syntetic_evaluator import SynEvaluator
-from models.hetero_recon_gnn import HeteroReconGNN
+from models.TaskA.hetero_recon_gnn import HeteroReconGNN
 
 
 def set_seed(seed: int) -> None:

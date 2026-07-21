@@ -10,11 +10,11 @@ import torch
 import wandb
 from omegaconf import DictConfig, OmegaConf, ListConfig
 
-from data.load_split_benchmark_data import load_split_benchmark_heterodata
+from data.PreprocessingTaskB.load_split_benchmark_data import load_split_benchmark_heterodata
 from evaluation.syntetic_evaluator import SynEvaluator
-from models.gnn_lp import SimpleHeteroGNN
+from models.TaskB.gnn_lp import SimpleHeteroGNN
 from training.class_weights import compute_pos_weights
-from models.linear import LinearHeteroLP
+from models.TaskB.linear import LinearHeteroLP
 
 
 def set_seed(seed: int) -> None:
