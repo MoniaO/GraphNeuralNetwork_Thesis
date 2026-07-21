@@ -27,7 +27,7 @@ import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
 
-from data.hetero_data_v2_2 import load_native_heterodata
+from hetero_data_v2_2 import load_native_heterodata
 
 
 def _global_layout(data) -> dict[str, int]:
@@ -100,11 +100,41 @@ def _attach_candidates(data, split_df: pd.DataFrame, split_name: str, lookup: di
     return data
 
 
-def load_recon_heterodata(cfg):
-    """cfg is expected to expose (mirroring load_split_benchmark_heterodata style):
+def _resolve_data_dir(cfg) -> Path:
+    """cfg.data.dataset.root_dir is typically ${oc.env:PHARMA_DATA_ROOT}.
+    Fails fast with a clear message if the env var / path isn't set up,
+    instead of a bare OmegaConf/FileNotFoundError deeper in pandas.read_csv.
+    """
+    raw = cfg.data.dataset.get("root_dir", None)
+    if raw is None or str(raw).strip() == "":
+        raise ValueError(
+            "cfg.data.dataset.root_dir is empty. If it uses "
+            "${oc.env:PHARMA_DATA_ROOT}, set the environment variable before "
+            "running, e.g.: export PHARMA_DATA_ROOT=/path/to/dataset_v2_2"
+        )
+    data_dir = Path(str(raw)).expanduser().resolve()
+    if not data_dir.exists():
+        raise FileNotFoundError(
+            f"Resolved data_dir does not exist: {data_dir}\n"
+            f"Check PHARMA_DATA_ROOT / cfg.data.dataset.root_dir."
+        )
+    nodes_file = data_dir / str(cfg.data.dataset.get("nodes_file", "synthetic_pharmacotherapy_v2_2_nodes.csv"))
+    edges_file = data_dir / str(cfg.data.dataset.get("edges_file", "synthetic_pharmacotherapy_v2_2_edges_audited.csv"))
+    for path in (nodes_file, edges_file):
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Expected file not found: {path}\n"
+                f"Check cfg.data.dataset.root_dir and cfg.data.dataset.nodes_file/edges_file."
+            )
+    return data_dir
 
-        cfg.data.dataset.data_dir     -> path to the v2.2 dataset folder
-        cfg.data.dataset.scenario     -> one of the six v2.2 scenarios
+
+def load_recon_heterodata(cfg):
+    """cfg is expected to expose (mirroring load_split_benchmark_heterodata style,
+    matching the colleague's dataset_syn.yaml schema):
+
+        cfg.data.dataset.root_dir     -> ${oc.env:PHARMA_DATA_ROOT}, path to the v2.2 dataset folder
+        cfg.data.dataset.scenario     -> scenario token, e.g. "clean"
         cfg.data.negative_ratio       -> negatives sampled per positive edge
         cfg.data.edge_repeat          -> which repeated split to use (1..3)
         cfg.training.seed             -> base seed
@@ -112,7 +142,7 @@ def load_recon_heterodata(cfg):
     Returns (train_data, valid_data, test_data, node_to_idx), same shape as
     load_split_benchmark_heterodata(cfg).
     """
-    data_dir = Path(cfg.data.dataset.data_dir)
+    data_dir = _resolve_data_dir(cfg)
     scenario = str(cfg.data.dataset.scenario)
     negative_ratio = int(getattr(cfg.data, "negative_ratio", 3))
     edge_repeat = int(getattr(cfg.data, "edge_repeat", 1))
