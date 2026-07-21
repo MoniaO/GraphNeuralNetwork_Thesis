@@ -66,9 +66,28 @@ GraphNeuralNetwork_Thesis/
 ## Installation
 
 1. Copy git structure https://github.com/MoniaO/GraphNeuralNetwork_Thesis.git to your local computer
-2. Use VSCode for code updates
-3. Any changes push into develop branch
-4. train.py - main code responsible for training, use Google colab train_setup_colab.ipynb for execute training. More details in Usage. 
+git clone git@github.com:MoniaO/GraphNeuralNetwork_Thesis.git
+2. Use VSCode or Cursor for code updates
+3. Any changes push into develop branch:
+git add . - dodaje nowe pliki
+git status - status plików mających być dodane 
+git commit -m "Update xxxx" - commit wraz z komentarzem 
+git push origin develop - push na branch develop
+4. W src/ mamy kody python, w config kody yaml pod Hydra. Kody pod task graph reconstruction:
+a.Data prep:
+- src/data/hetero_data_v2_2.py
+- src/data/load_hetero_recon_data.py
+b. Kod definiujący 
+-src/models/hetero_recon_gnn.py (zrekonstruowany kod modelu na podstawie Twojego hetero_gnn_link_prediction_v2_2.py)
+c. kod odpowiedzialny za cały trening
+-src/train_recon_lp.py
+Aby to wszystko działało poprzez Hydrę to nalezy mieć tez pliki yaml odpowiedzialne za kazdy krok, czyli to mamy w config/:
+- data/dataset_syn.yaml (to jest kod do ładowania danych z konkretnej ściezki i to bedzie zmienne)
+- model/r_hetero_sage.yaml (to jest config pod Twoj model, jak dodajesz nowy model to musisz wlasnie dodac plik yaml do tej lokalizaji)
+
+Aby puscic trening spojrz na kod w notebooks/train_setup_colab.ipynb. On instaluje konkretne pakiety, dodaje sciezkie
+
+train.py - main code responsible for training, use Google colab train_setup_colab.ipynb for execute training. More details in Usage. 
 
 ## Data
 
