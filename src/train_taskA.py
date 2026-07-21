@@ -4,13 +4,8 @@ reconstruction (Hetero GraphSAGE / R-GCN), following the same Hydra + wandb
 + SynEvaluator pattern as train_lp.py.
 
 Task A predicts `edge_label` (does this (source, target) pair exist in the
-audited causal graph), NOT any patient endpoint. Do not mix with train_lp.py
-(Task B / patient-level targets) -- see README "Do not mix the two targets."
-
-Usage (mirrors train_lp.py):
-    python train_recon_lp.py model=hetero_sage data=v2_2_recon
-    python train_recon_lp.py model=rgcn         data=v2_2_recon
-"""
+audited causal graph)
+""" 
 
 from __future__ import annotations
 
@@ -26,7 +21,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from data.PreprocessingTaskA.load_hetero_recon_data import load_recon_heterodata
 from evaluation.syntetic_evaluator import SynEvaluator
-from models.TaskA.hetero_recon_gnn import HeteroReconGNN
+from models.TaskA.hetero_gnn import HeteroReconGNN
 
 
 def set_seed(seed: int) -> None:
