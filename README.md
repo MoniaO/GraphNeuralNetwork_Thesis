@@ -2,17 +2,15 @@
 This thesis investigates the oversmoothing phenomenon in Graph Neural Networks 
 (GNNs) applied to heterogeneous graphs with rare causal edges. We generate a 
 synthetic heterogeneous graph with a controlled causal structure, enabling 
-precise evaluation of model behavior under known ground truth. Using this graph, 
-we benchmark selected GNN architectures on a link prediction task, with emphasis 
-on three research dimensions: 
-1. model robustness to oversmoothing as network depth increases, 
-2. ability to detect rare causal relations under class imbalance, 
-3. prediction stability under distribution shift caused by spurious correlations and varying data-generating environments.
+precise evaluation of model behavior under known ground truth. 
+We have aim to conduct two types of experiments:
+Task A: DAG graph reconstruction based on patient data (link prediction)
+Task B: ADR prediction for patient based on patient data and DAG structure
 
 ## Project Overview
 
 Experiments are conducted on two datasets:
-1. **`ogbl-ddi`** — drug-drug interaction network (Open Graph Benchmark)
+1. **`ogbl-ddi` / `ogbl-biokg` ** — drug-drug interaction network (Open Graph Benchmark)
 2. **Synthetic dataset** — medical data with rare edges and casuality
 
 ---
@@ -23,80 +21,59 @@ GraphNeuralNetwork_Thesis/
 ├── configs/ #Hydra
 │ ├── config.yaml # main Hydra config
 │ ├── data/
-│ │ ├── ogb_dataset.yaml # ogbl-ddi configuration
-│ │ └── synthetic.yaml # synthetic dataset configuration
+│ │ ├── dataset_proxy.yaml # ogbl-ddi configuration
+│ │ └── dataset_syn.yaml # synthetic dataset configuration
 │ └── model/ 
-│  └──  gcn.yaml #simple GCN model, new models will be added further in the process
-├── src/ #Python codes
-│ ├── train.py # main training loop
-│ ├── train_lp.py #main training loop for synthethic dataset (link prediction)
-│ ├── data/
-│ │ ├── load_data.py # OGB dataset loader
-│ │ ├── synthetic_dataset.py # synthetic dataset loader
-│ │ └── preprocess/
-│ │ └── csv_to_pyg.py # CSV → PyG transformation
-│ ├── models/
-│ │ ├── _init_.py # build_model() factory
-│ │ └── gcn.py
-│ │ └── gat.py
-│ │ └── gcn_link_prediction.py
-│ │ └── gin.py
-│ │ └── gnn_lp.py #the most updates - GNN architecture with option to change conv_type in Hydra parameter
-│ │ └── sage.py
-│ └── evaluation/
-│ ├── _init_.py # build_evaluator() factory
-│ ├── ogb_evaluator.py # hits@20
-│ └── synthetic_evaluator.py # AUPRC, ROC-AUC
-├── notebooks/
-│ └── train_setup_colab.ipynb # Google Colab notebook
+|  └── model_old_approach #models from previous run iteration
+│  └── TaskA_xxx.yaml #models for task A
+│  └── TaskB_xxx.yaml #modles for task B
 ├── data/
-│ ├── raw/
-│ │ └── README.md # instructions for obtaining raw data
-│ └── processed/ # auto-generated (gitignored)
-│ └── get_loaders.py
-│ └── load_data.py
-│ └── load_split_benchmark_data.py #preparation of hetero structure data
-│ └── syn_transform_gnn_inputs.py #data preparation for graph classification
+|  ├── raw #folder with codes to generate data
+│    ├── build_v3_interaction_spec.py 
+│    ├── creation_patient_splits_v3.py 
+│    └── generate_synthethic_pharmacotherapy_v3_from_spec.py
+├── notebooks/ #notebooks for run diagnostic & training in colab 
+│ └── train_setup_colab.ipynb # Google Colab notebook
+├── src/ #Python codes
+│ ├── train_taskA.py # main training loop for task A
+│ ├── train_taskB.py #main training loop for taskb
+│ ├── data/
+│   ├── PreprocessingTaskA #data prep for task A
+│       ├── hetero_data_v2_2.py 
+│       └── load_hetero_recon_data.py 
+│   ├── PreprocessingTaskB #data prep for task B
+│       └── load_split_benchmark_data.py 
+│ ├── evaluation/
+│ │ ├── __init__.py
+│ │ ├── ogb_evaluator.py #evaluator specific for OGB dataset, not used yet
+│ │ ├── oversmoothing_metrics.py #oversmoothing metrics
+│ │ ├── syntetic_evalutor.py #evaluator for synthethic dataset
+│ ├── models/
+│   ├── __init__.py # build_model() factory
+│   ├── TaskA
+│   ├── TaskB
+│   └── old approach.py
+│ ├── training/
+│   └── class_weights.py #weights for rare classes
 ├── .gitignore
 └── README.md
-└── train_setup_colab.ipynb #training instruction in colab
 ```
 ---
 
 ## Installation
 
 1. Copy git structure https://github.com/MoniaO/GraphNeuralNetwork_Thesis.git to your local computer
-git clone git@github.com:MoniaO/GraphNeuralNetwork_Thesis.git
-2. Use VSCode or Cursor for code updates
-3. Any changes push into develop branch:
-git add . - dodaje nowe pliki
-git status - status plików mających być dodane 
-git commit -m "Update xxxx" - commit wraz z komentarzem 
-git push origin develop - push na branch develop
-4. W src/ mamy kody python, w config kody yaml pod Hydra. Kody pod task graph reconstruction:
-a.Data prep:
-- src/data/hetero_data_v2_2.py
-- src/data/load_hetero_recon_data.py
-b. Kod definiujący 
--src/models/hetero_recon_gnn.py (zrekonstruowany kod modelu na podstawie Twojego hetero_gnn_link_prediction_v2_2.py)
-c. kod odpowiedzialny za cały trening
--src/train_recon_lp.py
-Aby to wszystko działało poprzez Hydrę to nalezy mieć tez pliki yaml odpowiedzialne za kazdy krok, czyli to mamy w config/:
-- data/dataset_syn.yaml (to jest kod do ładowania danych z konkretnej ściezki i to bedzie zmienne)
-- model/r_hetero_sage.yaml (to jest config pod Twoj model, jak dodajesz nowy model to musisz wlasnie dodac plik yaml do tej lokalizaji)
-
-Aby puscic trening spojrz na kod w notebooks/train_setup_colab.ipynb. On instaluje konkretne pakiety, dodaje sciezkie
-
-train.py - main code responsible for training, use Google colab train_setup_colab.ipynb for execute training. More details in Usage. 
+2. Use VSCode for code updates
+3. Any changes push into branch task A or task b
+4. train_taskX.py - main code responsible for training, use Google colab train_setup_colab.ipynb for execute training. More details in Usage. 
 
 ## Data
 
-### ogbl-ddi (auto-download)
+### ogbl-ddi/biokg 
 Downloaded automatically via OGB on first run.
 
 ### Synthetic dataset
-CSV files placed in `data/raw/` (not committed — there will be stored as WandB Artifact once we create a stable dataset).
-Code for generating dataset data/raw/synthetic_dataset_generate.py
+Codes for generating dataset data/raw/
 
 ---
 
@@ -111,34 +88,24 @@ Below there are included examples how training can be executed:
 python src/train.py
 
 # override parameters via Hydra
-python src/train.py model=gcn data=ogb_dataset training.epochs=100
+python src/train_taskX.py model=gcn data=ogb_dataset training.epochs=100
 
 # synthetic dataset
-python src/train.py data=synthetic model=gcn
+python src/train_taskX.py data=synthetic model=gcn
 
 # quick test (3 epochs)
-python src/train.py training.epochs=3 training.batch_size=64
+python src/train_taskX.py training.epochs=3 training.batch_size=64
 ```
 
 ---
 
 ## Models
 
-| Model | File | Description |
-|---|---|---|
-| GCN | `src/models/gcn.py` 
-
-To add a new model: create a file in `src/models/`, register it in
-`build_model()` in `src/models/__init__.py`, and add a config in `configs/model/`.
+To add a new model: create a file in `src/models/`, and add a config in `configs/model/`.
 
 ---
 
 ## Metrics
-
-| Dataset | Primary metric | Additional |
-|---|---|---|
-| `ogbl-ddi` | Hits@20 | ROC-AUC |
-| Synthetic | AUPRC | ROC-AUC, Hits@20 |
 
 AUPRC is the primary metric for dataset with class imbalance (rare edges).
 To add metrics update codes in evalution/ folder.
@@ -150,12 +117,6 @@ Metric used by specific dataset is registered in datasets yaml files in configs/
 
 Results available in Weight&Bias at:
 [wandb.ai/politechnika-gnn-thesis](https://wandb.ai/politechnika-gnn-thesis/politechnika-gnn-thesis)
-
-Each run logs:
-- `loss` — training loss per epoch
-- `val/hits@20`, `test/hits@20`
-- `val/auprc`, `val/auc` 
-- `lr` — current learning rate
 
 ---
 

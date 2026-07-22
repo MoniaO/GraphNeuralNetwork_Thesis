@@ -1,22 +1,14 @@
 defaults:
-  - data: ogb_dataset
-  - model: gcn
+  - data: dataset_syn
+  - model: null
   - _self_
 
 training:
   lr: 0.001
   epochs: 20
-  batch_size: 32
+  batch_size: 32 #for now full batch, we need to adjust models
   optimizer: adam
-  to_undirected: true
   seed: 42
-  val_size: 0.1
-  test_size: 0.1
-  heads: 4
-  dropout: 0.2
-  pooling: mean
-  batch_norm: true
-  conv_type: null
   eval_per_endpoint: true
   early_stopping_patience: 50
   early_stopping_min_delta: 0.0
@@ -24,6 +16,10 @@ training:
   oversmoothing_excluded_models: ["linear"]
   auto_threshold: true
   eval_threshold: 0.5
+  selection_metric: "auprc"
+  track_oversmoothing: true
+  oversmoothing_sample_size: 2000
+  grad_clip: 0.0
 
 meta:
   owner_initials: "MO" #our names initials to recognize the experiments in wandb
