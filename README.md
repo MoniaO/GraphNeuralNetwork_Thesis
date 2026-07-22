@@ -10,7 +10,7 @@ Task B: ADR prediction for patient based on patient data and DAG structure
 ## Project Overview
 
 Experiments are conducted on two datasets:
-1. **`ogbl-ddi`** — drug-drug interaction network (Open Graph Benchmark)
+1. **`ogbl-ddi` / 'ogbl-biokg' ** — drug-drug interaction network (Open Graph Benchmark)
 2. **Synthetic dataset** — medical data with rare edges and casuality
 
 ---
