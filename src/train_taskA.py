@@ -71,9 +71,9 @@ def build_run_name(cfg: DictConfig) -> str:
         return str(cfg.wandb.run_name)
     scenario = str(cfg.data.dataset.scenario)
     return (
-        f"{cfg.meta.owner_initials}_{cfg.model.name}_structural_recon"
+        f"{cfg.meta.owner_initials}_TaskA_{cfg.model.name}_"
         f"_{scenario}_ep{cfg.training.epochs}"
-        f"_lr{cfg.training.lr}_repeat{getattr(cfg.data, 'edge_repeat', 1)}"
+        f"_lr{cfg.training.lr}_layers{cfg.model.num_layers}_hidden{cfg.model.hidden_channels}"
     )
 
 
