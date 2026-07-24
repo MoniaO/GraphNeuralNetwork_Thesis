@@ -130,7 +130,7 @@ def compute_pos_weights_from_loader(train_loader: DataLoader, target_endpoint_na
         batch = batch.to(device)
         labels = get_targeted_labels(batch, target_local_idx, target_node_type="clinical_endpoint")
         labels = labels.view(-1, n_targets)
-        positives += labels.sum(dim=0)
+        positives += labels.sum(dim=0).cpu()
         totals += labels.size(0)
 
     negatives = totals - positives

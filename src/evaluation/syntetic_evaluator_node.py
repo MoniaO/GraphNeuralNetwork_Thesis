@@ -77,7 +77,7 @@ class SynEvaluatorNode:
 
     def _get_labels(self, model, batch) -> torch.Tensor:
         """Etykiety w tej samej kolejnosci co logity z model.forward()."""
-        from models.TaskB.gnn_node_clf_simple_targeted import get_targeted_labels
+        from models.TaskB.gnn_node import get_targeted_labels
         return get_targeted_labels(
             batch, model.target_local_idx, target_node_type=model.target_node_type
         )
