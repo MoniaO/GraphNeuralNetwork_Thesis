@@ -118,7 +118,7 @@ def build_run_name(cfg: DictConfig) -> str:
 # pos_weight per endpoint, liczony z loadera treningowego (nie z jednego grafu)
 # ---------------------------------------------------------------------------
 
-def compute_pos_weights_from_loader(train_loader: DataLoader, target_endpoint_names, target_local_idx) -> torch.Tensor:
+def compute_pos_weights_from_loader(train_loader: DataLoader, target_endpoint_names, target_local_idx, device: torch.device) -> torch.Tensor:
     """Zlicza pozytywne/negatywne etykiety per endpoint po WSZYSTKICH
     grafach w loaderze treningowym, zwraca tensor pos_weight [n_targets]
     do uzycia w BCEWithLogitsLoss (per-kolumna, broadcastowane na batch)."""
@@ -127,6 +127,7 @@ def compute_pos_weights_from_loader(train_loader: DataLoader, target_endpoint_na
     totals = torch.zeros(n_targets)
 
     for batch in train_loader:
+        batch = batch.to(device)
         labels = get_targeted_labels(batch, target_local_idx, target_node_type="clinical_endpoint")
         labels = labels.view(-1, n_targets)
         positives += labels.sum(dim=0)
@@ -186,13 +187,13 @@ def main(cfg: DictConfig) -> None:
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     pos_weight = compute_pos_weights_from_loader(
-        loaders["train"], model.target_endpoint_names, model.target_local_idx
+        loaders["train"], model.target_endpoint_names, model.target_local_idx, device
     ).to(device)
 
     criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     eval_criterion = torch.nn.BCEWithLogitsLoss()
 
-    evaluator = SynEvaluatorNodeClf(cfg, target_endpoint_names=model.target_endpoint_names)
+    evaluator = SynEvaluatorNode(cfg, target_endpoint_names=model.target_endpoint_names)
     threshold = evaluator.select_threshold(model, loaders["validation"], device)
 
     use_wandb = bool(getattr(cfg.wandb, "enabled", True)) if "wandb" in cfg else False
