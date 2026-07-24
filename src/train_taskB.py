@@ -75,7 +75,7 @@ def build_model(cfg: DictConfig, topology: dict, sample_graph):
         for node_type in node_types
     }
 
-    target_endpoints = list(getattr(cfg.data, "target_endpoints", DEFAULT_TARGET_ENDPOINTS))
+    target_endpoints = list(getattr(cfg.data, "target", DEFAULT_TARGET_ENDPOINTS))
     model_name = str(cfg.model.name).lower()
 
     if model_name in {"gnn_node_clf_simple", "baseline_node_clf"}:
@@ -145,6 +145,7 @@ def compute_pos_weights_from_loader(train_loader: DataLoader, target_endpoint_na
 def train_epoch(model, loader: DataLoader, optimizer, criterion, device: torch.device) -> float:
     model.train()
     total_loss, n_batches = 0.0, 0
+    n_targets = len(model.target_endpoint_names)
 
     for batch in loader:
         batch = batch.to(device)
@@ -152,6 +153,10 @@ def train_epoch(model, loader: DataLoader, optimizer, criterion, device: torch.d
 
         optimizer.zero_grad()
         logits = model(batch)
+        
+        logits = logits.view(-1, n_targets)
+        labels = labels.view(-1, n_targets)
+        
         loss = criterion(logits, labels)
         loss.backward()
 

@@ -56,11 +56,15 @@ class SynEvaluatorNode:
         all_y_prob: List[np.ndarray] = []
         losses: List[float] = []
         last_batch = None
+        n_targets = len(model.target_endpoint_names)
 
         for batch in loader:
             batch = batch.to(device)
             logits = model(batch)
             labels = self._get_labels(model, batch)
+
+            logits = logits.view(-1, n_targets)
+            labels = labels.view(-1, n_targets)
 
             loss = criterion(logits, labels)
             losses.append(float(loss.item()))
