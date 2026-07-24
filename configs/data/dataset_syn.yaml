@@ -16,16 +16,16 @@ evaluator_type: synthetic_evaluator
 
 dataset:
   root_dir: ${oc.env:PHARMA_DATA_ROOT}
-  nodes_file: "synthetic_pharmacotherapy_v2_2_nodes.csv"
-  edges_file: "synthetic_pharmacotherapy_v2_2_edges_audited.csv"
+  nodes_file: "synthetic_pharmacotherapy_v3_nodes.csv"
+  edges_file: "synthetic_pharmacotherapy_v3_edges_audited.csv"
 
   samples:
-      clean: "synthetic_pharmacotherapy_v2_2_samples_clean.csv"
-      nooverlap: "synthetic_pharmacotherapy_v2_2_samples_no_overlap.csv"
-      multihospital: "synthetic_pharmacotherapy_v2_2_samples_multihospital.csv"
-      hidden:   "synthetic_pharmacotherapy_v2_2_samples_hidden_confounder.csv"
-      doc: "synthetic_pharmacotherapy_v2_2_samples_noisy_documentation.csv"
-      bias: "synthetic_pharmacotherapy_v2_2_samples_selection_bias.csv"
+      clean: "synthetic_pharmacotherapy_v3_samples_clean.csv"
+      nooverlap: "synthetic_pharmacotherapy_v3_samples_no_overlap.csv"
+      multihospital: "synthetic_pharmacotherapy_v3_samples_multihospital.csv"
+      hidden:   "synthetic_pharmacotherapy_v3_samples_hidden_confounder.csv"
+      doc: "synthetic_pharmacotherapy_v3_samples_noisy_documentation.csv"
+      bias: "synthetic_pharmacotherapy_v3_samples_selection_bias.csv"
 
   scenario: clean #choose key from samples to select the scenario for training and evaluation
 
