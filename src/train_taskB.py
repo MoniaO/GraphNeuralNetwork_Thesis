@@ -14,8 +14,7 @@ from torch_geometric.loader import DataLoader
 from data.PreprocessingTaskB.build_patient_dag_heterodata import (
     load_shared_hetero_topology,
     build_patient_hetero_graphs,
-    attach_splits,
-    attach_computed_splits,
+    attach_splits
 )
 from evaluation.syntetic_evaluator_node import SynEvaluatorNode
 from models.TaskB.gnn_node import (
@@ -41,10 +40,7 @@ def build_loaders(cfg: DictConfig):
     dataset_cfg = cfg.data.dataset
     root = Path(dataset_cfg.root_dir)
 
-    nodes_file = root / str(getattr(dataset_cfg, "nodes_file", "synthetic_pharmacotherapy_v3_nodes.csv"))
-    edges_file = root / str(getattr(dataset_cfg, "edges_file", "synthetic_pharmacotherapy_v3_edges_audited.csv"))
-
-    topology = load_shared_hetero_topology(nodes_file, edges_file)
+    topology = load_shared_hetero_topology(cfg)
 
     scenario = str(getattr(dataset_cfg, "scenario", "clean"))
     samples_file = root / f"synthetic_pharmacotherapy_v3_samples_{scenario}.csv"
@@ -54,17 +50,8 @@ def build_loaders(cfg: DictConfig):
 
     graphs = build_patient_hetero_graphs(samples_df, topology)
 
-    use_precomputed = bool(getattr(dataset_cfg, "use_precomputed_splits", True))
-    if use_precomputed:
-        split_file = root / "splits" / "patient_splits_v3.csv"
-        buckets = attach_splits(graphs, split_file)
-    else:
-        endpoint_type = "clinical_endpoint"
-        endpoint_cols = [
-            e for e in topology["node_names_by_type"][endpoint_type]
-            if e in samples_df.columns
-        ]
-        buckets = attach_computed_splits(graphs, samples_df, endpoint_cols)
+    split_file = root / "splits" / str(getattr(dataset_cfg, "splits_file", "patient_splits_v3.csv"))
+    buckets = attach_splits(graphs, split_file)
 
     batch_size = int(cfg.training.batch_size)
     loaders = {

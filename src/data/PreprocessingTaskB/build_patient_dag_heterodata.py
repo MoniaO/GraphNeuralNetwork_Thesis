@@ -11,7 +11,7 @@ from torch_geometric.data import HeteroData
 from torch_geometric.loader import DataLoader
 
 
-ENDPOINT_NODE_TYPE = ["clinical_endpoint"]
+ENDPOINT_NODE_TYPE = "clinical_endpoint"
 
 
 ID_COLS = ["patient_id", "hospital_id"]
