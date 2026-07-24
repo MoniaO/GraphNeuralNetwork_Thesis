@@ -75,7 +75,12 @@ def build_model(cfg: DictConfig, topology: dict, sample_graph):
         for node_type in node_types
     }
 
-    target_endpoints = list(getattr(cfg.data, "target", DEFAULT_TARGET_ENDPOINTS))
+    raw_targets = getattr(cfg.data, "target", DEFAULT_TARGET_ENDPOINTS)
+    if isinstance(raw_targets, str):
+        target_endpoints = [raw_targets]
+    else:
+        target_endpoints = list(raw_targets)
+
     model_name = str(cfg.model.name).lower()
 
     if model_name in {"gnn_node_clf_simple", "baseline_node_clf"}:
