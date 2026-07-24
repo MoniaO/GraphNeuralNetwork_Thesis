@@ -9,12 +9,21 @@ import numpy as np
 import torch
 import wandb
 from omegaconf import DictConfig, OmegaConf, ListConfig
+from torch_geometric.loader import DataLoader
 
-from data.PreprocessingTaskB.load_split_benchmark_data import load_split_benchmark_heterodata
-from evaluation.syntetic_evaluator import SynEvaluator
-from models.TaskB.gnn_lp import SimpleHeteroGNN
-from training.class_weights import compute_pos_weights
-from models.TaskB.linear import LinearHeteroLP
+from data.PreprocessingTaskB.build_patient_dag_heterodata import (
+    load_shared_hetero_topology,
+    build_patient_hetero_graphs,
+    attach_splits,
+    attach_computed_splits,
+)
+from evaluation.syntetic_evaluator_node import SynEvaluatorNode
+from models.TaskB.gnn_node import (
+    TargetedPatientDAGNodeClassifier,
+    get_targeted_labels,
+    DEFAULT_TARGET_ENDPOINTS,
+)
+from models.TaskB.gnn_node import SimplePatientDAGNodeClassifier
 
 
 def set_seed(seed: int) -> None:
@@ -23,35 +32,91 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-def build_model(cfg: DictConfig, train_data):
-    metadata = train_data.metadata()
-    in_dims = {
-        node_type: int(train_data[node_type].x.size(-1))
-        for node_type in train_data.node_types
+
+# ---------------------------------------------------------------------------
+# Budowa danych: loadery train/valid/test na bazie grafow-pacjentow
+# ---------------------------------------------------------------------------
+
+def build_loaders(cfg: DictConfig):
+    dataset_cfg = cfg.data.dataset
+    root = Path(dataset_cfg.root_dir)
+
+    nodes_file = root / str(getattr(dataset_cfg, "nodes_file", "synthetic_pharmacotherapy_v3_nodes.csv"))
+    edges_file = root / str(getattr(dataset_cfg, "edges_file", "synthetic_pharmacotherapy_v3_edges_audited.csv"))
+
+    topology = load_shared_hetero_topology(nodes_file, edges_file)
+
+    scenario = str(getattr(dataset_cfg, "scenario", "clean"))
+    samples_file = root / f"synthetic_pharmacotherapy_v3_samples_{scenario}.csv"
+
+    import pandas as pd
+    samples_df = pd.read_csv(samples_file, low_memory=False)
+
+    graphs = build_patient_hetero_graphs(samples_df, topology)
+
+    use_precomputed = bool(getattr(dataset_cfg, "use_precomputed_splits", True))
+    if use_precomputed:
+        split_file = root / "splits" / "patient_splits_v3.csv"
+        buckets = attach_splits(graphs, split_file)
+    else:
+        endpoint_type = "clinical_endpoint"
+        endpoint_cols = [
+            e for e in topology["node_names_by_type"][endpoint_type]
+            if e in samples_df.columns
+        ]
+        buckets = attach_computed_splits(graphs, samples_df, endpoint_cols)
+
+    batch_size = int(cfg.training.batch_size)
+    loaders = {
+        split: DataLoader(items, batch_size=batch_size, shuffle=(split == "train"))
+        for split, items in buckets.items() if items
     }
+    return loaders, topology, graphs
+
+
+# ---------------------------------------------------------------------------
+# Budowa modelu
+# ---------------------------------------------------------------------------
+
+def build_model(cfg: DictConfig, topology: dict, sample_graph):
+    node_types = sample_graph.node_types
+    edge_types = sample_graph.edge_types
+    metadata = (node_types, edge_types)
+
+    in_dims = {
+        node_type: int(sample_graph[node_type].x.size(-1))
+        for node_type in node_types
+    }
+
+    target_endpoints = list(getattr(cfg.data, "target_endpoints", DEFAULT_TARGET_ENDPOINTS))
     model_name = str(cfg.model.name).lower()
 
-    if model_name in {"linear", "linear_lp", "linear_hetero_lp"}:
-        return LinearHeteroLP(cfg=cfg, metadata=metadata, in_dims=in_dims)
+    if model_name in {"gnn_node_clf_simple", "baseline_node_clf"}:
+        return SimplePatientDAGNodeClassifier(
+            cfg=cfg, metadata=metadata, in_dims=in_dims,
+            target_node_type="clinical_endpoint",
+        )
 
-    if model_name in {"gnn_lp", "gnn_lp_attr", "heterognn", "simple_hetero_gnn"}:
-        return SimpleHeteroGNN(cfg=cfg, metadata=metadata, in_dims=in_dims)
+    if model_name in {"gnn_node"}:
+        return TargetedPatientDAGNodeClassifier(
+            cfg=cfg, metadata=metadata, in_dims=in_dims,
+            node_names_by_type=topology["node_names_by_type"],
+            target_node_type="clinical_endpoint",
+            target_endpoint_names=target_endpoints,
+        )
 
     raise ValueError(f"Unknown model.name='{cfg.model.name}'")
+
 
 def build_run_name(cfg: DictConfig) -> str:
     if "wandb" in cfg and getattr(cfg.wandb, "run_name", None):
         return str(cfg.wandb.run_name)
-    
-    target = cfg.data.target
-    if isinstance(target, (list, tuple, ListConfig)):
-        targets_str = "multitarget" if len(target) > 5 else "-".join(target)
-    else:
-        targets_str = str(target)
+
+    target_endpoints = list(getattr(cfg.data, "target_endpoints", DEFAULT_TARGET_ENDPOINTS))
+    targets_str = "multitarget" if len(target_endpoints) > 5 else "-".join(target_endpoints)
 
     scenario = getattr(cfg.data.dataset, "scenario", None)
     scenario_str = str(scenario) if scenario is not None else "default"
-
 
     return (
         f"{cfg.meta.owner_initials}_{cfg.model.name}_{cfg.data.name}"
@@ -62,26 +127,55 @@ def build_run_name(cfg: DictConfig) -> str:
     )
 
 
-def get_labels(data) -> torch.Tensor:
-    return data[("patient", "has_adr", "variable")].edge_label.float()
+# ---------------------------------------------------------------------------
+# pos_weight per endpoint, liczony z loadera treningowego (nie z jednego grafu)
+# ---------------------------------------------------------------------------
+
+def compute_pos_weights_from_loader(train_loader: DataLoader, target_endpoint_names, target_local_idx) -> torch.Tensor:
+    """Zlicza pozytywne/negatywne etykiety per endpoint po WSZYSTKICH
+    grafach w loaderze treningowym, zwraca tensor pos_weight [n_targets]
+    do uzycia w BCEWithLogitsLoss (per-kolumna, broadcastowane na batch)."""
+    n_targets = len(target_endpoint_names)
+    positives = torch.zeros(n_targets)
+    totals = torch.zeros(n_targets)
+
+    for batch in train_loader:
+        labels = get_targeted_labels(batch, target_local_idx, target_node_type="clinical_endpoint")
+        labels = labels.view(-1, n_targets)
+        positives += labels.sum(dim=0)
+        totals += labels.size(0)
+
+    negatives = totals - positives
+    pos_weight = negatives / positives.clamp(min=1.0)
+    return pos_weight
 
 
-def train_epoch(model, data, optimizer, criterion, device: torch.device) -> float:
+# ---------------------------------------------------------------------------
+# Trening jednej epoki: iteracja po batchach, nie jeden forward na cala populacje
+# ---------------------------------------------------------------------------
+
+def train_epoch(model, loader: DataLoader, optimizer, criterion, device: torch.device) -> float:
     model.train()
-    data = data.to(device)
-    labels = get_labels(data)
+    total_loss, n_batches = 0.0, 0
 
-    optimizer.zero_grad()
-    logits = model(data)
-    loss = criterion(logits, labels)
-    loss.backward()
+    for batch in loader:
+        batch = batch.to(device)
+        labels = get_targeted_labels(batch, model.target_local_idx, target_node_type=model.target_node_type)
 
-    grad_clip = getattr(model, "grad_clip", None)
-    if grad_clip is not None and grad_clip > 0:
-        torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+        optimizer.zero_grad()
+        logits = model(batch)
+        loss = criterion(logits, labels)
+        loss.backward()
 
-    optimizer.step()
-    return float(loss.item())
+        grad_clip = getattr(model, "grad_clip", None)
+        if grad_clip is not None and grad_clip > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+
+        optimizer.step()
+        total_loss += float(loss.item())
+        n_batches += 1
+
+    return total_loss / max(n_batches, 1)
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
@@ -90,9 +184,10 @@ def main(cfg: DictConfig) -> None:
     set_seed(int(cfg.training.seed))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_data, valid_data, test_data, node_to_idx = load_split_benchmark_heterodata(cfg)
+    loaders, topology, graphs = build_loaders(cfg)
+    sample_graph = graphs[0]
 
-    model = build_model(cfg, train_data).to(device)
+    model = build_model(cfg, topology, sample_graph).to(device)
 
     optimizer_name = str(getattr(cfg.training, "optimizer", "adam")).lower()
     lr = float(cfg.training.lr)
@@ -103,24 +198,15 @@ def main(cfg: DictConfig) -> None:
     else:
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
-    #for just singlelabel
-    #pos_weight = float(getattr(cfg.training, "pos_weight", 1.0))
+    pos_weight = compute_pos_weights_from_loader(
+        loaders["train"], model.target_endpoint_names, model.target_local_idx
+    ).to(device)
 
-    pos_weight_map = compute_pos_weights(train_data, node_to_idx)
-
-    target_idx_per_row = train_data[("patient", "has_adr", "variable")].edge_label_target_idx
-    pos_weight_tensor = torch.tensor(
-    [pos_weight_map[int(t)] for t in target_idx_per_row],
-    dtype=torch.float32,
-    device=device)
-
-    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
-
+    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     eval_criterion = torch.nn.BCEWithLogitsLoss()
 
-    evaluator = SynEvaluator(cfg, node_to_idx=node_to_idx)
-
-    threshold = evaluator.select_threshold(model, valid_data, device)
+    evaluator = SynEvaluatorNodeClf(cfg, target_endpoint_names=model.target_endpoint_names)
+    threshold = evaluator.select_threshold(model, loaders["validation"], device)
 
     use_wandb = bool(getattr(cfg.wandb, "enabled", True)) if "wandb" in cfg else False
     if use_wandb:
@@ -140,14 +226,13 @@ def main(cfg: DictConfig) -> None:
     min_delta = float(getattr(cfg.training, "early_stopping_min_delta", 0.0))
     epochs_without_improvement = 0
 
-
     epochs = int(cfg.training.epochs)
     for epoch in range(1, epochs + 1):
-        train_loss = train_epoch(model, train_data, optimizer, criterion, device)
+        train_loss = train_epoch(model, loaders["train"], optimizer, criterion, device)
 
-        train_metrics = evaluator.evaluate(model, train_data, eval_criterion, device, threshold=threshold)
-        valid_metrics = evaluator.evaluate(model, valid_data, eval_criterion, device, threshold=threshold)
-        test_metrics = evaluator.evaluate(model, test_data, eval_criterion, device, threshold=threshold)
+        train_metrics = evaluator.evaluate(model, loaders["train"], eval_criterion, device, threshold=threshold)
+        valid_metrics = evaluator.evaluate(model, loaders["validation"], eval_criterion, device, threshold=threshold)
+        test_metrics = evaluator.evaluate(model, loaders["test"], eval_criterion, device, threshold=threshold)
 
         print({k: v for k, v in train_metrics.items() if k.startswith("oversmoothing/")})
 
@@ -159,7 +244,6 @@ def main(cfg: DictConfig) -> None:
             epochs_without_improvement = 0
         else:
             epochs_without_improvement += 1
-
 
         log_dict = {
             "epoch": epoch,
@@ -202,12 +286,10 @@ def main(cfg: DictConfig) -> None:
         }
 
         for split_name, metrics_dict in [
-            ("train", train_metrics),
-            ("valid", valid_metrics),
-            ("test", test_metrics),
-            ]:
+            ("train", train_metrics), ("valid", valid_metrics), ("test", test_metrics),
+        ]:
             for key, value in metrics_dict.items():
-                if key.startswith(("auc_", "auprc_", "oversmoothing/")):
+                if key.startswith(tuple(model.target_endpoint_names)) or key.startswith("oversmoothing/"):
                     log_dict[f"{split_name}/{key}"] = value
 
         if use_wandb:
@@ -237,27 +319,6 @@ def main(cfg: DictConfig) -> None:
             break
 
     model.load_state_dict(best_state)
-
-    output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
-    ckpt_path = output_dir / "best_model.pt"
-    torch.save(
-        {
-            "model_state_dict": model.state_dict(),
-            "cfg": OmegaConf.to_container(cfg, resolve=True),
-            "best_epoch": best_epoch,
-            "best_valid": best_valid,
-        },
-        ckpt_path,
-    )
-
-    if use_wandb:
-        wandb.summary["best_epoch"] = best_epoch
-        wandb.summary[f"best_valid_AUPRC"] = best_valid
-        wandb.summary["checkpoint_path"] = str(ckpt_path)
-        wandb.finish()
-
-    print(f"Saved checkpoint to: {ckpt_path}")
-    print(f"Hydra run dir: {output_dir}")
 
 
 if __name__ == "__main__":
