@@ -11,14 +11,8 @@ from torch_geometric.data import HeteroData
 from torch_geometric.loader import DataLoader
 
 
-
-NODES_FILE = Path(cfg.data.dataset.root_dir) / Path(cfg.data.dataset.nodes_file) 
-EDGES_FILE = Path(cfg.data.dataset.root_dir) / Path(cfg.data.dataset.edges_file)
-SPLIT_FILE = Path(cfg.data.dataset.root_dir) / "splits" /  "patient_splits_v3.csv"
-
 ENDPOINT_NODE_TYPE = ["clinical_endpoint"]
 
-TARGET_ENDPOINTS = cfg.data.dataset.target if hasattr(cfg.data.dataset, "target") else None
 
 ID_COLS = ["patient_id", "hospital_id"]
 META_COLS = [
@@ -31,10 +25,17 @@ META_COLS = [
 # 1. HeteroData topology: node types, edge types, edge_index/edge_attr
 # ---------------------------------------------------------------------------
 
-def load_shared_hetero_topology(nodes_path: Path, edges_path: Path) -> dict:
+def load_shared_hetero_topology(cfg) -> dict:
 
-    nodes = pd.read_csv(nodes_path)
-    edges = pd.read_csv(edges_path)
+    dataset_cfg = cfg.data.dataset
+    root = Path(dataset_cfg.root_dir)
+
+    nodes_file = root / str(getattr(dataset_cfg, "nodes_file", "synthetic_pharmacotherapy_v2_nodes.csv"))
+    edges_file = root / str(getattr(dataset_cfg, "edges_file", "synthetic_pharmacotherapy_v2_edges.csv"))
+    splits_file = root / f"splits/{getattr(dataset_cfg, 'splits_file', 'patient_splits_v3.csv')}"
+
+    nodes = pd.read_csv(nodes_file)
+    edges = pd.read_csv(edges_file)
 
     node_types = nodes["node_type"].astype(str).unique().tolist()
 
@@ -209,14 +210,14 @@ def attach_splits(graphs: List[HeteroData], split_path: Path) -> Dict[str, List[
 # 4. Pipeline glowny
 # ---------------------------------------------------------------------------
 
-def main(scenario: str = "clean", batch_size: int = 32):
-    topology = load_shared_hetero_topology(NODES_FILE, EDGES_FILE)
+def main(cfg, scenario: str = "clean", batch_size: int = 32):
+    topology = load_shared_hetero_topology(cfg)
 
     samples_path = Path(cfg.data.dataset.root_dir) / f"synthetic_pharmacotherapy_v3_samples_{scenario}.csv"
     samples_df = pd.read_csv(samples_path, low_memory=False)
 
     graphs = build_patient_hetero_graphs(samples_df, topology)
-    buckets = attach_splits(graphs, SPLIT_FILE)
+    buckets = attach_splits(graphs, splits_file)
 
     loaders = {
         split: DataLoader(items, batch_size=batch_size, shuffle=(split == "train"))
