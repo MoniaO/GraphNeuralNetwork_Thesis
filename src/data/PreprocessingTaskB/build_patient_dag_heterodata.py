@@ -210,7 +210,7 @@ def attach_splits(graphs: List[HeteroData], split_path: Path) -> Dict[str, List[
 # 4. Pipeline glowny
 # ---------------------------------------------------------------------------
 
-def main(cfg, scenario: str = "clean", batch_size: int = 32):
+def main(cfg, scenario: str = "clean"):
     topology = load_shared_hetero_topology(cfg)
 
     samples_path = Path(cfg.data.dataset.root_dir) / f"synthetic_pharmacotherapy_v3_samples_{scenario}.csv"
@@ -220,7 +220,7 @@ def main(cfg, scenario: str = "clean", batch_size: int = 32):
     buckets = attach_splits(graphs, splits_file)
 
     loaders = {
-        split: DataLoader(items, batch_size=batch_size, shuffle=(split == "train"))
+        split: DataLoader(items, batch_size=cfg.training.batch_size, shuffle=(split == "train"))
         for split, items in buckets.items() if items
     }
 

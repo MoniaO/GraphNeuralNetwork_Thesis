@@ -227,12 +227,14 @@ def main(cfg: DictConfig) -> None:
     epochs = int(cfg.training.epochs)
     for epoch in range(1, epochs + 1):
         train_loss = train_epoch(model, loaders["train"], optimizer, criterion, device)
-
-        train_metrics = evaluator.evaluate(model, loaders["train"], eval_criterion, device, threshold=threshold)
         valid_metrics = evaluator.evaluate(model, loaders["validation"], eval_criterion, device, threshold=threshold)
-        test_metrics = evaluator.evaluate(model, loaders["test"], eval_criterion, device, threshold=threshold)
 
-        print({k: v for k, v in train_metrics.items() if k.startswith("oversmoothing/")})
+        do_full_eval = (epoch % 5 == 0) or (epoch == epochs)
+        train_metrics, test_metrics = {}, {}
+        if do_full_eval:
+            train_metrics = evaluator.evaluate(model, loaders["train"], eval_criterion, device, threshold=threshold)
+            test_metrics = evaluator.evaluate(model, loaders["test"], eval_criterion, device, threshold=threshold)
+            print({k: v for k, v in train_metrics.items() if k.startswith("oversmoothing/")})
 
         current_valid = valid_metrics.get(best_metric_name, float("nan"))
         if not np.isnan(current_valid) and current_valid > best_valid + min_delta:
@@ -248,16 +250,6 @@ def main(cfg: DictConfig) -> None:
             "train/optim_loss": train_loss,
             "classification_threshold": threshold,
 
-            "train/loss": train_metrics["loss"],
-            "train/auc": train_metrics["auc"],
-            "train/auprc": train_metrics["auprc"],
-            "train/brier": train_metrics["brier"],
-            "train/f1": train_metrics["f1"],
-            "train/precision": train_metrics["precision"],
-            "train/recall": train_metrics["recall"],
-            "train/auprc_baseline": train_metrics["auprc_baseline"],
-            "train/auprc_lift": train_metrics["auprc_lift"],
-
             "valid/loss": valid_metrics["loss"],
             "valid/auc": valid_metrics["auc"],
             "valid/auprc": valid_metrics["auprc"],
@@ -268,49 +260,62 @@ def main(cfg: DictConfig) -> None:
             "valid/auprc_baseline": valid_metrics["auprc_baseline"],
             "valid/auprc_lift": valid_metrics["auprc_lift"],
 
-            "test/loss": test_metrics["loss"],
-            "test/auc": test_metrics["auc"],
-            "test/auprc": test_metrics["auprc"],
-            "test/brier": test_metrics["brier"],
-            "test/f1": test_metrics["f1"],
-            "test/precision": test_metrics["precision"],
-            "test/recall": test_metrics["recall"],
-            "test/auprc_baseline": test_metrics["auprc_baseline"],
-            "test/auprc_lift": test_metrics["auprc_lift"],
-
             "best/valid_metric": best_valid,
             "best/epoch": best_epoch,
             "lr": optimizer.param_groups[0]["lr"],
         }
 
-        for split_name, metrics_dict in [
-            ("train", train_metrics), ("valid", valid_metrics), ("test", test_metrics),
-        ]:
-            for key, value in metrics_dict.items():
-                if key.startswith(tuple(model.target_endpoint_names)) or key.startswith("oversmoothing/"):
-                    log_dict[f"{split_name}/{key}"] = value
+        for key, value in valid_metrics.items():
+            if key.startswith(tuple(model.target_endpoint_names)) or key.startswith("oversmoothing/"):
+                log_dict[f"valid/{key}"] = value
+
+        if do_full_eval:
+            log_dict.update({
+                "train/loss": train_metrics["loss"],
+                "train/auc": train_metrics["auc"],
+                "train/auprc": train_metrics["auprc"],
+                "train/brier": train_metrics["brier"],
+                "train/f1": train_metrics["f1"],
+                "train/precision": train_metrics["precision"],
+                "train/recall": train_metrics["recall"],
+                "train/auprc_baseline": train_metrics["auprc_baseline"],
+                "train/auprc_lift": train_metrics["auprc_lift"],
+
+                "test/loss": test_metrics["loss"],
+                "test/auc": test_metrics["auc"],
+                "test/auprc": test_metrics["auprc"],
+                "test/brier": test_metrics["brier"],
+                "test/f1": test_metrics["f1"],
+                "test/precision": test_metrics["precision"],
+                "test/recall": test_metrics["recall"],
+                "test/auprc_baseline": test_metrics["auprc_baseline"],
+                "test/auprc_lift": test_metrics["auprc_lift"],
+            })
+            for split_name, metrics_dict in [("train", train_metrics), ("test", test_metrics)]:
+                for key, value in metrics_dict.items():
+                    if key.startswith(tuple(model.target_endpoint_names)) or key.startswith("oversmoothing/"):
+                        log_dict[f"{split_name}/{key}"] = value
 
         if use_wandb:
             wandb.log(log_dict, step=epoch)
 
-        print(
-            f"Epoch {epoch:03d} | "
-            f"train loss {train_loss:.4f} | "
-            f"train AUC {train_metrics['auc']:.4f} | "
-            f"train AUPRC {train_metrics['auprc']:.4f} | "
-            f"valid loss {valid_metrics['loss']:.4f} | "
-            f"test loss {test_metrics['loss']:.4f} | "
-            f"valid AUC {valid_metrics['auc']:.4f} | "
-            f"valid AUPRC {valid_metrics['auprc']:.4f} | "
-            f"test AUC {test_metrics['auc']:.4f} | "
-            f"test AUPRC {test_metrics['auprc']:.4f}"
-        )
+        if do_full_eval:
+            print(
+                f"Epoch {epoch:03d} | train loss {train_loss:.4f} | "
+                f"train AUC {train_metrics['auc']:.4f} | train AUPRC {train_metrics['auprc']:.4f} | "
+                f"valid loss {valid_metrics['loss']:.4f} | test loss {test_metrics['loss']:.4f} | "
+                f"valid AUC {valid_metrics['auc']:.4f} | valid AUPRC {valid_metrics['auprc']:.4f} | "
+                f"test AUC {test_metrics['auc']:.4f} | test AUPRC {test_metrics['auprc']:.4f}"
+            )
+        else:
+            print(
+                f"Epoch {epoch:03d} | train loss {train_loss:.4f} | "
+                f"valid loss {valid_metrics['loss']:.4f} | "
+                f"valid AUC {valid_metrics['auc']:.4f} | valid AUPRC {valid_metrics['auprc']:.4f}"
+            )
 
         if epochs_without_improvement >= patience:
-            print(
-                f"Early stopping triggered at epoch {epoch}: "
-                f"no improvement in valid/{best_metric_name} for {patience} epochs."
-            )
+            print(f"Early stopping triggered at epoch {epoch}: no improvement in valid/{best_metric_name} for {patience} epochs.")
             if use_wandb:
                 wandb.summary["early_stopped"] = True
                 wandb.summary["early_stopped_epoch"] = epoch
