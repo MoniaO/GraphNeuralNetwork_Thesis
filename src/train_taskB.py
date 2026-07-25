@@ -153,7 +153,7 @@ def train_epoch(model, loader: DataLoader, optimizer, criterion, device: torch.d
     n_targets = len(model.target_endpoint_names)
 
     for batch in loader:
-        batch = batch.to(device)
+        batch = batch.to(device, non_blocking=True)
         labels = get_targeted_labels(batch, model.target_local_idx, target_node_type=model.target_node_type)
 
         optimizer.zero_grad()
