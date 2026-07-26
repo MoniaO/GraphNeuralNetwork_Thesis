@@ -115,7 +115,7 @@ def build_run_name(cfg: DictConfig) -> str:
         f"_{targets_str}_{cfg.model.conv_type}_{scenario_str}"
         f"_ep{cfg.training.epochs}_layer{cfg.model.num_layers}"
         f"_lr{cfg.training.lr}"
-        f"_bs{cfg.training.batch_size}"
+        f"_bs{cfg.training.batch_size}_f"_{cfg.model.aggr}"
     )
 
 
