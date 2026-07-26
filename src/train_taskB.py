@@ -229,7 +229,7 @@ def main(cfg: DictConfig) -> None:
         train_loss = train_epoch(model, loaders["train"], optimizer, criterion, device)
         valid_metrics = evaluator.evaluate(model, loaders["validation"], eval_criterion, device, threshold=threshold)
 
-        do_full_eval = (epoch % 5 == 0) or (epoch == epochs)
+        do_full_eval = (epoch % 10 == 0) or (epoch == epochs)
         train_metrics, test_metrics = {}, {}
         if do_full_eval:
             train_metrics = evaluator.evaluate(model, loaders["train"], eval_criterion, device, threshold=threshold)

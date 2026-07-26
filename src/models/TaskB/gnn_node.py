@@ -187,7 +187,7 @@ class TargetedPatientDAGNodeClassifier(nn.Module):
         self.target_node_type = target_node_type
 
         all_endpoint_names = node_names_by_type[target_node_type]
-        requested = target_endpoint_names or getattr(cfg.data, "target_endpoints", None) or DEFAULT_TARGET_ENDPOINTS
+        requested = target_endpoint_names or getattr(cfg.data, "target", None) or DEFAULT_TARGET_ENDPOINTS
         requested = list(requested)
 
         missing = [e for e in requested if e not in all_endpoint_names]
