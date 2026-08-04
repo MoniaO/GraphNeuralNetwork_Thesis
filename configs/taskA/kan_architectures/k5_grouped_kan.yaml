@@ -1,5 +1,5 @@
-hcr: w7c_b2_audit
-model: TaskA_hgt_wave7c
+hcr: final_ghcr
+model: TaskA_hgt_final
 hgt:
   num_layers: 3
   heads: 8

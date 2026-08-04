@@ -114,10 +114,20 @@ def _kind(name: str) -> str:
 def _load_registry(seed: int) -> pd.DataFrame:
     path = REPO_ROOT / "outputs/wave5c/registry/edge_context_registry.csv"
     if not path.exists():
-        return pd.DataFrame()
+        raise FileNotFoundError(
+            f"Missing Wave 5C edge-context registry: {path}. "
+            "Build it with: PYTHONPATH=src python scripts/build_wave5c_context_registry.py "
+            "(requires Wave 5 evidence under outputs/wave5/evidence/). "
+            "Without this file Wave 7C/11 silently falls back to AG-only motifs."
+        )
     reg = pd.read_csv(path)
     if "seed" in reg.columns:
         reg = reg[reg["seed"] == int(seed)]
+    if len(reg) == 0:
+        raise ValueError(
+            f"Wave 5C registry at {path} has no rows for seed={seed}. "
+            "Rebuild with: PYTHONPATH=src python scripts/build_wave5c_context_registry.py"
+        )
     return reg
 
 

@@ -8,6 +8,10 @@ audytują lub agregują eksperymenty.
 
 Uruchamiaj w tej kolejności:
 
+0. `build_wave5c_context_registry.py` — rejestr kontekstu krawędzi
+   (`outputs/wave5c/registry/edge_context_registry.csv`). Wymaga evidence
+   Wave 5 w `outputs/wave5/evidence/`. Bez tego attach Wave 7C/11 nie ma
+   pełnych motywów AZ/AG/ZG.
 1. `run_taska_mlp_vs_kan_scenarios.py` — pełny retrain finalnego MLP i
    bezpośredniego KAN: 6 scenariuszy × 3 seedy.
 2. `build_taska_edge_endpoint_registry.py` — rejestr ścieżek prowadzących do
@@ -23,6 +27,8 @@ Uruchamiaj w tej kolejności:
 
 Konfiguracje finalnych modeli:
 
+- `configs/model/TaskA_hgt_final.yaml`
+- `configs/hcr/final_ghcr.yaml`
 - `configs/taskA/mlp_full_retrain.yaml`
 - `configs/taskA/kan_full_retrain.yaml`
 - `configs/taskA/kan_architectures/`

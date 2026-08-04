@@ -23,6 +23,7 @@ PY = str(ROOT / ".venv" / "bin" / "python")
 WAVE_OUT = ROOT / "outputs" / "wave11_taskA"
 OUT = WAVE_OUT / "kan_architecture_audit"
 DIRECT_OUT = WAVE_OUT / "mlp_vs_kan_full"
+CONTEXT_REGISTRY = ROOT / "outputs" / "wave5c" / "registry" / "edge_context_registry.csv"
 DEFAULT_GSN = Path.home() / "Desktop" / "GSN Graphs dysertation 2026"
 CFG_DIR = ROOT / "configs" / "taskA" / "kan_architectures"
 
@@ -229,6 +230,12 @@ def main() -> None:
         help="Comma list of k1_shallow,... or all",
     )
     args = ap.parse_args()
+    if not CONTEXT_REGISTRY.exists():
+        raise SystemExit(
+            f"Missing Wave 5C edge-context registry: {CONTEXT_REGISTRY}\n"
+            "Build it first (requires Wave 5 evidence under outputs/wave5/evidence/):\n"
+            f"  PYTHONPATH=src {PY} {ROOT / 'scripts' / 'build_wave5c_context_registry.py'}"
+        )
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "screen").mkdir(exist_ok=True)
     (OUT / "diagnostics").mkdir(exist_ok=True)

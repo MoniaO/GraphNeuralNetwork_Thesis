@@ -7,10 +7,14 @@ HGT L1, hidden 64 i HCR 8D. Nie opisuje finalnego MLP ani KAN.
 
 Źródłem finalnego stacku jest:
 
-- `configs/model/TaskA_hgt_wave7c.yaml`;
-- `configs/hcr/w7c_b2_audit.yaml`;
+- `configs/model/TaskA_hgt_final.yaml`;
+- `configs/hcr/final_ghcr.yaml`;
 - `configs/taskA/mlp_full_retrain.yaml`;
 - `configs/taskA/kan_architectures/k1_shallow.yaml`.
+
+Pierwsze dwa pliki są czytelnymi aliasami. Ich historyczne źródła
+(`TaskA_hgt_wave7c.yaml` i `w7c_b2_audit.yaml`) pozostają w repozytorium,
+aby odtwarzać eksperymenty Wave 7C–10.
 
 ## 1. Struktura najważniejszych katalogów
 
@@ -21,8 +25,10 @@ GraphNeuralNetwork_Thesis/
 │   ├── data/
 │   │   └── dataset_v3.yaml
 │   ├── hcr/
+│   │   ├── final_ghcr.yaml
 │   │   └── w7c_b2_audit.yaml
 │   ├── model/
+│   │   ├── TaskA_hgt_final.yaml
 │   │   └── TaskA_hgt_wave7c.yaml
 │   └── taskA/
 │       ├── mlp_full_retrain.yaml
@@ -128,7 +134,7 @@ Za co odpowiada:
 
 Plik:
 
-`configs/model/TaskA_hgt_wave7c.yaml`
+`configs/model/TaskA_hgt_final.yaml`
 
 Za co odpowiada:
 
@@ -148,7 +154,7 @@ To Wave 3: HGT L1 i HCR 8D.
 
 Plik:
 
-`configs/hcr/w7c_b2_audit.yaml`
+`configs/hcr/final_ghcr.yaml`
 
 Za co odpowiada:
 
@@ -530,8 +536,8 @@ Jeśli masz mało czasu, przejrzyj tylko te pliki:
 
 1. `configs/taskA/mlp_full_retrain.yaml`;
 2. `configs/taskA/kan_architectures/k1_shallow.yaml`;
-3. `configs/model/TaskA_hgt_wave7c.yaml`;
-4. `configs/hcr/w7c_b2_audit.yaml`;
+3. `configs/model/TaskA_hgt_final.yaml`;
+4. `configs/hcr/final_ghcr.yaml`;
 5. `src/models/TaskA/encoders/hgt.py`;
 6. `src/hcr/wave7/panel_b/packing.py`;
 7. `src/models/TaskA/wave7c_decoder.py`;

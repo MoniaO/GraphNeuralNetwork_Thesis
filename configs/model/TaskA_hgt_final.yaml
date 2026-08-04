@@ -1,0 +1,4 @@
+# Public Hydra alias for the final Task A HGT stack.
+# Keep TaskA_hgt_wave7c.yaml as the historical source for reproducibility.
+defaults:
+  - TaskA_hgt_wave7c

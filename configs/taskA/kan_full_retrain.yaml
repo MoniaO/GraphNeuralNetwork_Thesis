@@ -9,8 +9,8 @@ variant: TASKA_KAN_FULL_RETRAIN
 pair_encoder_type: kan
 
 inherits_from: W7D_T0_A1_UNSHARED_ROLE_ENCODERS
-hcr: w7c_b2_audit
-model: TaskA_hgt_wave7c
+hcr: final_ghcr
+model: TaskA_hgt_final
 
 hgt:
   num_layers: 3

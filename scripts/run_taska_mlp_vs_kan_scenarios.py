@@ -23,6 +23,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 PY = str(ROOT / ".venv" / "bin" / "python")
 OUT = ROOT / "outputs" / "wave11_taskA" / "mlp_vs_kan_full"
+CONTEXT_REGISTRY = ROOT / "outputs" / "wave5c" / "registry" / "edge_context_registry.csv"
 DEFAULT_GSN = Path.home() / "Desktop" / "GSN Graphs dysertation 2026"
 
 SEEDS = (20260722, 20260723, 20260724)
@@ -355,6 +356,16 @@ def summarize(rows: list[dict]) -> None:
     (OUT / "FINAL_DECISION.json").write_text(json.dumps(decision, indent=2, default=float))
 
 
+def _require_context_registry() -> None:
+    if CONTEXT_REGISTRY.exists():
+        return
+    raise SystemExit(
+        f"Missing Wave 5C edge-context registry: {CONTEXT_REGISTRY}\n"
+        "Build it first (requires Wave 5 evidence under outputs/wave5/evidence/):\n"
+        f"  PYTHONPATH=src {PY} {ROOT / 'scripts' / 'build_wave5c_context_registry.py'}"
+    )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--epochs", type=int, default=200)
@@ -364,6 +375,8 @@ def main() -> None:
     ap.add_argument("--no-skip", action="store_true")
     ap.add_argument("--build-registry", action="store_true", default=True)
     args = ap.parse_args()
+
+    _require_context_registry()
 
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "runs").mkdir(exist_ok=True)

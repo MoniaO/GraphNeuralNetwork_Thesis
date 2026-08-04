@@ -50,8 +50,11 @@ Różni je wyłącznie encoder każdej pary GHCR:
 - `configs/taskA/mlp_full_retrain.yaml`
 - `configs/taskA/kan_full_retrain.yaml`
 - `configs/taskA/kan_architectures/`
-- `configs/model/TaskA_hgt_wave7c.yaml`
-- `configs/hcr/w7c_b2_audit.yaml`
+- `configs/model/TaskA_hgt_final.yaml`
+- `configs/hcr/final_ghcr.yaml`
+
+Nazwy `TaskA_hgt_wave7c` i `w7c_b2_audit` pozostają historycznymi źródłami
+aliasów i służą do odtwarzania eksperymentów Wave 7C–10.
 
 ## Struktura repozytorium
 
@@ -134,10 +137,8 @@ Sprawdzenie kompozycji finalnej konfiguracji bez treningu:
 ```bash
 PYTHONPATH=src .venv/bin/python src/train_taskA.py \
   --cfg job \
-  model=TaskA_hgt_wave7c \
-  hcr=w7c_b2_audit \
-  model.decoder.arch=unshared_mlp \
-  model.decoder.pair_encoder.type=mlp \
+  model=TaskA_hgt_final \
+  hcr=final_ghcr \
   wandb.enabled=false
 ```
 
@@ -151,20 +152,27 @@ Jednoepokowy run kontrolny bez zapisu do W&B:
 
 ```bash
 PYTHONPATH=src .venv/bin/python src/train_taskA.py \
-  model=TaskA_hgt_wave7c \
-  hcr=w7c_b2_audit \
+  model=TaskA_hgt_final \
+  hcr=final_ghcr \
   data.dataset.scenario=clean \
   data.candidate_seed=20260722 \
   training.seed=20260722 \
   training.epochs=1 \
   training.device=cpu \
-  model.decoder.arch=unshared_mlp \
-  model.decoder.pair_encoder.type=mlp \
-  model.decoder.ag_kan_residual.enabled=false \
   wandb.enabled=false
 ```
 
 ## Finalny eksperyment Wave 11
+
+Najpierw zbuduj rejestr kontekstu krawędzi Wave 5C (wymaga evidence Wave 5 w
+`outputs/wave5/evidence/`). Bez tego `hcr=final_ghcr` nie ma pełnych motywów
+40D×3 i trening się wyłoży na brakującym pliku:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/build_wave5c_context_registry.py
+```
+
+Następnie:
 
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/run_taska_mlp_vs_kan_scenarios.py

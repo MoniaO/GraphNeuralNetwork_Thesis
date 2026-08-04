@@ -25,7 +25,7 @@ decoder:
   dropout: 0.2
   pair_dropout: 0.1
   hcr_dim: 120
-  arch: shared_mlp
+  arch: unshared_mlp
   ablation: none
   use_triple: false
   # Wave 9: only pair_encoder.type should change between K0/K1.
