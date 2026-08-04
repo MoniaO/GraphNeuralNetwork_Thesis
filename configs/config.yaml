@@ -1,29 +1,102 @@
+# configs/config.yaml
+# Task A — link prediction on GSN v3.
+# Model must be selected explicitly at runtime.
+# W&B project/entity below must stay unchanged.
+
 defaults:
-  - data: dataset_syn
+  - data: dataset_v3
   - model: null
+  - hcr: none
   - _self_
 
 training:
   lr: 0.001
-  epochs: 20
-  batch_size: 32 #for now full batch, we need to adjust models
+  epochs: 100
   optimizer: adam
-  seed: 42
-  eval_per_endpoint: true
-  early_stopping_patience: 50
-  early_stopping_min_delta: 0.0
+  # Weight init / dropout RNG (NOT candidate sampling).
+  seed: 20260721
   weight_decay: 0.0005
-  oversmoothing_excluded_models: ["linear"]
+  device: auto
+  batch_size: 32
+
+  eval_per_endpoint: false
+  selection_metric: auprc
   auto_threshold: true
   eval_threshold: 0.5
-  selection_metric: "auprc"
+
+  early_stopping_patience: 20
+  early_stopping_min_delta: 0.0
+
   track_oversmoothing: true
   oversmoothing_sample_size: 2000
+  oversmoothing_excluded_models:
+    - linear
+
   grad_clip: 0.0
+  # Used by Panel B residual fusion (legacy encoder + gate).
+  residual_lr: 0.0003
+  # Wave 10: load frozen MLP backbone before training AG KAN residual.
+  init_from_checkpoint: null
+  lr_kan: 0.001
+  lr_gate: 0.001
+  lr_existing_ag_mlp: 0.0001
+  lr_decoder: 0.0001
 
 meta:
-  owner_initials: "MO" #our names initials to recognize the experiments in wandb
+  owner_initials: "MJ"
+
+experiment:
+  wave: BAZA
+  hcr_variant: none
+  variant: none
+  description: ""
+  intervention: none
+  relation_ablation:
+    enabled: false
+    removed_relations: []
+  motif_completion:
+    enabled: false
+    hide: parent_a
+  # Wave 4C: recover A→G with HCR3(A,B,Y) — never use gate G patient values.
+  latent_gate:
+    enabled: false
+  # Wave 4D: structural context selection + causal-role audit.
+  causal_role_audit:
+    enabled: false
+    registry_source: true_graph_evaluator_only
+    roles:
+      - true_coparent
+      - confounder
+      - mediator
+      - collider
+      - descendant
+    max_per_role: 50
+    match_node_types: true
+    match_prevalence: true
+    match_support: true
+  context_selection:
+    mode: structural
+    source_graph: train
+    use_true_graph: false
+    allowed_roles:
+      - known_target_parent
+    exclude:
+      source_descendants: true
+      target_descendants: true
+      downstream_descendants: true
+      post_outcome: true
+    require:
+      temporal_precedence: true
+      allowed_node_type: true
 
 wandb:
   project: "politechnika-gnn-thesis"
   entity: "politechnika-gnn-thesis"
+  enabled: true
+  group: TaskA_BAZA
+  job_type: training
+  tags:
+    - TaskA
+    - BAZA
+    - v3
+    - no_hcr

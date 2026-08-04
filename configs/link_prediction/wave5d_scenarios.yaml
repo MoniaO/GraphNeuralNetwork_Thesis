@@ -1,0 +1,20 @@
+# WAVE 5E prep — scenario matrix (run after clean WAVE5D decision)
+
+defaults:
+  - wave5d_clean
+
+experiment:
+  wave: WAVE5E
+  name: TASK_A_SCENARIO_ROBUSTNESS
+
+scenarios:
+  - clean
+  - hidden_confounder
+  - selection_bias
+  - no_overlap
+  - noisy_documentation
+  - multihospital
+
+evaluation_modes:
+  - in_scenario
+  - cross_scenario_from_clean

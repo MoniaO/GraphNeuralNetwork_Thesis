@@ -1,0 +1,23 @@
+# R1 — architectural control: shared B2 pair encoder only (no legacy residual).
+enabled: true
+encoder: panel_b_residual_fusion
+variant: W7BR_R1_B2_SHARED_PAIR_ENCODER
+pair_dim: 40
+motif_dim: 120
+legacy_pair_dim: 8
+legacy_motif_dim: 24
+motif_type: candidate_coparent_triangle
+roles:
+  - AZ
+  - AG
+  - ZG
+output_dim: 120
+v0_smoothing: 0.5
+v1_smoothing: 0.0
+fit_split: train
+fit_scope: train_only
+min_complete: 50
+min_level_count: 5
+bootstrap_seed: 20260722
+count_cap_percentile: 99.5
+use_legacy_residual: false

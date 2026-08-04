@@ -1,124 +1,188 @@
-# GraphNeuralNetwork_Thesis
-This thesis investigates the oversmoothing phenomenon in Graph Neural Networks 
-(GNNs) applied to heterogeneous graphs with rare causal edges. We generate a 
-synthetic heterogeneous graph with a controlled causal structure, enabling 
-precise evaluation of model behavior under known ground truth. 
-We have aim to conduct two types of experiments:
-Task A: DAG graph reconstruction based on patient data (link prediction)
-Task B: ADR prediction for patient based on patient data and DAG structure
+# Graph Neural Network Thesis — Task A
 
-## Project Overview
+Repozytorium pracy dyplomowej poświęconej rekonstrukcji skierowanych krawędzi
+grafu przyczynowego farmakoterapii. Główne zadanie to heterogeniczne link
+prediction na syntetycznym zbiorze GSN v3, ze szczególnym uwzględnieniem:
 
-Experiments are conducted on two datasets:
-1. **`ogbl-ddi` / `ogbl-biokg` ** — drug-drug interaction network (Open Graph Benchmark)
-2. **Synthetic dataset** — medical data with rare edges and casuality
+- HGT i heterogenicznego message passingu;
+- cech zależności HCR/GHCR;
+- porównania decoderów MLP i KAN;
+- odporności na sześć scenariuszy generowania pacjentów;
+- jakości krawędzi należących do ścieżek prowadzących do rzadkich endpointów.
 
----
+## Problem
 
-## Repository Structure
+Model otrzymuje dodatnie krawędzie splitu treningowego jako graf message
+passingu. Następnie ocenia kandydackie pary węzłów ze splitów
+train/validation/test. Dodatnie krawędzie validation i test pozostają ukryte
+przed encoderem.
+
+```text
+pacjenci train ──► empiryczne cechy węzłów ─┐
+                                             ├─► HGT ─► embeddingi węzłów ─┐
+dodatnie krawędzie train ─► G_train ─────────┘                              │
+                                                                            ├─► logit krawędzi
+cechy GHCR par AZ, AG, ZG ─► MLP albo KAN ──────────────────────────────────┘
 ```
-GraphNeuralNetwork_Thesis/
-├── configs/ #Hydra
-│ ├── config.yaml # main Hydra config
-│ ├── data/
-│ │ ├── dataset_proxy.yaml # ogbl-ddi configuration
-│ │ └── dataset_syn.yaml # synthetic dataset configuration
-│ └── model/ 
-|  └── model_old_approach #models from previous run iteration
-│  └── TaskA_xxx.yaml #models for task A
-│  └── TaskB_xxx.yaml #modles for task B
-├── data/
-|  ├── raw #folder with codes to generate data
-│    ├── build_v3_interaction_spec.py 
-│    ├── creation_patient_splits_v3.py 
-│    └── generate_synthethic_pharmacotherapy_v3_from_spec.py
-├── notebooks/ #notebooks for run diagnostic & training in colab 
-│ └── train_setup_colab.ipynb # Google Colab notebook
-├── src/ #Python codes
-│ ├── train_taskA.py # main training loop for task A
-│ ├── train_taskB.py #main training loop for taskb
-│ ├── data/
-│   ├── PreprocessingTaskA #data prep for task A
-│       ├── hetero_data_v2_2.py 
-│       └── load_hetero_recon_data.py 
-│   ├── PreprocessingTaskB #data prep for task B
-│       └── load_split_benchmark_data.py 
-│ ├── evaluation/
-│ │ ├── __init__.py
-│ │ ├── ogb_evaluator.py #evaluator specific for OGB dataset, not used yet
-│ │ ├── oversmoothing_metrics.py #oversmoothing metrics
-│ │ ├── syntetic_evalutor.py #evaluator for synthethic dataset
-│ ├── models/
-│   ├── __init__.py # build_model() factory
-│   ├── TaskA
-│   ├── TaskB
-│   └── old approach.py
-│ ├── training/
-│   └── class_weights.py #weights for rare classes
-├── .gitignore
-└── README.md
+
+Wiersze pacjentów nie są przykładami treningowymi GNN. Służą do obliczenia
+cech węzłów i dopasowania HCR/GHCR wyłącznie na partycji pacjentów `train`.
+
+## Finalne modele
+
+Oba modele mają identyczny:
+
+- encoder HGT: 3 warstwy, hidden dimension 32, 8 głów attention, residual,
+  LayerNorm i dropout 0.2;
+- graf kandydatów, splity, seedy, loss i protokół ewaluacji;
+- 40-wymiarowe wejścia GHCR dla trzech ról `AZ`, `AG`, `ZG`;
+- graph branch i końcowy decoder.
+
+Różni je wyłącznie encoder każdej pary GHCR:
+
+- `TA_MLP`: `40 → 16 → 8`, GELU, LayerNorm, dropout 0.1;
+- `TA_KAN`: bezpośredni odpowiednik KAN z bazą spline;
+- audyt K1–K5: alternatywne architektury KAN, z najlepszym wariantem K1
+  shallow.
+
+Źródła konfiguracji:
+
+- `configs/taskA/mlp_full_retrain.yaml`
+- `configs/taskA/kan_full_retrain.yaml`
+- `configs/taskA/kan_architectures/`
+- `configs/model/TaskA_hgt_wave7c.yaml`
+- `configs/hcr/w7c_b2_audit.yaml`
+
+## Struktura repozytorium
+
+```text
+.
+├── configs/                  konfiguracje Hydra
+│   ├── data/                 GSN v3 i scenariusze
+│   ├── model/                architektury GNN
+│   ├── hcr/                  warianty HCR/GHCR
+│   └── taskA/                finalny MLP, KAN i audit K1–K9
+├── src/
+│   ├── train_taskA.py        główny entrypoint treningu
+│   ├── data/                 preprocessing i kandydaci krawędzi
+│   ├── models/TaskA/         HGT, decodery i pair encoders
+│   ├── hcr/                  implementacja HCR/GHCR
+│   ├── evaluation/           metryki globalne i endpoint-path
+│   ├── experiments/          wspólne funkcje audytów
+│   └── wnerw/                historyczne eksperymenty ścieżkowe
+├── scripts/                  runnery, ewaluacja i agregacja wyników
+├── tests/                    testy jednostkowe i leakage guards
+├── notebooks/               eksploracja danych i raporty wcześniejszych fal
+└── outputs/
+    └── Wave 0-11 podsumowanie/  wersjonowany raport promotorski
 ```
----
 
-## Installation
+Szczegółowe mapy:
 
-1. Copy git structure https://github.com/MoniaO/GraphNeuralNetwork_Thesis.git to your local computer
-2. Use VSCode for code updates
-3. Any changes push into branch task A or task b
-4. train_taskX.py - main code responsible for training, use Google colab train_setup_colab.ipynb for execute training. More details in Usage. 
+- `src/README.md` — przepływ kodu i kolejność czytania;
+- `configs/README.md` — składanie konfiguracji;
+- `scripts/README.md` — finalne i historyczne skrypty eksperymentalne;
+- `outputs/Wave 0-11 podsumowanie/00_README.md` — historia i wyniki fal 0–11.
 
-## Data
+## Dane
 
-### ogbl-ddi/biokg 
-Downloaded automatically via OGB on first run.
-
-### Synthetic dataset
-Codes for generating dataset data/raw/
-
----
-
-## Usage
-
-Train_setup_colab.ipynb allows to execute default training via Hydra + override parameters in Hydra. 
-Structure for Hydra is defined yaml files in configs/. 
-Below there are included examples how training can be executed: 
+Dane GSN v3 są przechowywane poza repozytorium. Ustaw:
 
 ```bash
-# default training on ogbl-ddi
-python src/train.py
-
-# override parameters via Hydra
-python src/train_taskX.py model=gcn data=ogb_dataset training.epochs=100
-
-# synthetic dataset
-python src/train_taskX.py data=synthetic model=gcn
-
-# quick test (3 epochs)
-python src/train_taskX.py training.epochs=3 training.batch_size=64
+export GSN_PROJECT_ROOT="$HOME/Desktop/GSN Graphs dysertation 2026"
 ```
 
----
+Oczekiwana lokalizacja danych:
 
-## Models
-
-To add a new model: create a file in `src/models/`, and add a config in `configs/model/`.
-
----
-
-## Metrics
-
-AUPRC is the primary metric for dataset with class imbalance (rare edges).
-To add metrics update codes in evalution/ folder.
-Metric used by specific dataset is registered in datasets yaml files in configs/data.
-
----
-
-## Experiments
-
-Results available in Weight&Bias at:
-[wandb.ai/politechnika-gnn-thesis](https://wandb.ai/politechnika-gnn-thesis/politechnika-gnn-thesis)
-
----
-
-}
+```text
+$GSN_PROJECT_ROOT/
+└── 2 v3. Data/
+    ├── dataset_v3/
+    │   ├── synthetic_pharmacotherapy_v3_nodes.csv
+    │   ├── synthetic_pharmacotherapy_v3_edges_audited.csv
+    │   └── synthetic_pharmacotherapy_v3_samples_<scenario>.csv
+    └── splits/
+        └── patient_splits_v3.csv
 ```
+
+Scenariusze: `clean`, `hidden_confounder`, `selection_bias`, `no_overlap`,
+`noisy_documentation` i `multihospital`.
+
+## Instalacja
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+export PYTHONPATH="$PWD/src:$PWD"
+```
+
+W&B jest opcjonalne dla testów i lokalnych smoke runów. Pełne eksperymenty
+korzystają z projektu `politechnika-gnn-thesis`.
+
+## Szybka weryfikacja
+
+Testy:
+
+```bash
+.venv/bin/python -m pytest
+```
+
+Sprawdzenie kompozycji finalnej konfiguracji bez treningu:
+
+```bash
+PYTHONPATH=src .venv/bin/python src/train_taskA.py \
+  --cfg job \
+  model=TaskA_hgt_wave7c \
+  hcr=w7c_b2_audit \
+  model.decoder.arch=unshared_mlp \
+  model.decoder.pair_encoder.type=mlp \
+  wandb.enabled=false
+```
+
+Smoke test encoderów:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/smoke_taskA_architecture.py
+```
+
+Jednoepokowy run kontrolny bez zapisu do W&B:
+
+```bash
+PYTHONPATH=src .venv/bin/python src/train_taskA.py \
+  model=TaskA_hgt_wave7c \
+  hcr=w7c_b2_audit \
+  data.dataset.scenario=clean \
+  data.candidate_seed=20260722 \
+  training.seed=20260722 \
+  training.epochs=1 \
+  training.device=cpu \
+  model.decoder.arch=unshared_mlp \
+  model.decoder.pair_encoder.type=mlp \
+  model.decoder.ag_kan_residual.enabled=false \
+  wandb.enabled=false
+```
+
+## Finalny eksperyment Wave 11
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/run_taska_mlp_vs_kan_scenarios.py
+PYTHONPATH=src .venv/bin/python scripts/run_taska_kan_architecture_audit.py
+PYTHONPATH=src .venv/bin/python scripts/run_taska_winner_rare_endpoint_audit.py
+PYTHONPATH=src .venv/bin/python scripts/upload_taska_results_to_wandb.py
+```
+
+Ciężkie checkpointy, logi Hydra i lokalne runy W&B są ignorowane przez Git.
+Wersjonowany jest jedynie lekki raport podsumowujący w
+`outputs/Wave 0-11 podsumowanie/`.
+
+## Metryki
+
+Główna metryka selekcji modelu to validation AUPRC. Raport zawiera także
+AUROC, Brier score, precision, recall, F1, F2, AUPRC lift, normalized AUPRC,
+metryki oversmoothing oraz wyniki grupowane według ścieżek do endpointów.
+
+Loss to ważona `BCEWithLogitsLoss`, gdzie `pos_weight` jest obliczany z bilansu
+klas wyłącznie na zbiorze treningowym. Próg klasyfikacyjny jest wybierany na
+validation i zamrażany dla testu.

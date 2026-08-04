@@ -1,0 +1,54 @@
+# Task A — TA_KAN full retrain (direct pair-encoder swap vs A1 MLP)
+#
+# Identical to mlp_full_retrain.yaml except pair_encoder.type=kan (+ KAN knobs).
+# Full retrain: HGT + three unshared KAN role encoders + graph branch + decoder.
+# No AG residual, no frozen MLP, and no adaptive grid.
+
+model_id: TA_KAN
+variant: TASKA_KAN_FULL_RETRAIN
+pair_encoder_type: kan
+
+inherits_from: W7D_T0_A1_UNSHARED_ROLE_ENCODERS
+hcr: w7c_b2_audit
+model: TaskA_hgt_wave7c
+
+hgt:
+  num_layers: 3
+  heads: 8
+  hidden_dim: 32
+  activation: leaky_relu
+  residual: true
+  dropout: 0.2
+
+decoder:
+  arch: unshared_mlp
+  ablation: none
+  use_triple: false
+  pair_encoder:
+    type: kan
+    input_dim: 40
+    hidden_dim: 16
+    output_dim: 8
+    # Spec: KAN pair-encoder dropout = 0.2 (A1 MLP control stays 0.1).
+    dropout: 0.2
+    spline_order: 3
+    grid_size: 5
+    grid_range: [-3.0, 3.0]
+    grid_update: false
+    base_activation: silu
+    base_scale_init: 1.0
+    spline_scale_init: 0.1
+    use_bias: true
+    spline_l1: 1.0e-5
+    layernorm: true
+
+training:
+  epochs: 200
+  early_stopping_patience: 40
+  grad_clip: 1.0
+  selection_metric: auprc
+  device: cpu
+
+ag_kan_residual_enabled: false
+use_cmi: false
+init_from_checkpoint: null

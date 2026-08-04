@@ -11,18 +11,64 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CODE = PROJECT_ROOT / "2 v3. Data" / "code"
-DATA = PROJECT_ROOT / "2 v3. Data" / "dataset_v3"
-sys.path.insert(0, str(CODE))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from gsn_paths import v3_data_dir  # noqa: E402
 
-from build_v3_interaction_spec import (  # pyright: ignore[reportMissingImports]  # noqa: E402
-    ADR_BURDEN_COMPONENTS_V3,
-    DRUGS,
-    ENDPOINTS,
-    GATE_DEFINITIONS,
-    LOAD_DEFINITIONS,
-)
+DATA = v3_data_dir()
+
+LOAD_DEFINITIONS = {
+    "nephrotoxin_load": [
+        "nsaid", "aminoglycoside", "contrast_agent", "lithium", "acei_arb",
+    ],
+    "hepatic_drug_load": [
+        "hepatotoxic_drug_A", "antibiotic_hepatic_risk", "valproate_like_drug",
+        "statin", "macrolide", "azole_antifungal",
+    ],
+    "qt_drug_load_v3": [
+        "qt_prolonging_drug", "ssri", "snri", "macrolide",
+        "azole_antifungal", "digoxin",
+    ],
+    "cns_depressant_load": [
+        "opioid", "benzodiazepine", "anticholinergic", "valproate_like_drug",
+    ],
+    "bleeding_risk_load": [
+        "anticoagulant", "antiplatelet", "nsaid", "ssri", "corticosteroid",
+    ],
+    "serotonergic_load": ["ssri", "snri", "opioid", "triptan"],
+    "cyp_inhibitor_load": ["macrolide", "azole_antifungal"],
+}
+
+GATE_DEFINITIONS = {
+    "ddi_statin_cyp_inhibitor": ["statin", "cyp_inhibitor_load"],
+    "ddi_metformin_renal_risk": ["metformin", "ckd"],
+    "ddi_lithium_renal_risk": ["lithium", "ckd"],
+    "ddi_digoxin_electrolyte_risk": ["digoxin", "electrolyte_disturbance"],
+    "ddi_serotonergic_high_load": ["serotonergic_load"],
+    "drug_disease_nsaid_ckd": ["nsaid", "ckd"],
+    "drug_disease_nsaid_heart_failure": ["nsaid", "heart_failure"],
+    "drug_disease_qt_baseline_risk": ["qt_drug_load_v3", "baseline_qt_risk"],
+    "drug_disease_hepatic_liver_disease": ["hepatic_drug_load", "liver_disease"],
+    "drug_disease_anticoagulant_frailty": ["anticoagulant", "frailty"],
+}
+
+ADR_BURDEN_COMPONENTS_V3 = {
+    "creatinine_rise": 2.0,
+    "alt_ast_rise": 1.5,
+    "bilirubin_rise": 2.0,
+    "overt_bleeding": 3.0,
+    "confusion_state": 1.5,
+    "sedation_state": 1.0,
+    "qt_prolongation_state": 2.0,
+    "hyponatremia_state": 1.5,
+    "hyperkalemia_state": 2.0,
+    "hypotension": 1.0,
+    "dizziness": 0.5,
+    "muscle_injury": 2.0,
+    "lactate_accumulation": 2.5,
+    "serotonin_toxicity": 2.0,
+    "digoxin_toxicity": 2.0,
+    "lithium_toxicity": 2.0,
+}
 
 SCENARIOS = [
     "clean",
@@ -46,6 +92,8 @@ def main() -> None:
     nodes = pd.read_csv(DATA / "synthetic_pharmacotherapy_v3_nodes.csv")
     edges = pd.read_csv(DATA / "synthetic_pharmacotherapy_v3_edges_audited.csv")
     clean = pd.read_csv(DATA / "synthetic_pharmacotherapy_v3_samples_clean.csv")
+    drugs = nodes.loc[nodes["node_type"].eq("drug_exposure"), "node"].tolist()
+    endpoints = nodes.loc[nodes["node_type"].eq("clinical_endpoint"), "node"].tolist()
 
     graph = nx.from_pandas_edgelist(
         edges, "source", "target", create_using=nx.DiGraph
@@ -86,7 +134,7 @@ def main() -> None:
         "active_drug_count_exact": bool(
             np.array_equal(
                 clean["active_drug_count"].to_numpy(int),
-                clean[DRUGS].sum(axis=1).to_numpy(int),
+                clean[drugs].sum(axis=1).to_numpy(int),
             )
         ),
         "active_drug_count_mean": float(clean["active_drug_count"].mean()),
@@ -142,7 +190,7 @@ def main() -> None:
         set(clean["patient_id"])
     )
     checks["noisy_has_documentation_columns"] = all(
-        f"recorded_{endpoint}" in noisy for endpoint in ENDPOINTS
+        f"recorded_{endpoint}" in noisy for endpoint in endpoints
     )
     checks["multihospital_has_four_hospitals"] = (
         multihospital["hospital_id"].nunique() == 4
@@ -158,7 +206,7 @@ def main() -> None:
         "Falls": (0.03, 0.20),
         "Hospitalization": (0.10, 0.40),
     }
-    for endpoint in ENDPOINTS:
+    for endpoint in endpoints:
         rate = float(clean[endpoint].mean())
         checks[f"{endpoint}_rate"] = rate
         checks[f"{endpoint}_nondegenerate"] = bool(0 < clean[endpoint].sum() < len(clean))
@@ -178,7 +226,7 @@ def main() -> None:
         "multihospital_has_four_hospitals",
         *[f"{name}_exact" for name in LOAD_DEFINITIONS],
         *[f"{name}_exact" for name in GATE_DEFINITIONS],
-        *[f"{endpoint}_nondegenerate" for endpoint in ENDPOINTS],
+        *[f"{endpoint}_nondegenerate" for endpoint in endpoints],
         *[f"{endpoint}_within_target" for endpoint in rate_targets],
     ]
     failures = [name for name in required_true if checks.get(name) is not True]

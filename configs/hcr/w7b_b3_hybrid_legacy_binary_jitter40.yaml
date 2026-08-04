@@ -1,0 +1,24 @@
+# Wave 7 Panel B3 — primary hybrid: legacy V0 binary–binary + jitter/Legendre elsewhere.
+enabled: true
+encoder: panel_b_jitter_ghcr
+variant: W7B_B3_HYBRID_LEGACY_BINARY_JITTER40
+pair_dim: 40
+motif_dim: 120
+motif_type: candidate_coparent_triangle
+roles:
+  - AZ
+  - AG
+  - ZG
+output_dim: 120
+v0_smoothing: 0.5
+v1_smoothing: 0.0
+fit_split: train
+fit_scope: train_only
+unsupported_pair_mode: zeros
+unknown_pair_value: 0.0
+force_zero_features: false
+append_supported_mask: false
+min_complete: 50
+min_level_count: 5
+bootstrap_seed: 20260722
+count_cap_percentile: 99.5

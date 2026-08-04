@@ -1,0 +1,3 @@
+model_id: TA_MLP_PAIR_PLUS_KAN_FUSION
+status: conditional_not_in_screen
+note: "Run only after K1\u2013K5 promotion policy."

@@ -1,0 +1,21 @@
+# Placebo control: same HCR decoder width as binary_compact, all stats zeroed.
+# Isolates architecture/capacity change from actual dependence features.
+enabled: true
+variant: all_zero
+output_dim: 8
+smoothing: 0.5
+fit_split: train
+unsupported_pair_mode: zeros
+unknown_pair_value: 0.0
+force_zero_features: true
+append_supported_mask: false
+
+features:
+  p11: true
+  conditional_probability: true
+  risk_difference: true
+  log_odds_ratio: true
+  phi: true
+  mutual_information: true
+  joint_support_rate: true
+  uncertainty: true

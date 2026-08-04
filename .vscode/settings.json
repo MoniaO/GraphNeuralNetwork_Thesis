@@ -1,0 +1,5 @@
+{
+  "git.autofetch": true,
+  "terminal.integrated.cwd": "${workspaceFolder}",
+  "python.terminal.activateEnvironment": true
+}

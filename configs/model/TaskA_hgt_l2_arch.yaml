@@ -1,0 +1,29 @@
+# Wave 5D L2 architecture audit — HGT + structural HCR (24-d).
+name: hgt
+conv_type: hgt
+encoder_name: hgt
+
+hidden_channels: 64
+hidden_dim: 64
+num_layers: 1
+heads: 8
+dropout: 0.2
+residual: true
+activation: gelu
+
+hgt:
+  hidden_dim: 64
+  num_layers: 1
+  heads: 8
+  activation: gelu
+  dropout: 0.2
+  residual: true
+  norm: layernorm
+
+decoder:
+  name: hcr_mlp
+  hidden_dims:
+    - 64
+  activation: gelu
+  dropout: 0.2
+  hcr_dim: 24

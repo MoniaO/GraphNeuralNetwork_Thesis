@@ -1,0 +1,41 @@
+{
+  "scope": "train patients only",
+  "scenarios": [
+    "clean",
+    "hidden_confounder",
+    "selection_bias",
+    "no_overlap",
+    "noisy_documentation",
+    "multihospital"
+  ],
+  "scenario_n_train": {
+    "clean": 14000,
+    "hidden_confounder": 14000,
+    "selection_bias": 9854,
+    "no_overlap": 14000,
+    "noisy_documentation": 14000,
+    "multihospital": 14000
+  },
+  "hospital_n_train": {
+    "1": 3564,
+    "2": 3496,
+    "3": 3402,
+    "4": 3538
+  },
+  "variable_registry_size_excluding_latent": 154,
+  "binary_shift": "absolute prevalence difference; Bernoulli JS divergence",
+  "numeric_shift": "standardized mean difference, KS statistic, Wasserstein distance",
+  "hospital_reference": "each hospital compared with pooled other hospitals",
+  "no_p_values": true,
+  "outputs": [
+    "scenario_variable_distributions.csv",
+    "scenario_shifts_vs_clean.csv",
+    "scenario_shift_summary.csv",
+    "scenario_top20_shifts.csv",
+    "endpoint_prevalence_scenarios_and_hospitals.csv",
+    "multihospital_variable_distributions.csv",
+    "multihospital_shifts_vs_other_hospitals.csv",
+    "multihospital_shift_summary.csv",
+    "multihospital_top20_shifts.csv"
+  ]
+}

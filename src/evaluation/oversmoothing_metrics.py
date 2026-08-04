@@ -139,6 +139,9 @@ def compute_oversmoothing_metrics(
 
     energy = dirichlet_energy(z_dict, data)
     if energy is not None:
+        # Keep legacy key + explicit micro/macro names for Wave-1 analysis.
         out["oversmoothing/dirichlet_energy"] = energy
+        out["oversmoothing/dirichlet_energy_edge_weighted"] = energy
+        out["oversmoothing/dirichlet_energy_relation_macro"] = energy
 
     return out

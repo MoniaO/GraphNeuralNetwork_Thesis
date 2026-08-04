@@ -1,0 +1,61 @@
+# WAVE 5C — Patient-Conditioned Mechanistic Path Activation
+# Topology from HCR G*; energies from patient context (β=0 primary).
+
+experiment:
+  name: WAVE5C_PATIENT_CONDITIONED_PATHS
+  wave: WAVE5C
+
+wandb:
+  group: TaskA_WAVE5C_PATIENT_WNERW
+  job_type: patient_conditioned_paths
+
+seeds:
+  - 20260721
+  - 20260722
+  - 20260723
+  - 20260724
+  - 20260725
+
+paths:
+  edge_pattern: outputs/wave5/evidence/seed{seed}_edges.csv
+  output_dir: outputs/wave5c
+
+columns:
+  hgt_probability: p_hgt_calibrated
+  hcr_probability: p_hcr2_calibrated
+
+graph_selection:
+  hgt_threshold: 0.50
+  hcr_threshold: 0.50
+  keep_all_train_edges: true
+  require_topological_allowed_for_predicted: true
+
+energy:
+  temperature: 0.5
+  length_penalty: 0.1
+  uncertainty_penalty: 0.0
+  node_activity_grid: [0.0, 0.1, 0.25, 0.5]
+  gate_weight_grid: [0.25, 0.5, 1.0, 2.0]
+  static_hcr_prior_ablation: 0.1
+
+patient_features:
+  allowed_node_types:
+    - drug_exposure
+    - patient_context
+  excluded_node_types:
+    - clinical_endpoint
+    - mechanism
+    - adr_or_intermediate_state
+    - observation_or_selection
+  binary_threshold: 0.5
+  use_endpoint_columns: false
+  use_gate_columns: false
+
+evaluation:
+  top_k: 100
+  tune_split: valid
+  final_split: test
+  max_patients_per_query_state: 20
+
+hub_definition:
+  degree_quantile: 0.90

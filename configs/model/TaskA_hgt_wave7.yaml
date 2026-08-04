@@ -1,0 +1,31 @@
+# Wave 7 — frozen L2 architecture winner (Stage 3).
+# joint_L3_H8_W32_leaky_relu + decoder [256,128] gelu + HCR motif 24-d.
+name: hgt
+conv_type: hgt
+encoder_name: hgt
+
+hidden_channels: 32
+hidden_dim: 32
+num_layers: 3
+heads: 8
+dropout: 0.2
+residual: true
+activation: leaky_relu
+
+hgt:
+  hidden_dim: 32
+  num_layers: 3
+  heads: 8
+  activation: leaky_relu
+  dropout: 0.2
+  residual: true
+  norm: layernorm
+
+decoder:
+  name: hcr_mlp
+  hidden_dims:
+    - 256
+    - 128
+  activation: gelu
+  dropout: 0.2
+  hcr_dim: 24

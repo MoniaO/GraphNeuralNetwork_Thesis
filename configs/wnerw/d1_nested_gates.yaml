@@ -1,0 +1,37 @@
+# Wave 5B — D1 nested + population gate potentials on dual AND gates.
+enabled: true
+name: d1_nested_gates
+
+graph:
+  source: predicted
+  enforce_dag: true
+  endpoint_terminal: true
+  candidate_threshold: 0.50
+  candidate_budget: null
+  probability_column: p_d1_calibrated
+
+path:
+  top_k: 20
+  temperature: 1.0
+  length_penalty: 0.10
+  max_hops: null
+
+edge_potential:
+  mode: d1_nested
+  alpha_hgt: 1.0
+  beta_hcr2: 1.0
+  known_edge_probability: 0.999999
+  uncertainty_penalty: 0.0
+  calibration: platt
+
+motifs:
+  enabled: true
+  mode: population
+  coefficient: 1.0
+  # Gate score = coefficient * mean log P_D1 over structural parents→gate.
+
+patient_context:
+  enabled: false
+
+temporal:
+  enabled: false

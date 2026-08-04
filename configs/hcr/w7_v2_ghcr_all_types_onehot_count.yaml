@@ -1,0 +1,57 @@
+# Wave 7 V2 — GHCR all types; count = one-hot (NOT ranks/EDF/Legendre).
+# Motif identical to V0/V1: AZ⊕AG⊕ZG (only the pair encoding changes).
+enabled: true
+encoder: generalized_hcr
+variant: W7_V2_GHCR_ALL_TYPES_ONEHOT_COUNT
+pair_dim: 8
+motif_dim: 24
+motif_type: candidate_coparent_triangle
+roles:
+  - AZ
+  - AG
+  - ZG
+output_dim: 24
+smoothing: 0.5
+fit_split: train
+fit_scope: train_only
+unsupported_pair_mode: zeros
+min_complete: 50
+min_level_count: 5
+bootstrap_seed: 20260722
+
+binary:
+  representation: one_hot
+  basis: weighted_gram_schmidt
+  drop_constant_direction: true
+  smoothing: 0.5
+
+count:
+  representation: one_hot
+  basis: weighted_gram_schmidt
+  category_order: numeric_ascending
+  drop_constant_direction: true
+  unknown_category_policy: zero
+  smoothing: 0.5
+  # v3 loads can exceed 12 observed levels; keep hard cap (no silent ranks).
+  max_categories: 20
+
+continuous:
+  transform: train_empirical_cdf
+  basis: shifted_legendre
+  degree: 4
+
+coefficient_mapping:
+  binary_binary: [a11, zero, zero, zero]
+  binary_count: [a11, a12, a13, a14]
+  count_binary: [a11, a21, a31, a41]
+  discrete_continuous: [a11, a12, a21, a22]
+  continuous_discrete: [a11, a12, a21, a22]
+  count_count: [a11, a12, a21, a22]
+  continuous_continuous: [a11, a12, a21, a22]
+
+energy:
+  use_all_coefficients: true
+
+uncertainty:
+  method: bootstrap
+  repeats: 10

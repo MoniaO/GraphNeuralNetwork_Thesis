@@ -1,0 +1,18 @@
+# Wave 3 — frozen HGT L1 H8 + HCR-aware decoder.
+# Override hcr=binary_compact|binary_minimal|classical_binary at runtime.
+name: hgt
+conv_type: hgt
+encoder_name: hgt
+
+hidden_channels: 64
+hidden_dim: 64
+num_layers: 1
+heads: 8
+dropout: 0.2
+residual: true
+
+decoder:
+  name: hcr_mlp
+  hidden_dim: 64
+  dropout: 0.2
+  hcr_dim: 8

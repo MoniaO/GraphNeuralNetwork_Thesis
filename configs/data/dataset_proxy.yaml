@@ -1,6 +1,0 @@
-# @package data
-name: "ogbl-biokg"
-task_type: "link_prediction"
-metric: "mrr"
-root: "data/"
-evaluator_type: synthetic_evaluator #for now we use this one, but for future we can encode evaluator with MRR metric which is officially used for this dataset

@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.pycache/
 *.py[codz]
 *$py.class
 
@@ -221,8 +222,10 @@ __marimo__/
 # ML PROJECT: Hydra + Weights & Biases + PyG
 # =============================================
 
-# Hydra outputs
-outputs/
+# Hydra outputs. Keep the lightweight, promoter-facing report under version control.
+outputs/*
+!outputs/Wave 0-11 podsumowanie/
+!outputs/Wave 0-11 podsumowanie/**
 multirun/
 
 # Weights & Biases

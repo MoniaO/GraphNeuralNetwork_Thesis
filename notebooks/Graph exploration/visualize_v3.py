@@ -11,8 +11,12 @@ import networkx as nx
 import pandas as pd
 from pyvis.network import Network
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA = PROJECT_ROOT / "2 v3. Data" / "dataset_v3"
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from gsn_paths import v3_data_dir  # noqa: E402
+
+DATA = v3_data_dir()
 DEFAULT_OUTPUT = DATA / "synthetic_pharmacotherapy_v3_dag.html"
 
 COLORS = {

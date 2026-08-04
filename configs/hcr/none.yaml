@@ -1,0 +1,8 @@
+# HCR disabled (HCR-0 baseline uses standard MLP decoder).
+enabled: false
+variant: none
+output_dim: 0
+smoothing: 0.5
+fit_split: train
+unsupported_pair_mode: zeros
+unknown_pair_value: 0.0

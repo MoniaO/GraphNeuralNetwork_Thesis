@@ -1,0 +1,50 @@
+# Task A — GSN v3 link prediction
+#
+# candidate_seed freezes negatives + candidate train/valid/test splits
+# across ALL scenarios so scenario comparisons change only patient-derived
+# empirical node features (not G-TRAIN / CAND sets).
+#
+# node_feature_profile:
+#   structural | empirical (default) | empirical_layer | empirical_ontology | oracle
+
+name: syn_v3
+
+negative_ratio: 3
+edge_repeat: 1
+
+# Frozen for TaskA_BAZA scenario comparisons
+candidate_seed: 20260722
+
+target: edge_label
+evaluator_type: synthetic_evaluator
+
+node_feature_profile: empirical
+
+# Controlled Task A ablation applied AFTER empirical construction.
+# Supported: empirical | topology_only | empirical_shuffled
+feature_ablation_profile: empirical
+
+# Used only by empirical_shuffled (independent of candidate_seed).
+feature_ablation_seed: 20260722
+
+add_reverse_edges: true
+
+dataset:
+  root_dir: "${oc.env:GSN_PROJECT_ROOT}/2 v3. Data/dataset_v3"
+
+  graph_version: v3_audited
+  candidate_id_prefix: v3_c
+
+  nodes_file: synthetic_pharmacotherapy_v3_nodes.csv
+  edges_file: synthetic_pharmacotherapy_v3_edges_audited.csv
+  patient_split_file: patient_splits_v3.csv
+
+  samples:
+    clean: synthetic_pharmacotherapy_v3_samples_clean.csv
+    hidden_confounder: synthetic_pharmacotherapy_v3_samples_hidden_confounder.csv
+    selection_bias: synthetic_pharmacotherapy_v3_samples_selection_bias.csv
+    no_overlap: synthetic_pharmacotherapy_v3_samples_no_overlap.csv
+    noisy_documentation: synthetic_pharmacotherapy_v3_samples_noisy_documentation.csv
+    multihospital: synthetic_pharmacotherapy_v3_samples_multihospital.csv
+
+  scenario: clean

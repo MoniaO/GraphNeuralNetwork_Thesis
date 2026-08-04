@@ -1,0 +1,30 @@
+# Wave 7 Panel B — same frozen HGT as Wave 7, decoder HCR width 120.
+name: hgt
+conv_type: hgt
+encoder_name: hgt
+
+hidden_channels: 32
+hidden_dim: 32
+num_layers: 3
+heads: 8
+dropout: 0.2
+residual: true
+activation: leaky_relu
+
+hgt:
+  hidden_dim: 32
+  num_layers: 3
+  heads: 8
+  activation: leaky_relu
+  dropout: 0.2
+  residual: true
+  norm: layernorm
+
+decoder:
+  name: hcr_mlp
+  hidden_dims:
+    - 256
+    - 128
+  activation: gelu
+  dropout: 0.2
+  hcr_dim: 120

@@ -1,0 +1,20 @@
+hydra-core
+networkx
+numpy
+omegaconf
+pandas
+pyvis
+PyYAML
+scikit-learn
+scipy
+torch
+torch-geometric
+wandb
+
+# Notebook and visualization utilities
+jupyter
+matplotlib
+seaborn
+
+# Development
+pytest

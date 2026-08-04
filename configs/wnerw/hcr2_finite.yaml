@@ -1,0 +1,35 @@
+# Wave 5 — finite ensemble with nested HGT + HCR-2 (W4)
+enabled: true
+name: hcr2_finite
+
+graph:
+  source: predicted
+  enforce_dag: true
+  endpoint_terminal: true
+  candidate_threshold: 0.50
+  candidate_budget: null
+  probability_column: p_calibrated
+
+path:
+  top_k: 20
+  temperature: 1.0
+  length_penalty: 0.10
+  max_hops: null
+
+edge_potential:
+  mode: nested_probabilities
+  alpha_hgt: 1.0
+  beta_hcr2: 1.0
+  beta_hcr3: 0.0
+  uncertainty_penalty: 0.0
+  known_edge_probability: 0.999999
+  calibration: platt
+
+motifs:
+  enabled: false
+
+patient_context:
+  enabled: false
+
+temporal:
+  enabled: false

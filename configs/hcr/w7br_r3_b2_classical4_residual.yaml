@@ -1,0 +1,25 @@
+# R3 — B2 + gated classical4 residual (binary–binary only); no triple block.
+enabled: true
+encoder: panel_b_residual_fusion
+variant: W7BR_R3_B2_CLASSICAL4_RESIDUAL
+pair_dim: 40
+motif_dim: 120
+legacy_pair_dim: 4
+legacy_motif_dim: 12
+motif_type: candidate_coparent_triangle
+roles:
+  - AZ
+  - AG
+  - ZG
+output_dim: 120
+v0_smoothing: 0.5
+v1_smoothing: 0.0
+fit_split: train
+fit_scope: train_only
+min_complete: 50
+min_level_count: 5
+bootstrap_seed: 20260722
+count_cap_percentile: 99.5
+use_legacy_residual: true
+legacy_mode: classical4
+use_triple: false

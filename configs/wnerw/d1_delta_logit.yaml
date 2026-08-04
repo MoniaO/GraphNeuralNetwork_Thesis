@@ -1,0 +1,34 @@
+# Wave 5B — D1 delta-logit bridge:
+# q = log p_HGT + γ (logit P_D1 − logit p_HGT)
+enabled: true
+name: d1_delta_logit
+
+graph:
+  source: predicted
+  enforce_dag: true
+  endpoint_terminal: true
+  candidate_threshold: 0.50
+  candidate_budget: null
+  probability_column: p_d1_calibrated
+
+path:
+  top_k: 20
+  temperature: 1.0
+  length_penalty: 0.10
+  max_hops: null
+
+edge_potential:
+  mode: d1_delta_logit
+  gamma_delta: 1.0
+  known_edge_probability: 0.999999
+  uncertainty_penalty: 0.0
+  calibration: platt
+
+motifs:
+  enabled: false
+
+patient_context:
+  enabled: false
+
+temporal:
+  enabled: false

@@ -1,0 +1,66 @@
+# Wave 7C — frozen HGT + Wave7C B2 motif decoder (architecture/context audit).
+name: hgt
+conv_type: hgt
+encoder_name: hgt
+
+hidden_channels: 32
+hidden_dim: 32
+num_layers: 3
+heads: 8
+dropout: 0.2
+residual: true
+activation: leaky_relu
+
+hgt:
+  hidden_dim: 32
+  num_layers: 3
+  heads: 8
+  activation: leaky_relu
+  dropout: 0.2
+  residual: true
+  norm: layernorm
+
+decoder:
+  name: wave7c
+  dropout: 0.2
+  pair_dropout: 0.1
+  hcr_dim: 120
+  arch: shared_mlp
+  ablation: none
+  use_triple: false
+  # Wave 9: only pair_encoder.type should change between K0/K1.
+  pair_encoder:
+    type: mlp
+    input_dim: 40
+    hidden_dim: 16
+    output_dim: 8
+    dropout: 0.1
+    activation: gelu
+    layernorm: true
+    spline_order: 3
+    grid_size: 5
+    grid_range: [-3.0, 3.0]
+    grid_update: false
+    base_activation: silu
+    base_scale_init: 1.0
+    spline_scale_init: 0.1
+    use_bias: true
+    spline_l1: 1.0e-5
+    gate_init_logit: -3.0  # used by linear_plus_kan; ignored by other encoders
+  # Wave 10: AG-only KAN residual over frozen MLP (disabled by default).
+  ag_kan_residual:
+    enabled: false
+    input_dim: 40
+    output_dim: 8
+    spline_order: 3
+    grid_size: 3
+    grid_range: [-3.0, 3.0]
+    grid_update: false
+    base_activation: silu
+    base_scale_init: 0.1
+    spline_scale_init: 0.05
+    use_bias: true
+    gate_init_logit: -3.0
+    spline_l1: 1.0e-5
+    type_routed: false
+    train_mode: residual_only

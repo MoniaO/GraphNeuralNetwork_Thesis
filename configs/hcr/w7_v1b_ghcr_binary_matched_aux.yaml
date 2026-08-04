@@ -1,0 +1,44 @@
+# Wave 7 V1B — control: GHCR a11 + V0-matched joint prevalence / rarity.
+# Does NOT replace V1. Answers: is the V0→V1 drop from losing p11/rarity?
+#
+# Vector: [a11, 0, 0, 0, a11^2, p11=n11/n_complete, 1/sqrt(n11+1), mask]
+# Bootstrap SD is audit metadata only (not in the network vector).
+enabled: true
+encoder: generalized_hcr
+variant: W7_V1B_GHCR_BINARY_MATCHED_AUX
+pair_dim: 8
+motif_dim: 24
+motif_type: candidate_coparent_triangle
+roles:
+  - AZ
+  - AG
+  - ZG
+output_dim: 24
+smoothing: 0.0
+v1_smoothing: 0.0
+fit_split: train
+fit_scope: train_only
+unsupported_pair_mode: zeros
+min_complete: 50
+min_level_count: 5
+bootstrap_seed: 20260722
+
+binary:
+  representation: one_hot
+  basis: weighted_gram_schmidt
+  drop_constant_direction: true
+  smoothing: 0.0
+
+uncertainty:
+  method: bootstrap
+  target: a11
+  repeats: 30
+  place_in_vector: false
+
+energy:
+  use_all_coefficients: true
+
+aux:
+  joint_prevalence: raw_n11_over_n_complete
+  rarity: one_over_sqrt_n11_plus_1
+  note: "Matched to V0 binary_compact slots joint_support_rate / uncertainty"
