@@ -12,9 +12,7 @@ DEFAULT_TARGET_ENDPOINTS = [
 
 
 class NodeClassificationHead(nn.Module):
-    """Prosty MLP klasyfikujacy per-wezel. Uzywany przez KAZDA architekture
-    (HeteroConv-owa i R-GCN) - dzieki temu porownanie architektur dotyczy
-    wylacznie encodera, nie roznic w glowicy."""
+    #MLP klasyfikujacy per-wezel
 
     def __init__(self, hidden_dim: int, dropout: float = 0.0):
         super().__init__()
@@ -34,9 +32,7 @@ def get_targeted_labels(
     target_local_idx: torch.Tensor,
     target_node_type: str = "clinical_endpoint",
 ) -> torch.Tensor:
-    """Etykiety odfiltrowane do target_endpoint_names, w tej samej
-    kolejnosci co logity z forward(). Wspolne dla wszystkich architektur
-    eksponujacych target_local_idx/target_node_type (Targeted, R-GCN)."""
+    #Etykiety odfiltrowane do target_endpoint_names
     y = data[target_node_type].y.float()
     batch_size = int(data[target_node_type].batch.max().item()) + 1 \
         if hasattr(data[target_node_type], "batch") else 1
@@ -51,12 +47,7 @@ def get_targeted_wide_scores(
     target_local_idx: torch.Tensor,
     target_node_type: str = "clinical_endpoint",
 ) -> torch.Tensor:
-    """"Wide" wyniki HCR (Wide&Deep) odfiltrowane do target_endpoint_names,
-    w TEJ SAMEJ kolejnosci co logity z forward() i etykiety z
-    get_targeted_labels() - identyczna logika indeksowania, tylko czyta
-    hcr_wide zamiast y. Zawsze obecne na kazdym pacjencie (zera, jesli
-    hcr_wide_df nie bylo podane przy budowie grafow - patrz
-    build_patient_hetero_graphs)."""
+    """"Wide" wyniki HCR (Wide&Deep) odfiltrowane do target_endpoint_names"""
     wide = data[target_node_type].hcr_wide.float()
     batch_size = int(data[target_node_type].batch.max().item()) + 1 \
         if hasattr(data[target_node_type], "batch") else 1
@@ -67,11 +58,10 @@ def get_targeted_wide_scores(
 
 
 def get_node_labels(data: HeteroData, target_node_type: str = "clinical_endpoint") -> torch.Tensor:
-    """Etykiety dla WSZYSTKICH wezlow target_node_type (uzyj z
-    SimplePatientDAGNodeClassifier, nie z wariantami targeted/R-GCN)."""
+    #Etykiety dla WSZYSTKICH wezlow target_node_type 
     return data[target_node_type].y.float()
 
 
 def get_node_mask(data: HeteroData, target_node_type: str = "clinical_endpoint") -> torch.Tensor:
-    """Maska wskazujaca, ktore wezly maja rzeczywista etykiete."""
+    #Maska wskazujaca
     return data[target_node_type].y_mask
