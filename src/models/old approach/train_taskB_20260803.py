@@ -28,12 +28,8 @@ from models.TaskB.gnn_node import (
     get_targeted_labels,
     DEFAULT_TARGET_ENDPOINTS,
 )
-from models.TaskB.gnn_rgcn_node import RGCNPatientDAGNodeClassifier
-from training.losses import ClassBalanceStats, compute_class_balance_stats, build_criterion
 
-from data.PreprocessingTaskB.hcr_wide_features import (
-    get_binary_direct_parents, compute_hcr_wide_scores,
-)
+from models.TaskB.gnn_rgcn_node import RGCNPatientDAGNodeClassifier
 
 
 def set_seed(seed: int) -> None:
@@ -57,33 +53,12 @@ def build_loaders(cfg: DictConfig):
     samples_file = root / f"synthetic_pharmacotherapy_v3_samples_{scenario}.csv"
     samples_df = pd.read_csv(samples_file, low_memory=False)
 
-    # Reżim obserwowalności 
+    #dane obserwacyjne wybierane przez observability_regime w build_patient_hetero_graphs()
     observability_regime = str(getattr(dataset_cfg, "observability_regime", "full"))
 
-    # w build_loaders(), po wczytaniu topology i samples_df:
-    raw_targets = getattr(cfg.data, "target", DEFAULT_TARGET_ENDPOINTS)
-
-    dataset_cfg = cfg.data.dataset
-    root = Path(dataset_cfg.root_dir)
-
-    nodes_file = root / str(getattr(dataset_cfg, "nodes_file", "synthetic_pharmacotherapy_v3_nodes.csv"))
-    edges_file = root / str(
-        getattr(dataset_cfg, "edges_file", "synthetic_pharmacotherapy_v3_edges_audited.csv")
-    )
-
-    #hcr temp - to reconstruct
-    excluded_nodes = topology["excluded_nodes"]
-    nodes_df = pd.read_csv(nodes_file)
-    edges_df = pd.read_csv(edges_file)
-    parents_by_endpoint = get_binary_direct_parents(
-        nodes_df, edges_df, raw_targets, excluded_nodes
-    )
-
-    # Statystyki normalizacyjne  na train
+    # Statystyki normalizacyjne MUSZA byc liczone wylacznie na splicie train,
+    split_map = load_split_map(topology["splits_file"])
     train_patient_ids = {pid for pid, split in split_map.items() if split == "train"}
-
-    hcr_wide_df = compute_hcr_wide_scores(samples_df, parents_by_endpoint, train_patient_ids)
-
     norm_stats = compute_norm_stats(
         samples_df,
         topology["node_names_by_type"],
@@ -96,7 +71,6 @@ def build_loaders(cfg: DictConfig):
         topology,
         observability_regime=observability_regime,
         norm_stats=norm_stats,
-        hcr_wide_df=hcr_wide_df
     )
 
     buckets = attach_splits(graphs, topology["splits_file"])
@@ -123,6 +97,9 @@ def build_model(cfg: DictConfig, topology: dict, sample_graph):
         for node_type in node_types
     }
 
+    # edge_dim jest liczony z faktycznej topologii (waga + metadane audytu +
+    # one-hot typu relacji), NIE z cfg.model.edge_dim - inaczej latwo o rozjazd
+    # (np. stary config z edge_dim=1) i blad ksztaltu w GATv2Conv/TransformerConv.
     edge_dim = int(topology["edge_attr_dim"])
 
     raw_targets = getattr(cfg.data, "target", DEFAULT_TARGET_ENDPOINTS)
@@ -149,8 +126,8 @@ def build_model(cfg: DictConfig, topology: dict, sample_graph):
             target_endpoint_names=target_endpoints,
             edge_dim=edge_dim,
         )
-
-    if model_name in {"rgcn", "gnn_node_rgcn"}:
+    
+    if model_name in {"gnn_rgcn_node", "rgcn"}:
         return RGCNPatientDAGNodeClassifier(
             cfg=cfg, topology=topology, in_dims=in_dims,
             target_node_type="clinical_endpoint",
@@ -184,13 +161,37 @@ def build_run_name(cfg: DictConfig) -> str:
     residual_str = "res" if use_residual else "nores"
 
     return (
-        f"{cfg.meta.owner_initials}_TaskB_exnoisy_{cfg.model.name}_s{cfg.training.seed}"
+        f"{cfg.meta.owner_initials}_TaskB_{cfg.model.name}_{cfg.data.name}"
         f"_{targets_str}_{cfg.model.conv_type}_{scenario_str}_{regime}_{residual_str}"
-        f"_ep{cfg.training.epochs}_layer{cfg.model.num_layers}"
+        f"_ep{cfg.training.epochs}_L{cfg.model.num_layers}"
         f"_lr{cfg.training.lr}_hid{cfg.model.hidden_dim}"
         f"_bs{cfg.training.batch_size}_aggr_{cfg.model.aggr}_nb_{getattr(cfg.model, 'num_bases', '')}_dropedge_{getattr(cfg.model, 'drop_edge', 0.0)}_jk_{getattr(cfg.model, 'jk_mode', '')}"
     )
 
+
+# ---------------------------------------------------------------------------
+# pos_weight per endpoint, liczony z loadera treningowego (nie z jednego grafu)
+# ---------------------------------------------------------------------------
+
+def compute_pos_weights_from_loader(train_loader: DataLoader, target_endpoint_names, target_local_idx, device: torch.device) -> torch.Tensor:
+    """Zlicza pozytywne/negatywne etykiety per endpoint po WSZYSTKICH
+    grafach w loaderze treningowym, zwraca tensor pos_weight [n_targets]
+    do uzycia w BCEWithLogitsLoss (per-kolumna, broadcastowane na batch)."""
+    n_targets = len(target_endpoint_names)
+    positives = torch.zeros(n_targets)
+    totals = torch.zeros(n_targets)
+
+    for batch in train_loader:
+        batch = batch.to(device)
+        labels = get_targeted_labels(batch, target_local_idx, target_node_type="clinical_endpoint")
+        labels = labels.view(-1, n_targets)
+        positives += labels.sum(dim=0).cpu()
+        totals += labels.size(0)
+
+    negatives = totals - positives
+    pos_weight = (negatives / positives.clamp(min=1.0)).clamp(max=30.0)  # avoid extreme weights, cap at 30.0
+
+    return pos_weight
 
 
 # ---------------------------------------------------------------------------
@@ -248,45 +249,21 @@ def main(cfg: DictConfig) -> None:
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", factor=0.5, patience=5, min_lr=1e-5)
 
-    label_extractor = lambda batch: get_targeted_labels(
-        batch, model.target_local_idx, target_node_type=model.target_node_type
-    )
-    stats = compute_class_balance_stats(
-        loaders["train"], label_extractor, len(model.target_endpoint_names), device
-    )
-    criterion = build_criterion(cfg, stats, device)
+    pos_weight = compute_pos_weights_from_loader(
+        loaders["train"], model.target_endpoint_names, model.target_local_idx, device
+    ).to(device)
 
-    loss_type = str(getattr(cfg.training, "loss_type", "bce")).lower()
-    print(f"loss_type={loss_type}")
-    print("prevalence per endpoint:", dict(zip(cfg.data.target, stats.prevalence.tolist())))
-    if loss_type == "bce":
-        print("pos_weight per endpoint:", dict(zip(cfg.data.target, stats.pos_weight().tolist())))
-    elif loss_type == "focal":
-        print(f"focal_gamma={getattr(cfg.training, 'focal_gamma', 2.0)}")
-        print("focal_alpha per endpoint:", dict(zip(cfg.data.target, stats.focal_alpha().tolist())))
+    print(dict(zip(cfg.data.target, pos_weight.tolist())))
 
-    # eval_criterion zostaje CELOWO zwyklym, niewazonym BCE niezaleznie od
-    # loss_type - to jest wspolna, porownywalna skala "loss" w logach W&B
-    # miedzy roznymi ustawieniami (bce/focal/rozne gamma). Gdyby eval_criterion
-    # tez byl focal loss, wartosci "valid/loss" miedzy runami o roznym gamma
-    # nie bylyby ze soba porownywalne (inna skala liczbowa strat).
+    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     eval_criterion = torch.nn.BCEWithLogitsLoss()
 
-    noisy_endpoints = {"Serotonin_syndrome", "Rhabdomyolysis", "Lactic_acidosis"}
-    metric_target = [e for e in model.target_endpoint_names if e not in noisy_endpoints]
-
-    evaluator = SynEvaluatorNode(
-        cfg,
-        target_endpoint_names=model.target_endpoint_names,
-        metric_endpoint_names=metric_target,
-    )
+    evaluator = SynEvaluatorNode(cfg, target_endpoint_names=model.target_endpoint_names)
 
     use_wandb = bool(getattr(cfg.wandb, "enabled", True)) if "wandb" in cfg else False
     regime = str(getattr(cfg.data.dataset, "observability_regime", "full"))
     use_residual = bool(getattr(cfg.model, "use_residual", True))
     targets = "multitarget" if len(cfg.data.target) > 5 else "-".join(cfg.data.target)
-
-    loss_tag = loss_type if loss_type != "focal" else f"focal_g{getattr(cfg.training, 'focal_gamma', 2.0)}"
 
     wandb_tags = [
         "TaskB",
@@ -297,7 +274,6 @@ def main(cfg: DictConfig) -> None:
         f"scenario={getattr(cfg.data.dataset, 'scenario', 'clean')}",
         f"model={cfg.model.name}",
         f"targets={targets}",
-        f"loss={loss_tag}",
     ]
     wandb_group = f"{targets}_{cfg.model.conv_type}_{regime}_L{cfg.model.num_layers}"
 
@@ -382,10 +358,6 @@ def main(cfg: DictConfig) -> None:
                 if key.startswith(tuple(model.target_endpoint_names)) or key.startswith("oversmoothing/"):
                     log_dict[f"valid/{key}"] = value
 
-            if getattr(model, "hcr_wide_weight", None) is not None:
-                weights = dict(zip(model.target_endpoint_names, model.hcr_wide_weight.detach().cpu().tolist()))
-                log_dict.update({f"hcr_wide_weight/{ep}": w for ep, w in weights.items()})
-
             if do_full_eval:
                 log_dict.update({
                     "train/loss": train_metrics["loss"],
@@ -461,7 +433,9 @@ def main(cfg: DictConfig) -> None:
         if use_wandb:
             wandb.summary["final/best_epoch"] = best_epoch
             wandb.summary["final/threshold"] = final_threshold
-            for key, value in final_valid_metrics.items():
+            wandb.summary["final/valid/{key}"] = final_valid_metrics
+            wandb.summary["final/test/{key}"] = final_test_metrics
+            for key, value in final_valid_metrics.items():  
                 wandb.summary[f"final/valid/{key}"] = value
             for key, value in final_test_metrics.items():
                 wandb.summary[f"final/test/{key}"] = value

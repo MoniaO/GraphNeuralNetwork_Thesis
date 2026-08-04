@@ -5,19 +5,23 @@ target:
     - AKI
     - DILI
     - Depression
-    - Falls
     - Delirium
     - GI_bleeding
     - Hyponatremia
     - Hyperkalemia
     - QT_arrhythmia
-    - Hospitalization
+    - Serotonin_syndrome
+    - Rhabdomyolysis
+    - Lactic_acidosis
+
 evaluator_type: synthetic_evaluator
 
 dataset:
   root_dir: ${oc.env:PHARMA_DATA_ROOT}
   nodes_file: "synthetic_pharmacotherapy_v3_nodes.csv"
   edges_file: "synthetic_pharmacotherapy_v3_edges_audited.csv"
+
+  observability_regime: full 
 
   samples:
       clean: "synthetic_pharmacotherapy_v3_samples_clean.csv"

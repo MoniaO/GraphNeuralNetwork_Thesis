@@ -6,34 +6,23 @@ from pathlib import Path
 
 import hydra
 import numpy as np
-import pandas as pd
 import torch
 import wandb
 from omegaconf import DictConfig, OmegaConf, ListConfig
 from torch_geometric.loader import DataLoader
 
-from data.PreprocessingTaskB.build_patient_dag_heterodata_regime import (
+from data.PreprocessingTaskB.build_patient_dag_heterodata import (
     load_shared_hetero_topology,
     build_patient_hetero_graphs,
-    attach_splits,
-    compute_norm_stats,
-    load_split_map,
-    ID_COLS,
-    META_COLS,
+    attach_splits
 )
 from evaluation.syntetic_evaluator_node import SynEvaluatorNode
-from models.TaskB.gnn_node import (
-    SimplePatientDAGNodeClassifier,
+from src.models.TaskB.gnn_node_bef import (
     TargetedPatientDAGNodeClassifier,
     get_targeted_labels,
     DEFAULT_TARGET_ENDPOINTS,
 )
-from models.TaskB.gnn_rgcn_node import RGCNPatientDAGNodeClassifier
-from training.losses import ClassBalanceStats, compute_class_balance_stats, build_criterion
-
-from data.PreprocessingTaskB.hcr_wide_features import (
-    get_binary_direct_parents, compute_hcr_wide_scores,
-)
+from src.models.TaskB.gnn_node_bef import SimplePatientDAGNodeClassifier
 
 
 def set_seed(seed: int) -> None:
@@ -55,51 +44,14 @@ def build_loaders(cfg: DictConfig):
 
     scenario = str(getattr(dataset_cfg, "scenario", "clean"))
     samples_file = root / f"synthetic_pharmacotherapy_v3_samples_{scenario}.csv"
+
+    import pandas as pd
     samples_df = pd.read_csv(samples_file, low_memory=False)
 
-    # Reżim obserwowalności 
-    observability_regime = str(getattr(dataset_cfg, "observability_regime", "full"))
+    graphs = build_patient_hetero_graphs(samples_df, topology)
 
-    # w build_loaders(), po wczytaniu topology i samples_df:
-    raw_targets = getattr(cfg.data, "target", DEFAULT_TARGET_ENDPOINTS)
-
-    dataset_cfg = cfg.data.dataset
-    root = Path(dataset_cfg.root_dir)
-
-    nodes_file = root / str(getattr(dataset_cfg, "nodes_file", "synthetic_pharmacotherapy_v3_nodes.csv"))
-    edges_file = root / str(
-        getattr(dataset_cfg, "edges_file", "synthetic_pharmacotherapy_v3_edges_audited.csv")
-    )
-
-    #hcr temp - to reconstruct
-    excluded_nodes = topology["excluded_nodes"]
-    nodes_df = pd.read_csv(nodes_file)
-    edges_df = pd.read_csv(edges_file)
-    parents_by_endpoint = get_binary_direct_parents(
-        nodes_df, edges_df, raw_targets, excluded_nodes
-    )
-
-    # Statystyki normalizacyjne  na train
-    train_patient_ids = {pid for pid, split in split_map.items() if split == "train"}
-
-    hcr_wide_df = compute_hcr_wide_scores(samples_df, parents_by_endpoint, train_patient_ids)
-
-    norm_stats = compute_norm_stats(
-        samples_df,
-        topology["node_names_by_type"],
-        train_patient_ids,
-        exclude_cols=ID_COLS + META_COLS,
-    )
-
-    graphs = build_patient_hetero_graphs(
-        samples_df,
-        topology,
-        observability_regime=observability_regime,
-        norm_stats=norm_stats,
-        hcr_wide_df=hcr_wide_df
-    )
-
-    buckets = attach_splits(graphs, topology["splits_file"])
+    split_file = root / "splits" / str(getattr(dataset_cfg, "splits_file", "patient_splits_v3.csv"))
+    buckets = attach_splits(graphs, split_file)
 
     batch_size = int(cfg.training.batch_size)
     loaders = {
@@ -123,8 +75,6 @@ def build_model(cfg: DictConfig, topology: dict, sample_graph):
         for node_type in node_types
     }
 
-    edge_dim = int(topology["edge_attr_dim"])
-
     raw_targets = getattr(cfg.data, "target", DEFAULT_TARGET_ENDPOINTS)
     if isinstance(raw_targets, str):
         target_endpoints = [raw_targets]
@@ -136,23 +86,13 @@ def build_model(cfg: DictConfig, topology: dict, sample_graph):
     if model_name in {"gnn_node_clf_simple", "baseline_node_clf"}:
         return SimplePatientDAGNodeClassifier(
             cfg=cfg, metadata=metadata, in_dims=in_dims,
-            node_names_by_type=topology["node_names_by_type"],
             target_node_type="clinical_endpoint",
-            edge_dim=edge_dim,
         )
 
     if model_name in {"gnn_node"}:
         return TargetedPatientDAGNodeClassifier(
             cfg=cfg, metadata=metadata, in_dims=in_dims,
             node_names_by_type=topology["node_names_by_type"],
-            target_node_type="clinical_endpoint",
-            target_endpoint_names=target_endpoints,
-            edge_dim=edge_dim,
-        )
-
-    if model_name in {"rgcn", "gnn_node_rgcn"}:
-        return RGCNPatientDAGNodeClassifier(
-            cfg=cfg, topology=topology, in_dims=in_dims,
             target_node_type="clinical_endpoint",
             target_endpoint_names=target_endpoints,
         )
@@ -163,7 +103,7 @@ def build_model(cfg: DictConfig, topology: dict, sample_graph):
 def build_run_name(cfg: DictConfig) -> str:
     if "wandb" in cfg and getattr(cfg.wandb, "run_name", None):
         return str(cfg.wandb.run_name)
-
+    
     raw_targets = getattr(cfg.data, "target", DEFAULT_TARGET_ENDPOINTS)
     if isinstance(raw_targets, str):
         target_endpoints = [raw_targets]
@@ -175,22 +115,38 @@ def build_run_name(cfg: DictConfig) -> str:
     scenario = getattr(cfg.data.dataset, "scenario", None)
     scenario_str = str(scenario) if scenario is not None else "default"
 
-    # observability_regime dolaczony do nazwy runu - inaczej rozne reżimy
-    # ("full" / "mechanisms_latent" / "bedside") nadpisywalyby sie nawzajem
-    # przy takiej samej reszcie konfiguracji w porownaniach W&B.
-    regime = str(getattr(cfg.data.dataset, "observability_regime", "full"))
-
-    use_residual = bool(getattr(cfg.model, "use_residual", True))
-    residual_str = "res" if use_residual else "nores"
-
     return (
-        f"{cfg.meta.owner_initials}_TaskB_exnoisy_{cfg.model.name}_s{cfg.training.seed}"
-        f"_{targets_str}_{cfg.model.conv_type}_{scenario_str}_{regime}_{residual_str}"
+        f"{cfg.meta.owner_initials}_TaskB_{cfg.model.name}_{cfg.data.name}"
+        f"_{targets_str}_{cfg.model.conv_type}_{scenario_str}"
         f"_ep{cfg.training.epochs}_layer{cfg.model.num_layers}"
         f"_lr{cfg.training.lr}_hid{cfg.model.hidden_dim}"
-        f"_bs{cfg.training.batch_size}_aggr_{cfg.model.aggr}_nb_{getattr(cfg.model, 'num_bases', '')}_dropedge_{getattr(cfg.model, 'drop_edge', 0.0)}_jk_{getattr(cfg.model, 'jk_mode', '')}"
+        f"_bs{cfg.training.batch_size}_aggr_{cfg.model.aggr}"
     )
 
+
+# ---------------------------------------------------------------------------
+# pos_weight per endpoint, liczony z loadera treningowego (nie z jednego grafu)
+# ---------------------------------------------------------------------------
+
+def compute_pos_weights_from_loader(train_loader: DataLoader, target_endpoint_names, target_local_idx, device: torch.device) -> torch.Tensor:
+    """Zlicza pozytywne/negatywne etykiety per endpoint po WSZYSTKICH
+    grafach w loaderze treningowym, zwraca tensor pos_weight [n_targets]
+    do uzycia w BCEWithLogitsLoss (per-kolumna, broadcastowane na batch)."""
+    n_targets = len(target_endpoint_names)
+    positives = torch.zeros(n_targets)
+    totals = torch.zeros(n_targets)
+
+    for batch in train_loader:
+        batch = batch.to(device)
+        labels = get_targeted_labels(batch, target_local_idx, target_node_type="clinical_endpoint")
+        labels = labels.view(-1, n_targets)
+        positives += labels.sum(dim=0).cpu()
+        totals += labels.size(0)
+
+    negatives = totals - positives
+    pos_weight = (negatives / positives.clamp(min=1.0)).clamp(max=30.0) #avoid extreme weights, cap at 30.0
+
+    return pos_weight
 
 
 # ---------------------------------------------------------------------------
@@ -208,10 +164,10 @@ def train_epoch(model, loader: DataLoader, optimizer, criterion, device: torch.d
 
         optimizer.zero_grad()
         logits = model(batch)
-
+        
         logits = logits.view(-1, n_targets)
         labels = labels.view(-1, n_targets)
-
+        
         loss = criterion(logits, labels)
         loss.backward()
 
@@ -248,70 +204,28 @@ def main(cfg: DictConfig) -> None:
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", factor=0.5, patience=5, min_lr=1e-5)
 
-    label_extractor = lambda batch: get_targeted_labels(
-        batch, model.target_local_idx, target_node_type=model.target_node_type
-    )
-    stats = compute_class_balance_stats(
-        loaders["train"], label_extractor, len(model.target_endpoint_names), device
-    )
-    criterion = build_criterion(cfg, stats, device)
+    pos_weight = compute_pos_weights_from_loader(
+        loaders["train"], model.target_endpoint_names, model.target_local_idx, device
+    ).to(device)
 
-    loss_type = str(getattr(cfg.training, "loss_type", "bce")).lower()
-    print(f"loss_type={loss_type}")
-    print("prevalence per endpoint:", dict(zip(cfg.data.target, stats.prevalence.tolist())))
-    if loss_type == "bce":
-        print("pos_weight per endpoint:", dict(zip(cfg.data.target, stats.pos_weight().tolist())))
-    elif loss_type == "focal":
-        print(f"focal_gamma={getattr(cfg.training, 'focal_gamma', 2.0)}")
-        print("focal_alpha per endpoint:", dict(zip(cfg.data.target, stats.focal_alpha().tolist())))
+    print(dict(zip(cfg.data.target, pos_weight.tolist())))
 
-    # eval_criterion zostaje CELOWO zwyklym, niewazonym BCE niezaleznie od
-    # loss_type - to jest wspolna, porownywalna skala "loss" w logach W&B
-    # miedzy roznymi ustawieniami (bce/focal/rozne gamma). Gdyby eval_criterion
-    # tez byl focal loss, wartosci "valid/loss" miedzy runami o roznym gamma
-    # nie bylyby ze soba porownywalne (inna skala liczbowa strat).
+    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     eval_criterion = torch.nn.BCEWithLogitsLoss()
 
-    noisy_endpoints = {"Serotonin_syndrome", "Rhabdomyolysis", "Lactic_acidosis"}
-    metric_target = [e for e in model.target_endpoint_names if e not in noisy_endpoints]
-
-    evaluator = SynEvaluatorNode(
-        cfg,
-        target_endpoint_names=model.target_endpoint_names,
-        metric_endpoint_names=metric_target,
-    )
+    evaluator = SynEvaluatorNode(cfg, target_endpoint_names=model.target_endpoint_names)
+    threshold = evaluator.select_threshold(model, loaders["validation"], device)
 
     use_wandb = bool(getattr(cfg.wandb, "enabled", True)) if "wandb" in cfg else False
-    regime = str(getattr(cfg.data.dataset, "observability_regime", "full"))
-    use_residual = bool(getattr(cfg.model, "use_residual", True))
-    targets = "multitarget" if len(cfg.data.target) > 5 else "-".join(cfg.data.target)
-
-    loss_tag = loss_type if loss_type != "focal" else f"focal_g{getattr(cfg.training, 'focal_gamma', 2.0)}"
-
-    wandb_tags = [
-        "TaskB",
-        f"conv={cfg.model.conv_type}",
-        f"regime={regime}",
-        f"layers={cfg.model.num_layers}",
-        f"residual={'res' if use_residual else 'nores'}",
-        f"scenario={getattr(cfg.data.dataset, 'scenario', 'clean')}",
-        f"model={cfg.model.name}",
-        f"targets={targets}",
-        f"loss={loss_tag}",
-    ]
-    wandb_group = f"{targets}_{cfg.model.conv_type}_{regime}_L{cfg.model.num_layers}"
-
     if use_wandb:
         wandb.init(
             project=cfg.wandb.project,
             entity=getattr(cfg.wandb, "entity", None),
             name=build_run_name(cfg),
             config=OmegaConf.to_container(cfg, resolve=True),
-            tags=wandb_tags,
-            group=wandb_group,
         )
 
-    try:
+    try: 
 
         best_metric_name = str(getattr(cfg.training, "selection_metric", "auprc"))
         best_valid = -float("inf")
@@ -325,26 +239,13 @@ def main(cfg: DictConfig) -> None:
         epochs = int(cfg.training.epochs)
         for epoch in range(1, epochs + 1):
             train_loss = train_epoch(model, loaders["train"], optimizer, criterion, device)
-
-            # Prog wyznaczany TUTAJ, jako czesc tego samego forward-passu co
-            # valid_metrics (select_threshold=True) - NIE osobnym wywolaniem
-            # evaluator.select_threshold(), ktore zrobiloby DRUGIE, niezalezne
-            # przejscie po loaders["validation"]. Dzieki temu prog jest swiezy
-            # co epoke przy DOKLADNIE takim samym koszcie obliczeniowym, jaki
-            # bylby bez zadnego mechanizmu przeliczania progu w ogole.
-            valid_metrics = evaluator.evaluate(
-                model, loaders["validation"], eval_criterion, device, select_threshold=True
-            )
-            threshold = valid_metrics["classification_threshold"]
+            valid_metrics = evaluator.evaluate(model, loaders["validation"], eval_criterion, device, threshold=threshold)
 
             scheduler.step(valid_metrics[best_metric_name])
 
             do_full_eval = (epoch % 10 == 0) or (epoch == epochs)
             train_metrics, test_metrics = {}, {}
             if do_full_eval:
-                # train/test uzywaja progu WYZNACZONEGO NA WALIDACJI powyzej
-                # (nie wlasnego) - prog zawsze powinien pochodzic z valid,
-                # nigdy z danych, na ktorych jest raportowany wynik.
                 train_metrics = evaluator.evaluate(model, loaders["train"], eval_criterion, device, threshold=threshold)
                 test_metrics = evaluator.evaluate(model, loaders["test"], eval_criterion, device, threshold=threshold)
                 print({k: v for k, v in train_metrics.items() if k.startswith("oversmoothing/")})
@@ -381,10 +282,6 @@ def main(cfg: DictConfig) -> None:
             for key, value in valid_metrics.items():
                 if key.startswith(tuple(model.target_endpoint_names)) or key.startswith("oversmoothing/"):
                     log_dict[f"valid/{key}"] = value
-
-            if getattr(model, "hcr_wide_weight", None) is not None:
-                weights = dict(zip(model.target_endpoint_names, model.hcr_wide_weight.detach().cpu().tolist()))
-                log_dict.update({f"hcr_wide_weight/{ep}": w for ep, w in weights.items()})
 
             if do_full_eval:
                 log_dict.update({
@@ -440,36 +337,9 @@ def main(cfg: DictConfig) -> None:
 
         model.load_state_dict(best_state)
 
-        # --- Finalna ewaluacja na najlepszym checkpoincie ---
-        # Tak samo jak w petli: prog wyznaczany w TYM SAMYM forward-passie co
-        # final_valid_metrics (select_threshold=True), zamiast osobnym
-        # wywolaniem select_threshold() - jeden przebieg po walidacji, nie dwa.
-        final_valid_metrics = evaluator.evaluate(
-            model, loaders["validation"], eval_criterion, device, select_threshold=True
-        )
-        final_threshold = final_valid_metrics["classification_threshold"]
-        final_test_metrics = evaluator.evaluate(
-            model, loaders["test"], eval_criterion, device, threshold=final_threshold
-        )
-
-        print(
-            f"[FINAL best_epoch={best_epoch}] threshold={final_threshold:.4f} | "
-            f"valid AUC {final_valid_metrics['auc']:.4f} | valid AUPRC {final_valid_metrics['auprc']:.4f} | "
-            f"test AUC {final_test_metrics['auc']:.4f} | test AUPRC {final_test_metrics['auprc']:.4f}"
-        )
-
-        if use_wandb:
-            wandb.summary["final/best_epoch"] = best_epoch
-            wandb.summary["final/threshold"] = final_threshold
-            for key, value in final_valid_metrics.items():
-                wandb.summary[f"final/valid/{key}"] = value
-            for key, value in final_test_metrics.items():
-                wandb.summary[f"final/test/{key}"] = value
-
     finally:
         if use_wandb:
             wandb.finish() if use_wandb else None
-
 
 if __name__ == "__main__":
     main()

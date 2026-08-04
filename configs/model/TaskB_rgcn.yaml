@@ -1,5 +1,4 @@
-name: gnn_node
-conv_type: gcn
+name: rgcn
 hidden_dim: 64
 num_layers: 3
 dropout: 0.2
@@ -8,7 +7,5 @@ activation: relu
 aggr: sum #how to join the messages from different edge types, can be sum, mean, max
 heads: 4
 use_residual: true #whether to use residual connections between layers
-pair_norm_scale: 0.0    # 0.0 - off
-drop_edge: 0.0          # 0.0 - off
-jk_mode: cat            # null | cat | max | lstm
-use_hcr_wide: false     #whether to use HCR wide (true) or deep (false)
+conv_type: rgcn
+num_bases: 8
