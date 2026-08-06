@@ -1,0 +1,60 @@
+\documentclass[
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=3cm,
+    bindingoffset=6mm,
+    nohyphenation=false
+]{szablon/eiti/eiti-thesis}
+
+\langpol
+\graphicspath{{rysunki/}}
+\addbibresource{bibliografia.bib}
+
+% Dodanie usuwa jedno z ostrzeżeń
+\usepackage{csquotes}
+% Dodanie tego wpływa na wyświetlanie zdjęć w odpowiedni sposób przy adnotacji [H]
+\usepackage{float}
+\usepackage{subfig}
+\usepackage{amsmath}
+
+\begin{document}
+
+\input{rozdzialy/0-strona-tytulowa}
+\input{rozdzialy/StreszczeniePL}
+\input{rozdzialy/StreszczenieEN}
+
+% Oświadczenie o autorstwie
+\cleardoublepage  % Zaczynamy od nieparzystej strony
+\pagestyle{plain}
+\makeauthorship
+
+% Spis treści
+\cleardoublepage % Zaczynamy od nieparzystej strony
+\tableofcontents
+
+% Rozdziały
+\cleardoublepage % Zaczynamy od nieparzystej strony
+\pagestyle{headings}
+\input{rozdzialy/1-wstep}
+\input{rozdzialy/2-cel-pracy}
+\input{rozdzialy/3-przeglad-literatury}
+\input{rozdzialy/4-opis-rozwiazania}
+\input{rozdzialy/5-ewaluacja-eksperymentalna}
+\input{rozdzialy/6-podsumowanie}
+
+\cleardoublepage % Zaczynamy od nieparzystej strony
+\printbibliography
+
+% Spisy (opcjonalne)
+\newpage
+\pagestyle{plain}
+
+\vspace{0.8cm}
+
+
+\listoffigurestoc
+\vspace{1cm}
+\listoftablestoc
+
+\end{document}
