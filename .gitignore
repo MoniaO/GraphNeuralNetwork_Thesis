@@ -256,3 +256,6 @@ data/processed/
 *.blg
 *.out
 *.toc
+*.lof
+*.lot
+*.run.xml
