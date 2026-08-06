@@ -54,6 +54,7 @@ cover/
 # Translations
 *.mo
 *.pot
+*.csv
 
 # Django stuff:
 *.log
@@ -244,3 +245,14 @@ data/processed/
 
 # macOS
 .DS_Store
+
+#latex
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+*.out
+*.toc
