@@ -107,4 +107,4 @@ def build_criterion(cfg, stats: ClassBalanceStats, device: torch.device) -> nn.M
         alpha = stats.focal_alpha().to(device) if use_alpha else None
         return FocalLoss(gamma=gamma, alpha=alpha)
 
-    raise ValueError(f"Nieznany cfg.training.loss_type={loss_type!r}. Dostepne: 'bce', 'focal'.")
+    raise ValueError(f"Unknown cfg.training.loss_type={loss_type!r}. Available: 'bce', 'focal'.")
