@@ -12,6 +12,13 @@ import wandb
 from omegaconf import DictConfig, OmegaConf, ListConfig
 from torch_geometric.loader import DataLoader
 
+from data.PreprocessingTaskB.hcr_wide_features import (
+    get_binary_direct_parents,
+    compute_hcr_pair_evidence,
+    compute_hcr_pair_evidence_40d
+)
+
+
 from data.PreprocessingTaskB.build_patient_dag_heterodata_regime import (
     load_shared_hetero_topology,
     build_patient_hetero_graphs,
@@ -32,7 +39,7 @@ from models.TaskB.gnn_rgcn_node import RGCNPatientDAGNodeClassifier
 from training.losses import ClassBalanceStats, compute_class_balance_stats, build_criterion
 
 from data.PreprocessingTaskB.hcr_wide_features import (
-    get_binary_direct_parents, compute_hcr_wide_scores,
+    get_binary_direct_parents, compute_hcr_wide_scores, compute_hcr_pair_evidence 
 )
 
 
@@ -79,8 +86,20 @@ def build_loaders(cfg: DictConfig):
         nodes_df, edges_df, raw_targets, excluded_nodes
     )
 
+
+
+
+    split_map = load_split_map(topology["splits_file"])
     # Statystyki normalizacyjne  na train
     train_patient_ids = {pid for pid, split in split_map.items() if split == "train"}
+
+    hcr_evidence_dim = int(getattr(cfg.model, "hcr_evidence_dim", 9))
+    if hcr_evidence_dim == 9:
+        pair_evidence = compute_hcr_pair_evidence(samples_df, parents_by_endpoint, train_patient_ids)
+    elif hcr_evidence_dim == 41:
+        pair_evidence = compute_hcr_pair_evidence_40d(samples_df, parents_by_endpoint, train_patient_ids)
+    else:
+        raise ValueError(f"cfg.model.hcr_evidence_dim={hcr_evidence_dim} nieobslugiwane (9 lub 41).")
 
     hcr_wide_df = compute_hcr_wide_scores(samples_df, parents_by_endpoint, train_patient_ids)
 
@@ -91,12 +110,14 @@ def build_loaders(cfg: DictConfig):
         exclude_cols=ID_COLS + META_COLS,
     )
 
+
     graphs = build_patient_hetero_graphs(
         samples_df,
         topology,
         observability_regime=observability_regime,
         norm_stats=norm_stats,
-        hcr_wide_df=hcr_wide_df
+        hcr_wide_df=hcr_wide_df,
+        hcr_pair_evidence=pair_evidence
     )
 
     buckets = attach_splits(graphs, topology["splits_file"])
@@ -184,9 +205,9 @@ def build_run_name(cfg: DictConfig) -> str:
     residual_str = "res" if use_residual else "nores"
 
     return (
-        f"{cfg.meta.owner_initials}_TaskB_exnoisy_{cfg.model.name}_s{cfg.training.seed}"
+        f"{cfg.meta.owner_initials}_TaskB_HCRExtended2_exnoisy_{cfg.model.name}_s{cfg.training.seed}"
         f"_{targets_str}_{cfg.model.conv_type}_{scenario_str}_{regime}_{residual_str}"
-        f"_ep{cfg.training.epochs}_layer{cfg.model.num_layers}"
+        f"_ep{cfg.training.epochs}_L{cfg.model.num_layers}"
         f"_lr{cfg.training.lr}_hid{cfg.model.hidden_dim}"
         f"_bs{cfg.training.batch_size}_aggr_{cfg.model.aggr}_nb_{getattr(cfg.model, 'num_bases', '')}_dropedge_{getattr(cfg.model, 'drop_edge', 0.0)}_jk_{getattr(cfg.model, 'jk_mode', '')}"
     )

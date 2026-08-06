@@ -12,3 +12,8 @@ pair_norm_scale: 0.0    # 0.0 - off
 drop_edge: 0.0          # 0.0 - off
 jk_mode: cat            # null | cat | max | lstm
 use_hcr_wide: false     #whether to use HCR wide (true) or deep (false)
+hcr_wide_mode: "nonlinear" # "nonlinear"
+hcr_evidence_dim: 41 
+hcr_hidden_dim: 8          # domyślne
+hcr_embed_dim: 4           # domyślne
+hcr_dropout: 0.0           # domyślne
