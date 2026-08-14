@@ -1,9 +1,0 @@
-[0] Config.pm:328> INFO - This is Biber 2.21
-[0] Config.pm:331> INFO - Logfile is 'main.blg'
-[40] biber-darwin:342> INFO - === Fri Aug 14, 2026, 22:21:50
-[49] Biber.pm:421> INFO - Reading 'main.bcf'
-[94] Biber.pm:1002> INFO - Found 3 citekeys in bib section 0
-[103] Biber.pm:4487> INFO - Processing section 0
-[108] Biber.pm:4678> INFO - Looking for bibtex file 'bibliografia.bib' for section 0
-[109] bibtex.pm:1713> INFO - LaTeX decoding ...
-[111] bibtex.pm:1519> INFO - Found BibTeX data source 'bibliografia.bib'
