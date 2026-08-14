@@ -252,15 +252,16 @@
 % Wybór języka pracy
 %--------------------------------
 \newcommand{\langpol}{
-    \newcommand{\@lang}{polish}
-    \usepackage[polish]{babel}
+    \newcommand{\@lang}{english}
+    %\usepackage[polish]{babel}
+    \usepackage[english]{babel}
 
-	\newtheorem{theorem}{Twierdzenie}
-	\newtheorem{lemma}{Lemat}
-	\newtheorem{corollary}{Wniosek}
-	\newtheorem{definition}{Definicja}
-	\newtheorem{axiom}{Aksjomat}
-	\newtheorem{assumption}{Założenie}
+	%\newtheorem{theorem}{Twierdzenie}
+	%\newtheorem{lemma}{Lemat}
+	%\newtheorem{corollary}{Wniosek}
+	%\newtheorem{definition}{Definicja}
+	%\newtheorem{axiom}{Aksjomat}
+	%\newtheorem{assumption}{Założenie}
 
 	\AtBeginDocument{
 		\renewcommand{\listfigurename}{Spis rysunków}

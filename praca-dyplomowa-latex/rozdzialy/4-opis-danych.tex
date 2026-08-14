@@ -1,0 +1,46 @@
+\newpage % Rozdziały zaczynamy od nowej strony.
+\section{Dataset}
+
+\subsection{Synthethic dataset}
+The dataset includes two structures - knowledge graph of medicine and patient dataset with pateint's characteristics. 
+\subsubsection{Data generation}
+\subsubsection{Knowledge graph description}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Node types in the patient causal DAG.}
+    \label{tab:node_types}
+    \begin{tabularx}{\textwidth}{@{}l X@{}}
+        \toprule
+        \textbf{Node type} & \textbf{Description} \\
+        \midrule
+        \texttt{patient\_context} & Stable patient-level covariates (e.g. demographics, comorbidities) available at the moment of prediction. \\
+        \addlinespace
+        \texttt{drug\_exposure} & Drugs the patient is exposed to; source nodes for pharmacotherapeutic causal paths. \\
+        \addlinespace
+        \texttt{mechanism} & Intermediate physiological mechanisms mediating the effect of a drug or context on downstream states. \\
+        \addlinespace
+        \texttt{adr\_or\_intermediate\_state} & Intermediate adverse or physiological states positioned between mechanisms and clinical endpoints. \\
+        \addlinespace
+        \texttt{observation\_or\_selection} & Nodes representing observation, documentation, or selection processes rather than a clinical state itself. \\
+        \addlinespace
+        \texttt{clinical\_endpoint} & Target adverse clinical outcomes (e.g. AKI, DILI, Hospitalization) predicted by the node classification head. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsubsection{Patient data description}
+\subsection{Input to node classification task}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\textwidth]{rysunki/patient_dag_101.png}
+    \caption{The description of the two tasks addressed in the thesis.}
+    \label{fig:loop}
+\end{figure}
+
+\subsection{Proxy dataset}
+\subsubsection{Last-FM dataset}
+\subsubsection{Hetionet knowledge graph}
+
+
