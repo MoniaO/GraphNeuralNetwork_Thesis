@@ -72,6 +72,8 @@ Two structural exclusion mechanisms are applied before any feature is computed:
  not explicitly flagged in the source data. All normalization statistics (mean/std for continuous node values) 
  and all HCR evidence statistics (\cref{subsec:hcr_application}) are computed exclusively on the training split of patients, to 
  prevent both node-level and patient-level information leakage across splits.
+ %trzeba dopisać wybor endpoints - dlaczego tak a nie inaczej
+ %auc liczony bez endpoint Serotonin_syndrome Rhabdomyolysis Lactic_acidosis - bardzo rzadkich 
 
 \subsubsection{Model architecture}
 

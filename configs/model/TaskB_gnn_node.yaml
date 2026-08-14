@@ -12,3 +12,10 @@ pair_norm_scale: 0.0    # 0.0 - off
 drop_edge: 0.0          # 0.0 - off
 jk_mode: cat            # null | cat | max | lstm
 use_hcr_wide: false     #whether to use HCR wide (true) or deep (false)
+hcr_wide_mode: "linear" # "nonlinear", "typed_concat" "linear"
+hcr_evidence_dim: 42  #10
+hcr_hidden_dim: 32          # domyślne
+hcr_embed_dim: 8          # domyślne
+hcr_dropout: 0.0           # domyślne
+hcr_parent_scope: "all"
+hide_direct_parents: false

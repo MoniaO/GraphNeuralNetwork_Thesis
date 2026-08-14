@@ -1,0 +1,881 @@
+edge_id,source,target,edge_type,effect_sign,effect_size,activation_frequency,mechanistic_confidence,evidence_weight
+e000000,bind__PGR,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000001,bind__PDE4A,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000002,bind__ABCC1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000003,bind__CYP2D6,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000004,reg__GJA1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000005,bind__ESR2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000006,reg__TNIP1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000007,reg__IL1B,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000008,reg__EGR1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000009,reg__TLR4,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000010,reg__CCL2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000011,bind__ADRB1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000012,bind__ACHE,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000013,bind__SLC22A4,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000014,bind__CACNA1C,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000015,bind__AGTR1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000016,bind__NR3C2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000017,reg__SQSTM1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000018,reg__CXCR4,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000019,bind__MPO,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000020,reg__MIF,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000021,bind__ALOX5,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000022,reg__HMGCR,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000023,reg__MMP1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000024,reg__PRKCQ,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000025,bind__ESR1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000026,bind__SLC22A3,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000027,bind__PDE4B,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000028,reg__ID2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000029,bind__MPO,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000030,reg__PRKCQ,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000031,bind__DRD3,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000032,reg__RGS2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000033,reg__CCL2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000034,reg__DUSP6,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000035,reg__MRPS7,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000036,bind__AGTR1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000037,reg__AGR2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000038,bind__MPO,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000039,reg__CTSD,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000040,bind__PTGS2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000041,reg__PTGS2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000042,reg__HSPD1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000043,reg__PARP1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000044,bind__HTR1D,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000045,reg__FABP5,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000046,bind__CYP4A11,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000047,reg__MIF,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000048,reg__NME1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000049,bind__ADRB2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000050,reg__ADRB2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000051,bind__CYP17A1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000052,reg__PARP1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000053,reg__CDKN1A,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000054,reg__BRCA1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000055,bind__HTR6,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000056,bind__ADRB2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000057,reg__ADRB2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000058,reg__NFKBIA,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000059,bind__ALOX5,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000060,bind__PDE3A,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000061,reg__IL1B,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000062,reg__PGM1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000063,bind__CYP1B1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000064,reg__CBLB,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000065,bind__SCN1A,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000066,reg__BIRC5,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000067,bind__ABCC3,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000068,bind__BCHE,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000069,reg__IL1B,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000070,reg__C5,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000071,reg__LPL,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000072,reg__CDKN1A,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000073,reg__ATP1B1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000074,reg__MMP1,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000075,reg__ICAM1,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000076,bind__XDH,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000077,bind__AOX1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000078,reg__GADD45A,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000079,reg__CDK4,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000080,reg__LPL,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000081,reg__PHGDH,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000082,reg__LIPA,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000083,bind__ADRA1A,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000084,reg__ERBB2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000085,bind__CYP1A1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000086,bind__ABL1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000087,bind__OPRD1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000088,reg__ELAC2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000089,reg__AURKA,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000090,bind__PDE4B,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000091,reg__DDIT3,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000092,reg__IKBKB,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000093,bind__SLC22A1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000094,reg__RHOA,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000095,bind__CYP2C19,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000096,reg__LPL,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000097,bind__HTR2C,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000098,reg__MYC,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000099,reg__SMC1A,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000100,reg__MIF,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000101,bind__CALM1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000102,bind__GABRB2,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000103,reg__MMP1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000104,reg__IKZF1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000105,reg__CCND3,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000106,reg__EGF,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000107,bind__TOP2A,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000108,reg__TOP2A,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000109,bind__SLC6A2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000110,reg__TLR4,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000111,reg__JUN,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000112,reg__PARP1,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000113,bind__ABCG2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000114,bind__PDE4D,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000115,reg__CHEK2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000116,reg__HSPA8,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000117,reg__GJA1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000118,bind__ACE,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000119,bind__CHRNA7,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000120,bind__PTGS1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000121,bind__TOP2A,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000122,reg__TOP2A,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000123,reg__HADH,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000124,reg__EGR1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000125,reg__ATF3,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000126,bind__HTR3A,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000127,reg__CCL2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000128,bind__SLC18A2,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000129,bind__ACE,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000130,bind__CA9,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000131,bind__AGTR1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000132,bind__HTR2A,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000133,reg__ICAM1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000134,reg__PHGDH,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000135,bind__CYP3A5,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000136,reg__CEBPD,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000137,reg__ERBB3,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000138,reg__PTPRK,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000139,reg__COG2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000140,reg__LDLR,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000141,reg__CDK6,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000142,bind__PTGS2,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000143,reg__PTGS2,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000144,bind__ALOX5,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000145,reg__NFKBIA,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000146,bind__COMT,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000147,bind__CYP1A2,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000148,bind__ATP1A1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000149,bind__PTGS2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000150,reg__PTGS2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000151,reg__TLR4,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000152,reg__AURKA,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000153,bind__HRH2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000154,bind__COMT,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000155,reg__CDKN1B,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000156,reg__IL1B,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000157,reg__BIRC5,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000158,reg__BRCA1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000159,reg__HSPA1A,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000160,reg__SNAP25,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000161,reg__SERPINE1,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000162,bind__ESR2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000163,bind__ABCG2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000164,reg__RGS2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000165,bind__CYP2D6,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000166,bind__UGT1A1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000167,bind__CYP2C19,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000168,reg__PIN1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000169,bind__ACE,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000170,reg__MYBL2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000171,bind__SLC6A4,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000172,bind__HTR1B,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000173,reg__CXCR4,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000174,reg__CSRP1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000175,bind__SLC15A2,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000176,reg__MIF,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000177,reg__GHR,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000178,bind__ABCB1,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000179,bind__PTGS2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000180,reg__PTGS2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000181,bind__ALB,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000182,bind__DRD3,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000183,reg__EGR1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000184,reg__DECR1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000185,reg__IL1B,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000186,bind__SLC12A1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000187,bind__HTR7,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000188,reg__CDKN1B,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000189,bind__NR3C1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000190,reg__PRKCD,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000191,reg__DNMT3A,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000192,reg__FHL2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000193,reg__CXCL2,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000194,bind__SLC6A4,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000195,bind__AGTR1,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000196,bind__CYP3A4,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000197,reg__CXCL2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000198,bind__BCHE,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000199,bind__ADORA1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000200,bind__CHRM1,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000201,reg__TLE1,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000202,reg__HDAC2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000203,bind__PTGS2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000204,reg__PTGS2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000205,bind__MPO,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000206,reg__CDK4,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000207,reg__KIT,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000208,reg__MIF,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000209,bind__PGR,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000210,bind__AR,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000211,reg__PTPRK,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000212,bind__CA9,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000213,bind__SLC22A3,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000214,reg__UBE2C,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000215,reg__CDKN1A,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000216,reg__SERPINA3,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000217,bind__NR3C1,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000218,reg__FHL2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000219,bind__ADRA2B,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000220,bind__ALB,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000221,bind__ESR1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000222,bind__ESR1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000223,bind__ESR1,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000224,reg__BNIP3,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000225,reg__BIRC5,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000226,reg__EGF,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000227,bind__CYP1A1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000228,reg__SERPINE1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000229,bind__CYP19A1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000230,reg__CCL2,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000231,reg__SERPINE1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000232,reg__PARP1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000233,bind__CA9,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000234,reg__GDF15,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000235,reg__EIF4EBP1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000236,reg__CEBPD,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000237,reg__ICAM1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000238,reg__MAL,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000239,bind__SLCO1B1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000240,bind__PDE3A,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000241,bind__GRIK2,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000242,bind__PDE4D,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000243,bind__NR3C1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000244,reg__ICAM1,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000245,reg__HMOX1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000246,bind__DRD1,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000247,bind__KCNJ11,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000248,reg__PNP,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000249,reg__DNMT3A,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000250,bind__HTR2A,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000251,reg__HSPD1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000252,reg__IGFBP3,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000253,reg__CDKN1A,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000254,reg__SERPINE1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000255,reg__GDF15,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000256,reg__HMOX1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000257,reg__GPER1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000258,bind__HTR2C,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000259,reg__SERPINE1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000260,bind__ESR2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000261,reg__IL1B,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000262,reg__C5,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000263,reg__NFKBIA,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000264,bind__NR3C2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000265,reg__PAK1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000266,bind__CACNB2,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000267,reg__CDK6,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000268,reg__IGFBP3,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000269,reg__HMOX1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000270,bind__HTR1B,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000271,bind__PTGS2,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000272,reg__PTGS2,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000273,bind__ESR1,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000274,reg__KIT,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000275,reg__COG2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000276,bind__DRD2,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000277,reg__HLA-DRA,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000278,bind__PTGS1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000279,bind__AR,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000280,reg__BNIP3,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000281,bind__ADRB2,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000282,reg__ADRB2,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000283,bind__CHRFAM7A,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000284,bind__NR3C1,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000285,reg__ATP1B1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000286,bind__HTR7,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000287,bind__ABL1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000288,bind__ALB,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000289,reg__HMOX1,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000290,bind__SCN2A,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000291,bind__HTR3A,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000292,bind__ADORA1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000293,bind__CYP2C18,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000294,bind__CYP19A1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000295,bind__HTR1B,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000296,reg__ITGAE,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000297,reg__PLCB3,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000298,reg__NOTCH1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000299,reg__PMAIP1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000300,reg__HDAC6,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000301,bind__CYP3A5,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000302,reg__EZH2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000303,bind__ALB,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000304,reg__ERBB2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000305,reg__CXCL2,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000306,bind__HRH4,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000307,bind__CYP3A43,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000308,reg__HIST1H2BK,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000309,reg__PER1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000310,reg__CCL2,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000311,bind__PGR,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000312,reg__CTSD,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000313,reg__CHIC2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000314,reg__KIT,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000315,reg__CDKN1B,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000316,bind__MAOA,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000317,bind__CYP11B1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000318,bind__CALM2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000319,reg__TIPARP,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000320,reg__TXNRD1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000321,bind__HTR7,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000322,bind__PDE4A,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000323,bind__ADRA2A,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000324,reg__JUN,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000325,reg__CCL2,ep__multiple sclerosis,DaG,1,0.5,0.5,1.0,1.0
+e000326,reg__IL1B,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000327,bind__ACE,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000328,reg__ICAM1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000329,bind__ALB,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000330,reg__CYCS,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000331,bind__ALOX5,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000332,reg__COTL1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000333,reg__MPC2,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000334,reg__PRKCD,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000335,reg__HSPD1,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000336,reg__MRPL19,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000337,bind__ALB,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000338,bind__ESR2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000339,reg__NOTCH1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000340,bind__ADORA2A,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000341,reg__GJA1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000342,bind__DCK,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000343,reg__DCK,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000344,bind__SCN10A,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000345,bind__PPARG,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000346,reg__PPARG,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000347,bind__ABCC1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000348,reg__ZFP36,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000349,reg__DNM1L,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000350,reg__NOTCH1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000351,reg__KAT6A,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000352,reg__MYC,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000353,reg__BRCA1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000354,bind__TSPO,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000355,bind__CA5B,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000356,bind__COMT,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000357,reg__AGR2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000358,bind__HTR1A,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000359,bind__HTR1A,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000360,reg__ZFP36,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000361,bind__DRD4,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000362,bind__TYMS,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000363,reg__TYMS,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000364,bind__MPO,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000365,reg__SMAD3,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000366,bind__ADRB1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000367,reg__HSPA1A,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000368,bind__ESR1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000369,reg__EZH2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000370,bind__TYMS,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000371,reg__TYMS,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000372,bind__AR,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000373,bind__ESR2,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000374,reg__SSBP2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000375,reg__MYC,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000376,reg__MYC,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000377,reg__HSPA1A,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000378,reg__NRIP1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000379,bind__SLC12A3,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000380,reg__IER3,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000381,bind__CHRNA3,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000382,reg__ERBB3,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000383,bind__CYP3A4,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000384,reg__EZH2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000385,reg__TLR4,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000386,bind__CHRNA4,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000387,reg__ADI1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000388,bind__CYP1B1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000389,bind__CYP2A6,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000390,bind__HTR7,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000391,reg__ALAS1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000392,bind__SHBG,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000393,reg__RHOA,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000394,bind__SHBG,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000395,bind__ACE,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000396,bind__CYP1A1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000397,bind__NR3C1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000398,bind__HTR2A,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000399,reg__DDIT4,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000400,bind__PDE4D,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000401,bind__ABCB1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000402,bind__CYP2E1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000403,reg__CTSD,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000404,bind__CYP17A1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000405,bind__PDE4B,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000406,reg__CASC3,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000407,bind__SLC22A1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000408,bind__ABCB1,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000409,bind__CYP2C18,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000410,reg__IGFBP3,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000411,bind__CYP19A1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000412,reg__NRIP1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000413,bind__SLC6A3,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000414,bind__ATP1A1,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000415,reg__RGS2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000416,bind__PDE4D,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000417,bind__DRD2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000418,reg__CXCL2,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000419,reg__CHEK2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000420,bind__SLC6A3,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000421,bind__HTR2A,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000422,bind__CYP11A1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000423,reg__GHR,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000424,reg__BIRC5,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000425,reg__CEBPA,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000426,bind__ALB,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000427,reg__HSPB1,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000428,reg__MIF,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000429,reg__HERPUD1,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000430,bind__TOP2A,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000431,reg__TOP2A,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000432,bind__COMT,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000433,reg__ICAM1,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000434,bind__ACHE,ep__breast cancer,DaG,1,0.5,0.5,1.0,1.0
+e000435,reg__BIRC5,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000436,bind__PDE4B,ep__coronary artery disease,DaG,1,0.5,0.5,1.0,1.0
+e000437,reg__NFKBIE,ep__rheumatoid arthritis,DaG,1,0.5,0.5,1.0,1.0
+e000438,bind__AR,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000439,reg__HMGCR,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000440,bind__CYP17A1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000441,bind__HTR2B,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000442,bind__PPARG,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000443,reg__PPARG,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000444,bind__HTR2B,ep__migraine,DaG,1,0.5,0.5,1.0,1.0
+e000445,reg__NUCB2,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000446,reg__ICAM1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000447,bind__SLC6A4,ep__schizophrenia,DaG,1,0.5,0.5,1.0,1.0
+e000448,reg__MYC,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000449,reg__MMP1,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000450,reg__IL1B,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000451,reg__ERBB3,ep__prostate cancer,DaG,1,0.5,0.5,1.0,1.0
+e000452,bind__ADRB2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000453,reg__ADRB2,ep__hypertension,DaG,1,0.5,0.5,1.0,1.0
+e000454,bind__ACE,ep__asthma,DaG,1,0.5,0.5,1.0,1.0
+e000455,reg__TCEA2,ep__hematologic cancer,DaG,1,0.5,0.5,1.0,1.0
+e000456,bind__ABL1,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000457,reg__MYC,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000458,reg__ABHD6,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000459,reg__INPP1,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000460,reg__LBR,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000461,reg__NRIP1,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000462,reg__TMEM97,ep__hypertension,DdG,1,0.5,0.5,1.0,1.0
+e000463,reg__ALDOC,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000464,reg__LAMA3,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000465,reg__GPC1,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000466,reg__PCK2,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000467,reg__GNAI1,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000468,bind__MAOA,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000469,reg__ABHD6,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000470,bind__CA2,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000471,reg__ADI1,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000472,reg__PER1,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000473,bind__HTR3A,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000474,reg__RPS4Y1,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000475,reg__BNIP3,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000476,reg__HMG20B,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000477,reg__PROS1,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000478,bind__MPO,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000479,reg__LGMN,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000480,reg__SOCS2,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000481,reg__GRB10,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000482,reg__CCNA2,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000483,reg__KLHL21,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000484,bind__SLC18A2,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000485,reg__SMNDC1,ep__prostate cancer,DdG,1,0.5,0.5,1.0,1.0
+e000486,reg__CBLB,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000487,bind__PDE4B,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000488,reg__PCNA,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000489,reg__HERPUD1,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000490,reg__VPS28,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000491,reg__PARP2,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000492,reg__CEBPD,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000493,reg__TIPARP,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000494,reg__HADH,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000495,reg__PUF60,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000496,reg__CXCL2,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000497,reg__BNIP3,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000498,reg__PRKCQ,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000499,reg__FDPS,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000500,reg__INSIG1,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000501,bind__NR3C1,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000502,reg__SMAD3,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000503,reg__NR1H2,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000504,reg__PFN1,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000505,reg__ZFP36,ep__rheumatoid arthritis,DdG,1,0.5,0.5,1.0,1.0
+e000506,bind__NR3C2,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000507,reg__CYCS,ep__schizophrenia,DdG,1,0.5,0.5,1.0,1.0
+e000508,bind__AOX1,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000509,bind__ADRB2,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000510,reg__ADRB2,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000511,reg__GHR,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000512,reg__DUSP6,ep__breast cancer,DdG,1,0.5,0.5,1.0,1.0
+e000513,reg__NUCB2,ep__hematologic cancer,DdG,1,0.5,0.5,1.0,1.0
+e000514,reg__CLTB,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000515,reg__TPX2,ep__hypertension,DuG,1,0.5,0.5,1.0,1.0
+e000516,reg__CCNB2,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000517,reg__MELK,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000518,reg__HIST1H2BK,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000519,bind__TYMS,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000520,reg__TYMS,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000521,reg__CHMP4A,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000522,reg__TIMELESS,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000523,reg__UBE2C,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000524,reg__ZDHHC6,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000525,reg__MYC,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000526,reg__SQRDL,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000527,reg__NUSAP1,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000528,reg__PYCR1,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000529,reg__MLLT11,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000530,reg__SLC1A4,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000531,reg__STX1A,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000532,reg__KIF2C,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000533,reg__TES,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000534,reg__PTPRK,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000535,reg__DTL,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000536,reg__RPN1,ep__prostate cancer,DuG,1,0.5,0.5,1.0,1.0
+e000537,reg__CDC20,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000538,reg__CENPA,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000539,reg__TIPARP,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000540,reg__SMC4,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000541,reg__PGAM1,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000542,reg__TBP,ep__prostate cancer,DuG,1,0.5,0.5,1.0,1.0
+e000543,reg__SQLE,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000544,reg__CRYZ,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000545,reg__CNDP2,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000546,reg__MYBL2,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000547,reg__HJURP,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000548,reg__NVL,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000549,reg__PARP1,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000550,reg__ATP6V0B,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000551,reg__NNT,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000552,reg__ASPM,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000553,reg__GAA,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000554,reg__KCTD5,ep__prostate cancer,DuG,1,0.5,0.5,1.0,1.0
+e000555,bind__ALOX5,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000556,reg__RRS1,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000557,reg__ERBB2,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000558,reg__MTHFD2,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000559,reg__CDK1,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000560,reg__GTF2A2,ep__prostate cancer,DuG,1,0.5,0.5,1.0,1.0
+e000561,reg__TPX2,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000562,reg__TXNDC9,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000563,bind__TYMS,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000564,reg__TYMS,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000565,reg__CSRP1,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000566,reg__AGR2,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000567,reg__COL11A1,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000568,reg__ADGRE5,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000569,reg__RPS6KA1,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000570,bind__SLC22A4,ep__hypertension,DuG,1,0.5,0.5,1.0,1.0
+e000571,reg__PAFAH1B3,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000572,reg__PTPN6,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000573,reg__GINS2,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000574,reg__CANT1,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000575,reg__MIF,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000576,reg__CGRRF1,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000577,reg__SLC1A4,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000578,reg__KIT,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000579,reg__KAT6A,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000580,reg__LRP10,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000581,reg__PRAF2,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000582,reg__EED,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000583,reg__AURKA,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000584,reg__DMTF1,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000585,reg__PCNA,ep__prostate cancer,DuG,1,0.5,0.5,1.0,1.0
+e000586,reg__CLTC,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000587,reg__PDHX,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000588,reg__ARHGEF2,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000589,bind__TOP2A,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000590,reg__TOP2A,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000591,reg__HIST1H2BK,ep__hematologic cancer,DuG,1,0.5,0.5,1.0,1.0
+e000592,reg__CEBPA,ep__schizophrenia,DuG,1,0.5,0.5,1.0,1.0
+e000593,reg__CCNB1,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000594,reg__BIRC5,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000595,reg__PCNA,ep__breast cancer,DuG,1,0.5,0.5,1.0,1.0
+e000596,reg__ATP6V1D,ep__rheumatoid arthritis,DuG,1,0.5,0.5,1.0,1.0
+e000597,bind__ABCC6,reg__CRYZ,GcG,1,0.5,0.5,1.0,1.0
+e000598,bind__PDE4A,reg__CCDC85B,GcG,1,0.5,0.5,1.0,1.0
+e000599,bind__CHRM3,reg__CRIP1,GcG,1,0.5,0.5,1.0,1.0
+e000600,bind__CYP2C19,reg__PAK1,GcG,1,0.5,0.5,1.0,1.0
+e000601,bind__CACNA1S,reg__GPC1,GcG,1,0.5,0.5,1.0,1.0
+e000602,bind__SLC22A6,reg__HMOX1,GcG,1,0.5,0.5,1.0,1.0
+e000603,bind__SLCO1B3,reg__DEPDC1,GcG,1,0.5,0.5,1.0,1.0
+e000604,bind__CHRM4,reg__B4GAT1,GcG,1,0.5,0.5,1.0,1.0
+e000605,bind__PDE4C,reg__TICAM1,GcG,1,0.5,0.5,1.0,1.0
+e000606,bind__CACNB2,reg__KCTD5,GcG,1,0.5,0.5,1.0,1.0
+e000607,bind__GABRG1,reg__CRIP1,GcG,1,0.5,0.5,1.0,1.0
+e000608,bind__ORM1,reg__RRP1B,GcG,1,0.5,0.5,1.0,1.0
+e000609,bind__HTR2C,reg__NT5DC2,GcG,1,0.5,0.5,1.0,1.0
+e000610,bind__DRD2,reg__DDIT4,GcG,1,0.5,0.5,1.0,1.0
+e000611,bind__TUBB4B,reg__CRIP1,GcG,1,0.5,0.5,1.0,1.0
+e000612,bind__ABCC4,reg__TSPAN4,GcG,1,0.5,0.5,1.0,1.0
+e000613,bind__CACNA1G,reg__RRS1,GcG,1,0.5,0.5,1.0,1.0
+e000614,bind__HTR6,reg__GPC1,GcG,1,0.5,0.5,1.0,1.0
+e000615,bind__HTR2C,reg__DNAJB2,GcG,1,0.5,0.5,1.0,1.0
+e000616,bind__CYP3A4,reg__PTK2B,GcG,1,0.5,0.5,1.0,1.0
+e000617,bind__CYP3A7,reg__AKR7A2,GcG,1,0.5,0.5,1.0,1.0
+e000618,bind__ESR2,reg__CRIP1,GcG,1,0.5,0.5,1.0,1.0
+e000619,bind__CHRM3,reg__KIAA0907,GcG,1,0.5,0.5,1.0,1.0
+e000620,bind__CALM1,reg__NFKBIE,GiG,1,0.5,0.5,1.0,1.0
+e000621,bind__CALM3,reg__IKBKB,GiG,1,0.5,0.5,1.0,1.0
+e000622,bind__TOP2A,reg__PIN1,GiG,1,0.5,0.5,1.0,1.0
+e000623,bind__ADRB2,reg__IL1B,GiG,1,0.5,0.5,1.0,1.0
+e000624,bind__ABCC5,reg__SERPINA3,GiG,1,0.5,0.5,1.0,1.0
+e000625,bind__ADRB2,reg__CSK,GiG,1,0.5,0.5,1.0,1.0
+e000626,bind__TUBB,reg__RAN,GiG,1,0.5,0.5,1.0,1.0
+e000627,bind__TUBB1,reg__PSMD2,GiG,1,0.5,0.5,1.0,1.0
+e000628,bind__TUBB,reg__HSPA8,GiG,1,0.5,0.5,1.0,1.0
+e000629,bind__TUBB,reg__JUN,GiG,1,0.5,0.5,1.0,1.0
+e000630,bind__ESR1,reg__JUN,GiG,1,0.5,0.5,1.0,1.0
+e000631,bind__ESR1,reg__VAPB,GiG,1,0.5,0.5,1.0,1.0
+e000632,bind__TOP2A,reg__HDAC2,GiG,1,0.5,0.5,1.0,1.0
+e000633,bind__PPARG,reg__DNTTIP2,GiG,1,0.5,0.5,1.0,1.0
+e000634,bind__ESR1,reg__PAK1,GiG,1,0.5,0.5,1.0,1.0
+e000635,bind__AR,reg__JUN,GiG,1,0.5,0.5,1.0,1.0
+e000636,bind__GABRA1,reg__PRKCD,GiG,1,0.5,0.5,1.0,1.0
+e000637,bind__TOP2A,reg__JUN,GiG,1,0.5,0.5,1.0,1.0
+e000638,bind__ESR1,reg__RPN1,GiG,1,0.5,0.5,1.0,1.0
+e000639,bind__TUBB,reg__NFKBIA,GiG,1,0.5,0.5,1.0,1.0
+e000640,bind__ESR1,reg__CNDP2,GiG,1,0.5,0.5,1.0,1.0
+e000641,bind__AR,reg__BRCA1,GiG,1,0.5,0.5,1.0,1.0
+e000642,bind__ESR1,reg__FHL2,GiG,1,0.5,0.5,1.0,1.0
+e000643,bind__CALM2,reg__IKBKB,GiG,1,0.5,0.5,1.0,1.0
+e000644,bind__CALM1,reg__RPS4Y1,GiG,1,0.5,0.5,1.0,1.0
+e000645,bind__CALM2,reg__PLCB3,GiG,1,0.5,0.5,1.0,1.0
+e000646,bind__ESR1,reg__DNM1L,GiG,1,0.5,0.5,1.0,1.0
+e000647,bind__CALM1,reg__RALA,GiG,1,0.5,0.5,1.0,1.0
+e000648,bind__SLC6A3,reg__STX1A,GiG,1,0.5,0.5,1.0,1.0
+e000649,bind__ADRA2A,reg__PRKCD,GiG,1,0.5,0.5,1.0,1.0
+e000650,bind__NR3C1,reg__SMAD3,GiG,1,0.5,0.5,1.0,1.0
+e000651,bind__ESR1,reg__PHGDH,GiG,1,0.5,0.5,1.0,1.0
+e000652,bind__ESR1,reg__XBP1,GiG,1,0.5,0.5,1.0,1.0
+e000653,bind__AR,reg__CEBPA,GiG,1,0.5,0.5,1.0,1.0
+e000654,bind__ABL1,reg__EGR1,GiG,1,0.5,0.5,1.0,1.0
+e000655,bind__NR3C1,reg__HSPA1A,GiG,1,0.5,0.5,1.0,1.0
+e000656,bind__ESR1,reg__KAT6A,GiG,1,0.5,0.5,1.0,1.0
+e000657,bind__GRIA2,reg__SQSTM1,GiG,1,0.5,0.5,1.0,1.0
+e000658,bind__CALM3,reg__PLCB3,GiG,1,0.5,0.5,1.0,1.0
+e000659,bind__ESR1,reg__PCK2,GiG,1,0.5,0.5,1.0,1.0
+e000660,bind__ESR1,reg__PLCB3,GiG,1,0.5,0.5,1.0,1.0
+e000661,bind__NR3C1,reg__CEBPA,GiG,1,0.5,0.5,1.0,1.0
+e000662,bind__ESR1,reg__DECR1,GiG,1,0.5,0.5,1.0,1.0
+e000663,bind__TOP2A,reg__BRCA1,GiG,1,0.5,0.5,1.0,1.0
+e000664,bind__CALM2,reg__RPS4Y1,GiG,1,0.5,0.5,1.0,1.0
+e000665,bind__CALM2,reg__SQSTM1,GiG,1,0.5,0.5,1.0,1.0
+e000666,bind__ESR1,reg__CDC25B,GiG,1,0.5,0.5,1.0,1.0
+e000667,bind__ESR1,reg__RAN,GiG,1,0.5,0.5,1.0,1.0
+e000668,bind__SLC6A2,reg__STX1A,GiG,1,0.5,0.5,1.0,1.0
+e000669,bind__ESR1,reg__ATF1,GiG,1,0.5,0.5,1.0,1.0
+e000670,bind__ABL1,reg__BRCA1,GiG,1,0.5,0.5,1.0,1.0
+e000671,bind__CALM2,reg__RALA,GiG,1,0.5,0.5,1.0,1.0
+e000672,bind__CALM2,reg__AURKB,GiG,1,0.5,0.5,1.0,1.0
+e000673,bind__SCN1A,reg__PCNA,GiG,1,0.5,0.5,1.0,1.0
+e000674,bind__ALB,reg__CDC45,GiG,1,0.5,0.5,1.0,1.0
+e000675,bind__ESR1,reg__MVP,GiG,1,0.5,0.5,1.0,1.0
+e000676,bind__ESR1,reg__RRP12,GiG,1,0.5,0.5,1.0,1.0
+e000677,bind__ESR1,reg__CEBPB,GiG,1,0.5,0.5,1.0,1.0
+e000678,bind__CYP2C8,reg__DNAJB1,GiG,1,0.5,0.5,1.0,1.0
+e000679,bind__CALM2,reg__CLTB,GiG,1,0.5,0.5,1.0,1.0
+e000680,bind__AR,reg__RAN,GiG,1,0.5,0.5,1.0,1.0
+e000681,bind__ABL1,reg__PXN,GiG,1,0.5,0.5,1.0,1.0
+e000682,bind__ABL1,reg__PLSCR1,GiG,1,0.5,0.5,1.0,1.0
+e000683,bind__CALM3,reg__RGS2,GiG,1,0.5,0.5,1.0,1.0
+e000684,bind__NR3C1,reg__SLC25A4,GiG,1,0.5,0.5,1.0,1.0
+e000685,bind__SCN1A,reg__HIST2H2BE,GiG,1,0.5,0.5,1.0,1.0
+e000686,bind__CALM1,reg__NFKBIA,GiG,1,0.5,0.5,1.0,1.0
+e000687,bind__PGR,reg__CCNA2,GiG,1,0.5,0.5,1.0,1.0
+e000688,bind__ESR1,reg__PSMD2,GiG,1,0.5,0.5,1.0,1.0
+e000689,bind__CALM3,reg__NFKBIE,GiG,1,0.5,0.5,1.0,1.0
+e000690,bind__CALM1,reg__AURKB,GiG,1,0.5,0.5,1.0,1.0
+e000691,bind__OPRM1,reg__GNAI1,GiG,1,0.5,0.5,1.0,1.0
+e000692,bind__CALM3,reg__AURKB,GiG,1,0.5,0.5,1.0,1.0
+e000693,bind__NR3C1,reg__JUN,GiG,1,0.5,0.5,1.0,1.0
+e000694,bind__ESR1,reg__CDK7,GiG,1,0.5,0.5,1.0,1.0
+e000695,bind__ESR1,reg__RPS6KA1,GiG,1,0.5,0.5,1.0,1.0
+e000696,bind__ESR1,reg__PTPN6,GiG,1,0.5,0.5,1.0,1.0
+e000697,bind__KCNH2,reg__HSPA8,GiG,1,0.5,0.5,1.0,1.0
+e000698,bind__ESR1,reg__ERBB2,GiG,1,0.5,0.5,1.0,1.0
+e000699,bind__AR,reg__CDC25B,GiG,1,0.5,0.5,1.0,1.0
+e000700,bind__ESR1,reg__AARS,GiG,1,0.5,0.5,1.0,1.0
+e000701,bind__CALM2,reg__NFKBIA,GiG,1,0.5,0.5,1.0,1.0
+e000702,bind__ESR1,reg__INPP4B,GiG,1,0.5,0.5,1.0,1.0
+e000703,bind__NR3C1,reg__CDKN1A,GiG,1,0.5,0.5,1.0,1.0
+e000704,bind__CYP19A1,reg__CEBPD,GiG,1,0.5,0.5,1.0,1.0
+e000705,bind__NR3C1,reg__KDM5A,GiG,1,0.5,0.5,1.0,1.0
+e000706,bind__NR3C1,reg__RAN,GiG,1,0.5,0.5,1.0,1.0
+e000707,bind__ABL1,reg__CDKN1B,GiG,1,0.5,0.5,1.0,1.0
+e000708,bind__ALB,reg__CEBPB,GiG,1,0.5,0.5,1.0,1.0
+e000709,bind__CALM1,reg__PLCB3,GiG,1,0.5,0.5,1.0,1.0
+e000710,bind__CALM3,reg__SQSTM1,GiG,1,0.5,0.5,1.0,1.0
+e000711,bind__COMT,reg__RGS2,GiG,1,0.5,0.5,1.0,1.0
+e000712,bind__ABL1,reg__RPP38,GiG,1,0.5,0.5,1.0,1.0
+e000713,bind__ESR2,reg__DNTTIP2,GiG,1,0.5,0.5,1.0,1.0
+e000714,bind__ATP1A1,reg__EZH2,GiG,1,0.5,0.5,1.0,1.0
+e000715,bind__PGR,reg__CCNA1,GiG,1,0.5,0.5,1.0,1.0
+e000716,bind__NR3C1,reg__NRIP1,GiG,1,0.5,0.5,1.0,1.0
+e000717,bind__ESR1,reg__CDKN1A,GiG,1,0.5,0.5,1.0,1.0
+e000718,bind__ABCC3,reg__BRCA1,GiG,1,0.5,0.5,1.0,1.0
+e000719,bind__AR,reg__CDK7,GiG,1,0.5,0.5,1.0,1.0
+e000720,bind__NR3C1,reg__HSPD1,GiG,1,0.5,0.5,1.0,1.0
+e000721,bind__OPRD1,reg__PRKCD,GiG,1,0.5,0.5,1.0,1.0
+e000722,bind__TUBB,reg__BRCA1,GiG,1,0.5,0.5,1.0,1.0
+e000723,bind__ESR1,reg__HACD3,GiG,1,0.5,0.5,1.0,1.0
+e000724,bind__ACHE,reg__JUN,GiG,1,0.5,0.5,1.0,1.0
+e000725,bind__ABL1,reg__PTPN6,GiG,1,0.5,0.5,1.0,1.0
+e000726,bind__ADRA2A,reg__GNAI1,GiG,1,0.5,0.5,1.0,1.0
+e000727,bind__ESR1,reg__GADD45B,GiG,1,0.5,0.5,1.0,1.0
+e000728,bind__ABL1,reg__CENPA,GiG,1,0.5,0.5,1.0,1.0
+e000729,bind__SCN5A,reg__RGS2,GiG,1,0.5,0.5,1.0,1.0
+e000730,bind__AR,reg__HSPA1A,GiG,1,0.5,0.5,1.0,1.0
+e000731,bind__ESR1,reg__BLCAP,GiG,1,0.5,0.5,1.0,1.0
+e000732,bind__AR,reg__RUVBL1,GiG,1,0.5,0.5,1.0,1.0
+e000733,bind__ESR1,reg__ALDOC,GiG,1,0.5,0.5,1.0,1.0
+e000734,bind__AR,reg__FHL2,GiG,1,0.5,0.5,1.0,1.0
+e000735,bind__UGT1A1,reg__UGDH,GiG,1,0.5,0.5,1.0,1.0
+e000736,bind__CALM1,reg__IKBKB,GiG,1,0.5,0.5,1.0,1.0
+e000737,bind__ESR1,reg__GNAI1,GiG,1,0.5,0.5,1.0,1.0
+e000738,bind__NR3C1,reg__TBP,GiG,1,0.5,0.5,1.0,1.0
+e000739,bind__ABL1,reg__CDK1,GiG,1,0.5,0.5,1.0,1.0
+e000740,bind__AR,reg__CDK6,GiG,1,0.5,0.5,1.0,1.0
+e000741,bind__GABRR2,reg__SQSTM1,GiG,1,0.5,0.5,1.0,1.0
+e000742,bind__AR,reg__SLC25A4,GiG,1,0.5,0.5,1.0,1.0
+e000743,bind__ADRB2,reg__PRKCD,GiG,1,0.5,0.5,1.0,1.0
+e000744,bind__AR,reg__CEBPB,GiG,1,0.5,0.5,1.0,1.0
+e000745,bind__ESR1,reg__PFN1,GiG,1,0.5,0.5,1.0,1.0
+e000746,bind__TUBB,reg__PPARG,GiG,1,0.5,0.5,1.0,1.0
+e000747,bind__ALOX5,reg__COTL1,GiG,1,0.5,0.5,1.0,1.0
+e000748,bind__ESR1,reg__HSPD1,GiG,1,0.5,0.5,1.0,1.0
+e000749,bind__ATP1A1,reg__MYC,GiG,1,0.5,0.5,1.0,1.0
+e000750,bind__CALM2,reg__NFKBIE,GiG,1,0.5,0.5,1.0,1.0
+e000751,bind__ESR1,reg__HADH,GiG,1,0.5,0.5,1.0,1.0
+e000752,bind__NR3C1,reg__CLTC,GiG,1,0.5,0.5,1.0,1.0
+e000753,bind__TUBB,reg__HDAC6,GiG,1,0.5,0.5,1.0,1.0
+e000754,bind__TUBB,reg__PLK1,GiG,1,0.5,0.5,1.0,1.0
+e000755,bind__CALM1,reg__RELB,GiG,1,0.5,0.5,1.0,1.0
+e000756,bind__ESR1,reg__SMAD3,GiG,1,0.5,0.5,1.0,1.0
+e000757,bind__CYP11A1,reg__SMAD3,GiG,1,0.5,0.5,1.0,1.0
+e000758,bind__TUBB4B,reg__PAFAH1B3,GiG,1,0.5,0.5,1.0,1.0
+e000759,bind__AR,reg__STUB1,GiG,1,0.5,0.5,1.0,1.0
+e000760,bind__ESR1,reg__CEBPA,GiG,1,0.5,0.5,1.0,1.0
+e000761,bind__CALM2,reg__RGS2,GiG,1,0.5,0.5,1.0,1.0
+e000762,bind__HTR2A,reg__GNAI1,GiG,1,0.5,0.5,1.0,1.0
+e000763,bind__ABL1,reg__ERBB2,GiG,1,0.5,0.5,1.0,1.0
+e000764,bind__ESR1,reg__CLTC,GiG,1,0.5,0.5,1.0,1.0
+e000765,bind__CALM3,reg__IKBKE,GiG,1,0.5,0.5,1.0,1.0
+e000766,bind__ESR1,reg__MYC,GiG,1,0.5,0.5,1.0,1.0
+e000767,bind__ESR1,reg__EZH2,GiG,1,0.5,0.5,1.0,1.0
+e000768,bind__ESR1,reg__GADD45A,GiG,1,0.5,0.5,1.0,1.0
+e000769,bind__NR3C1,reg__HDAC6,GiG,1,0.5,0.5,1.0,1.0
+e000770,bind__NR3C1,reg__ATP1B1,GiG,1,0.5,0.5,1.0,1.0
+e000771,bind__AR,reg__KDM3A,GiG,1,0.5,0.5,1.0,1.0
+e000772,bind__ABL1,reg__RAN,GiG,1,0.5,0.5,1.0,1.0
+e000773,bind__TUBB,reg__NFKBIE,GiG,1,0.5,0.5,1.0,1.0
+e000774,bind__CALM3,reg__NFKBIA,GiG,1,0.5,0.5,1.0,1.0
+e000775,bind__PGR,reg__GNAI1,GiG,1,0.5,0.5,1.0,1.0
+e000776,bind__CALM3,reg__CLTB,GiG,1,0.5,0.5,1.0,1.0
+e000777,bind__ESR2,reg__SMAD3,GiG,1,0.5,0.5,1.0,1.0
+e000778,bind__GABRR1,reg__SQSTM1,GiG,1,0.5,0.5,1.0,1.0
+e000779,bind__SCN1A,reg__PSMD2,GiG,1,0.5,0.5,1.0,1.0
+e000780,bind__HRH4,reg__GNAI1,GiG,1,0.5,0.5,1.0,1.0
+e000781,bind__DRD3,reg__GNAI1,GiG,1,0.5,0.5,1.0,1.0
+e000782,bind__ESR1,reg__FOXO4,GiG,1,0.5,0.5,1.0,1.0
+e000783,bind__ESR1,reg__HSPB1,GiG,1,0.5,0.5,1.0,1.0
+e000784,bind__CALM3,reg__CCNA2,GiG,1,0.5,0.5,1.0,1.0
+e000785,bind__CA2,reg__HSPD1,GiG,1,0.5,0.5,1.0,1.0
+e000786,bind__ABL1,reg__ERBB3,GiG,1,0.5,0.5,1.0,1.0
+e000787,bind__ABL1,reg__DDB2,GiG,1,0.5,0.5,1.0,1.0
+e000788,bind__AR,reg__SMAD3,GiG,1,0.5,0.5,1.0,1.0
+e000789,bind__AR,reg__NRIP1,GiG,1,0.5,0.5,1.0,1.0
+e000790,bind__ESR1,reg__RRP1B,GiG,1,0.5,0.5,1.0,1.0
+e000791,bind__ESR1,reg__NSDHL,GiG,1,0.5,0.5,1.0,1.0
+e000792,bind__CYP2E1,reg__STUB1,GiG,1,0.5,0.5,1.0,1.0
+e000793,bind__ESR1,reg__STUB1,GiG,1,0.5,0.5,1.0,1.0
+e000794,bind__CALM2,reg__IKBKE,GiG,1,0.5,0.5,1.0,1.0
+e000795,bind__HTR1A,reg__RHOA,GiG,1,0.5,0.5,1.0,1.0
+e000796,bind__CALM1,reg__PSMD2,GiG,1,0.5,0.5,1.0,1.0
+e000797,bind__ESR1,reg__CEBPD,GiG,1,0.5,0.5,1.0,1.0
+e000798,bind__CALM1,reg__IKBKE,GiG,1,0.5,0.5,1.0,1.0
+e000799,bind__TUBB,reg__IKBKB,GiG,1,0.5,0.5,1.0,1.0
+e000800,bind__TUBB,reg__HSPD1,GiG,1,0.5,0.5,1.0,1.0
+e000801,bind__ABL1,reg__SHB,GiG,1,0.5,0.5,1.0,1.0
+e000802,bind__CALM1,reg__RGS2,GiG,1,0.5,0.5,1.0,1.0
+e000803,bind__CALM3,reg__RALA,GiG,1,0.5,0.5,1.0,1.0
+e000804,bind__PGR,reg__CDC25B,GiG,1,0.5,0.5,1.0,1.0
+e000805,bind__CA1,reg__HSD17B7,GiG,1,0.5,0.5,1.0,1.0
+e000806,bind__ESR1,reg__BRCA1,GiG,1,0.5,0.5,1.0,1.0
+e000807,bind__GRIK2,reg__CALCOCO1,GiG,1,0.5,0.5,1.0,1.0
+e000808,bind__SLC22A11,reg__RRP1B,GiG,1,0.5,0.5,1.0,1.0
+e000809,bind__CYP3A4,reg__STUB1,GiG,1,0.5,0.5,1.0,1.0
+e000810,bind__ESR1,reg__NME1,GiG,1,0.5,0.5,1.0,1.0
+e000811,bind__ESR1,reg__FIS1,GiG,1,0.5,0.5,1.0,1.0
+e000812,bind__ADRB3,reg__ADRB2,GiG,1,0.5,0.5,1.0,1.0
+e000813,bind__ESR1,reg__DNTTIP2,GiG,1,0.5,0.5,1.0,1.0
+e000814,bind__AR,reg__DDB2,GiG,1,0.5,0.5,1.0,1.0
+e000815,bind__CALM2,reg__CCNA2,GiG,1,0.5,0.5,1.0,1.0
+e000816,bind__CHRNA2,reg__EGR1,GiG,1,0.5,0.5,1.0,1.0
+e000817,bind__ESR1,reg__NRIP1,GiG,1,0.5,0.5,1.0,1.0
+e000818,bind__ABL1,reg__GRB10,GiG,1,0.5,0.5,1.0,1.0
+e000819,bind__ESR1,reg__CTSD,GiG,1,0.5,0.5,1.0,1.0
+e000820,bind__ESR1,reg__RRS1,GiG,1,0.5,0.5,1.0,1.0
+e000821,bind__CALM3,reg__RPS4Y1,GiG,1,0.5,0.5,1.0,1.0
+e000822,bind__TUBB1,reg__HSPA1A,GiG,1,0.5,0.5,1.0,1.0
+e000823,bind__PPARG,reg__GADD45B,GiG,1,0.5,0.5,1.0,1.0
+e000824,bind__TUBB1,reg__HSPA8,GiG,1,0.5,0.5,1.0,1.0
+e000825,bind__CYP2C8,reg__BLMH,GiG,1,0.5,0.5,1.0,1.0
+e000826,bind__NR3C1,reg__KPNA2,GiG,1,0.5,0.5,1.0,1.0
+e000827,bind__ESR2,reg__NRIP1,GiG,1,0.5,0.5,1.0,1.0
+e000828,bind__ABL1,reg__PRKCD,GiG,1,0.5,0.5,1.0,1.0
+e000829,bind__ADRA1A,reg__RGS2,GiG,1,0.5,0.5,1.0,1.0
+e000830,bind__CALM3,reg__NFKB2,GiG,1,0.5,0.5,1.0,1.0
+e000831,bind__ATP1A1,reg__JUN,GiG,1,0.5,0.5,1.0,1.0
+e000832,bind__CACNA1D,reg__STX1A,GiG,1,0.5,0.5,1.0,1.0
+e000833,bind__PPARG,reg__NRIP1,GiG,1,0.5,0.5,1.0,1.0
+e000834,bind__ALB,reg__CTSL,GiG,1,0.5,0.5,1.0,1.0
+e000835,bind__CALM2,reg__PSMD2,GiG,1,0.5,0.5,1.0,1.0
+e000836,bind__CALM1,reg__NFKB2,GiG,1,0.5,0.5,1.0,1.0
+e000837,bind__SLC6A4,reg__STX1A,GiG,1,0.5,0.5,1.0,1.0
+e000838,bind__CA2,reg__PCNA,GiG,1,0.5,0.5,1.0,1.0
+e000839,bind__TOP2A,reg__PARP1,GiG,1,0.5,0.5,1.0,1.0
+e000840,bind__AR,reg__TBP,GiG,1,0.5,0.5,1.0,1.0
+e000841,bind__AR,reg__PXN,GiG,1,0.5,0.5,1.0,1.0
+e000842,bind__TUBB,reg__IKBKE,GiG,1,0.5,0.5,1.0,1.0
+e000843,bind__AR,reg__CDK1,GiG,1,0.5,0.5,1.0,1.0
+e000844,bind__ORM1,reg__SERPINE1,GiG,1,0.5,0.5,1.0,1.0
+e000845,bind__ABL1,reg__KIT,GiG,1,0.5,0.5,1.0,1.0
+e000846,bind__ESR1,reg__PARP1,GiG,1,0.5,0.5,1.0,1.0
+e000847,bind__ESR1,reg__RUVBL1,GiG,1,0.5,0.5,1.0,1.0
+e000848,bind__TUBB,reg__RELB,GiG,1,0.5,0.5,1.0,1.0
+e000849,bind__ABCB1,reg__PSMB8,GiG,1,0.5,0.5,1.0,1.0
+e000850,bind__OPRD1,reg__ADRB2,GiG,1,0.5,0.5,1.0,1.0
+e000851,bind__ESR2,reg__PLSCR1,GiG,1,0.5,0.5,1.0,1.0
+e000852,bind__CALM1,reg__CCNA2,GiG,1,0.5,0.5,1.0,1.0
+e000853,bind__CALM1,reg__CLTB,GiG,1,0.5,0.5,1.0,1.0
+e000854,bind__NR3C1,reg__NFKB2,GiG,1,0.5,0.5,1.0,1.0
+e000855,bind__CALM1,reg__SQSTM1,GiG,1,0.5,0.5,1.0,1.0
+e000856,bind__CALM2,reg__RELB,GiG,1,0.5,0.5,1.0,1.0
+e000857,bind__OPRD1,reg__GNAI1,GiG,1,0.5,0.5,1.0,1.0
+e000858,bind__NR3C1,reg__MMP1,GiG,1,0.5,0.5,1.0,1.0
+e000859,bind__AR,reg__CDC25A,GiG,1,0.5,0.5,1.0,1.0
+e000860,bind__TUBB,reg__NFKB2,GiG,1,0.5,0.5,1.0,1.0
+e000861,bind__ESR1,reg__TBP,GiG,1,0.5,0.5,1.0,1.0
+e000862,bind__ESR1,reg__TOP2A,GiG,1,0.5,0.5,1.0,1.0
+e000863,bind__ATP1A1,reg__HSPD1,GiG,1,0.5,0.5,1.0,1.0
+e000864,bind__ATP1A1,reg__SLC25A4,GiG,1,0.5,0.5,1.0,1.0
+e000865,bind__ESR1,reg__HSPA8,GiG,1,0.5,0.5,1.0,1.0
+e000866,bind__TOP2A,reg__CDK1,GiG,1,0.5,0.5,1.0,1.0
+e000867,bind__TOP2A,reg__MYC,GiG,1,0.5,0.5,1.0,1.0
+e000868,bind__ESR1,reg__HDAC2,GiG,1,0.5,0.5,1.0,1.0
+e000869,bind__ESR1,reg__KDM5A,GiG,1,0.5,0.5,1.0,1.0
+e000870,bind__ESR1,reg__TRAP1,GiG,1,0.5,0.5,1.0,1.0
+e000871,bind__ESR1,reg__FOXO3,GiG,1,0.5,0.5,1.0,1.0
+e000872,bind__NR3C1,reg__HDAC2,GiG,1,0.5,0.5,1.0,1.0
+e000873,bind__CALM2,reg__NFKB2,GiG,1,0.5,0.5,1.0,1.0
+e000874,bind__CALM3,reg__PSMD2,GiG,1,0.5,0.5,1.0,1.0
+e000875,bind__ABL1,reg__JUN,GiG,1,0.5,0.5,1.0,1.0
+e000876,bind__CALM3,reg__RELB,GiG,1,0.5,0.5,1.0,1.0
+e000877,bind__ESR1,reg__UGDH,GiG,1,0.5,0.5,1.0,1.0
+e000878,bind__SHBG,reg__CTSD,GiG,1,0.5,0.5,1.0,1.0
+e000879,bind__NR3C1,reg__CEBPB,GiG,1,0.5,0.5,1.0,1.0

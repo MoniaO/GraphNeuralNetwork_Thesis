@@ -1,9 +1,11 @@
 \babel@toc {english}{}\relax 
 \contentsline {table}{\numberline {4.1}{\ignorespaces Node types in the patient causal DAG.}}{15}{table.caption.6}%
-\contentsline {table}{\numberline {5.1}{\ignorespaces Components of the per-patient \texttt {HeteroData} graph representation.}}{19}{table.caption.9}%
-\contentsline {table}{\numberline {6.1}{\ignorespaces Transformers with HCR and residual}}{23}{table.caption.11}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Transformers with oversmoothing methods applied}}{24}{table.caption.12}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Oversmoothing metrics}}{24}{table.caption.13}%
-\contentsline {table}{\numberline {6.4}{\ignorespaces Results under full observability on the proxy dataset. The epoch was selected on the validation set. \texttt {---} in the HCR column denotes a model without the HCR branch. Lift is AUPRC divided by the prevalence baseline. Jumping knowledge was not used in any configuration.}}{25}{table.caption.14}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Results under restricted (\emph {bedside}) observability, $L=3$.}}{26}{table.caption.15}%
-\contentsline {table}{\numberline {6.6}{\ignorespaces Representation smoothing metrics under full observability, measured on the validation set. By the conventional reading, lower MAD and higher cosine similarity indicate stronger smoothing. Validation AUC is repeated for comparison. Note that residual configurations appear more smoothed by every metric while performing better.}}{26}{table.caption.16}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces Components of the per-patient \texttt {HeteroData} graph representation.}}{18}{table.caption.8}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Message-passing architectures without residual connections.}}{23}{table.caption.10}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces The same architectures with residual connections.}}{23}{table.caption.11}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Transformers with HCR and residual}}{24}{table.caption.12}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Transformers with oversmoothing methods applied}}{25}{table.caption.13}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Oversmoothing metrics}}{25}{table.caption.14}%
+\contentsline {table}{\numberline {8.1}{\ignorespaces Results under full observability on the proxy dataset. The epoch was selected on the validation set. \texttt {---} in the HCR column denotes a model without the HCR branch. Lift is AUPRC divided by the prevalence baseline. Jumping knowledge was not used in any configuration.}}{28}{table.caption.15}%
+\contentsline {table}{\numberline {8.2}{\ignorespaces Results under restricted (\emph {bedside}) observability, $L=3$.}}{29}{table.caption.16}%
+\contentsline {table}{\numberline {8.3}{\ignorespaces Representation smoothing metrics under full observability, measured on the validation set. By the conventional reading, lower MAD and higher cosine similarity indicate stronger smoothing. Validation AUC is repeated for comparison. Note that residual configurations appear more smoothed by every metric while performing better.}}{29}{table.caption.17}%

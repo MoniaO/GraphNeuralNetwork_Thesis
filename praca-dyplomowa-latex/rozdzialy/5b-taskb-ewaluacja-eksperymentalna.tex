@@ -1,16 +1,113 @@
 \subsection{Endpoint prediction}
 
-The first aim of experiments was to choose the best architecture for the problem. The following architecture was tested RGCN, SAGE, Transformer. 
-All of architecture is designed for homogenous graphs. As pharmaceutical data that we used was structured in heterogenous graph, all of architecture was implemented in heterogenous convolutional layer - heteroconv.  
+\subsubsection{Architecture}
 
-\subsubsection{Synthethic dataset}
+The first aim of experiments was to choose the best architecture for the problem. The following architecture was 
+tested RGCN, SAGE, Transformer. 
+ 
+The results for these architectures are reported in \cref{tab:arch-nores}.
+The following conventions apply to this and all subsequent result tables.
 
-The results for the presented experiments are following. 
+\emph{Lift} is the AUPRC divided by the prevalence baseline, that is, the
+factor by which the model improves over a random ranking; at a mean
+prevalence of $5.5\%$ a lift of $2.3$ corresponds to an AUPRC of $0.125$.
+
+\emph{\%~ceiling} is defined as
+%
+\begin{equation}
+  \frac{\mathrm{AUC} - 0.5}{\mathrm{AUC}_{\mathrm{Bayes}} - 0.5} \cdot 100\%,
+  \label{eq:pct-ceiling}
+\end{equation}
+%
+where $\mathrm{AUC}_{\mathrm{Bayes}} = 0.651$ is the Bayes ceiling averaged
+over the same eight endpoints. It expresses the
+share of attainable signal recovered by the model. Both terms are subtracted
+by $0.5$ so that a random classifier scores $0\%$.
+Unless stated otherwise, the epoch is selected on the validation set and
+test metrics are reported from that epoch.
+%R-GCN with residual connections was only run with mean aggregation and is therefore absent from the lower block.
+In \cref{tab:arch-nores} there are included only layers 1,3 and 6 to show the trend with the increased number of layers.
+
+Without residual connections the three architectures diverge sharply at
+L=6: GraphSAGE retains 82\% of the ceiling on the test set, while R-GCN
+and TransformerConv collapse to constant predictions (AUC=0.50). 
+%Since the root transform was disabled in all three, this cannot be attributed to an implicit skip connection. 
+The difference lies in how the neighbourhood term is normalised — mean aggregation in GraphSAGE against learned 
+softmax weights in TransformerConv and degree normalisation in R-GCN.
+
+
+    \begin{table}[htbp]
+      \centering
+      \caption{Message-passing architectures without residual connections.}
+      \label{tab:arch-nores}
+      {\sisetup{table-format=1.3}
+      \begin{tabular}{l c SSS S[table-format=2.1] SSS S[table-format=2.1]}
+        \toprule
+        & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
+        \cmidrule(lr){3-6}\cmidrule(lr){7-10}
+        Architecture & $L$ & {AUC} & {AUPRC} & {Lift} & {\% ceil.} & {AUC} & {AUPRC} & {Lift} & {\% ceil.} \\
+        \midrule
+        R-GCN            & 1 & 0.601 & 0.092 & 2.25 & 66.9 & 0.614 & 0.091 & 2.24 & 75.4 \\
+        GraphSAGE        & 1 & 0.598 & 0.092 & 2.25 & 65.3 & 0.609 & 0.091 & 2.25 & 72.1 \\
+        TransformerConv  & 1 & 0.622 & 0.125 & 2.30 & 81.2 & 0.620 & 0.120 & 2.20 & 79.6 \\
+        \addlinespace[2pt]
+        R-GCN            & 3 & 0.536 & 0.057 & 1.40 & 24.0 & 0.542 & 0.051 & 1.27 & 28.1 \\
+        GraphSAGE        & 3 & 0.607 & 0.089 & 2.19 & 71.3 & 0.601 & 0.096 & 2.37 & 67.1 \\
+        TransformerConv  & 3 & 0.550 & 0.083 & 1.53 & 33.2 & 0.552 & 0.073 & 1.35 & 34.5 \\
+        \addlinespace[2pt]
+        R-GCN            & 6 & 0.516 & 0.041 & 1.01 & 10.4 & 0.501 & 0.041 & 1.00 & 0.5 \\
+        GraphSAGE        & 6 & 0.596 & 0.087 & 2.13 & 63.7 & 0.624 & 0.088 & 2.15 & 82.1 \\
+        TransformerConv  & 6 & 0.527 & 0.065 & 1.20 & 18.0 & 0.500 & 0.054 & 1.00 & 0.0 \\
+        \bottomrule
+      \end{tabular}}
+    \end{table}
+
+    That's why the next step was applying residual connections described in \cref{subsec:oversmoothing} 
+    to see the capabilities of models with higher number of layers. The results are presented 
+    in \cref{tab:arch-res}.
+    
+    \begin{table}[htbp]
+      \centering
+      \caption{The same architectures with residual connections.}
+      \label{tab:arch-res}
+      {\sisetup{table-format=1.3}
+      \begin{tabular}{l c SSS S[table-format=2.1] SSS S[table-format=2.1]}
+        \toprule
+        & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
+        \cmidrule(lr){3-6}\cmidrule(lr){7-10}
+        Architecture & $L$ & {AUC} & {AUPRC} & {Lift} & {\% ceil.} & {AUC} & {AUPRC} & {Lift} & {\% ceil.} \\
+        \midrule
+        GraphSAGE        & 1 & 0.597 & 0.091 & 2.24 & 64.5 & 0.609 & 0.090 & 2.22 & 72.1 \\
+        TransformerConv  & 1 & 0.623 & 0.126 & 2.31 & 81.3 & 0.619 & 0.120 & 2.21 & 79.0 \\
+        \addlinespace[2pt]
+        GraphSAGE        & 3 & 0.623 & 0.098 & 2.41 & 81.8 & 0.605 & 0.094 & 2.32 & 69.4 \\
+        TransformerConv  & 3 & 0.628 & 0.135 & 2.47 & 85.2 & 0.620 & 0.123 & 2.27 & 79.7 \\
+        \addlinespace[2pt]
+        GraphSAGE        & 6 & 0.615 & 0.095 & 2.33 & 76.6 & 0.608 & 0.097 & 2.37 & 71.9 \\
+        TransformerConv  & 6 & 0.627 & 0.134 & 2.46 & 84.2 & 0.620 & 0.122 & 2.24 & 79.4 \\
+        \bottomrule
+      \end{tabular}}
+    \end{table}
+
+    With residual connections all three architectures converge to comparable
+    performance (\cref{tab:arch-res}): 69--80\% of the Bayes ceiling on the test
+    set, with differences of about 0.01 AUC. The choice of architecture for the remaining experiments was
+    therefore made on structural grounds. TransformerConv
+    is the only one of the three that conditions message passing on edge
+    attributes, which the audited DAG provides (mechanistic confidence, evidence
+    weight, effect size and sign). Since the
+    role of edge-level evidence is important for casual classification,
+    TransformerConv was selected for all subsequent experiments with HCR.
+
+\subsubsection{HCR configuration}
+
+%HCR configuration - dodac triple i wyniki bez residuali
+%nastepnie w polaczeniu z residualami 
 
 \begin{table}[htbp]
   \centering
   \scriptsize
-  \caption{Transformers with HCR and residual}
+  \caption{Transformers with HCR and residual} %pokazac bez residuali 
   \setlength{\tabcolsep}{2.5pt}
   \label{tab:bayes-hcr-jk}
   \begin{tabular}{clllcccccccc}
@@ -45,42 +142,48 @@ The results for the presented experiments are following.
   \bottomrule
   \end{tabular}
   \end{table}
-  
-  \begin{table}[htbp]
-  \centering
-  \scriptsize
-  \caption{Transformers with oversmoothing methods applied}
-  \setlength{\tabcolsep}{2.5pt}
-  \label{tab:bayes-antiovs}
-  \begin{tabular}{cllcccccccc}
-  \toprule
-   &  &  & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
-  \cmidrule(lr){4-7}\cmidrule(lr){8-11}
-  $L$ & Residual & Method & AUC & AUPRC & Lift & \%AUC & AUC & AUPRC & Lift & \%AUC \\
-  \midrule
-  1 & no & --- & 0.621 & 0.1252 & 2.30 & 80 & 0.618 & 0.1192 & 2.19 & 78 \\
-  \addlinespace[4pt]
-  3 & no & --- & 0.546 & 0.0850 & 1.56 & 30 & 0.550 & 0.0752 & 1.38 & 33 \\
-  3 & no & JK cat & 0.606 & 0.1383 & 2.54 & 71 & 0.615 & 0.1235 & 2.27 & 76 \\
-  3 & no & JK max & 0.622 & 0.1372 & 2.52 & 81 & 0.619 & 0.1240 & 2.28 & 79 \\
-  3 & no & DropEdge & 0.546 & 0.0800 & 1.47 & 30 & 0.547 & 0.0726 & 1.33 & 31 \\
-  3 & no & JK cat + DropEdge & 0.623 & 0.1386 & 2.55 & 81 & 0.623 & 0.1249 & 2.30 & 82 \\
-  3 & no & JK max + DropEdge & 0.626 & 0.1389 & 2.55 & 84 & 0.622 & 0.1219 & 2.24 & 81 \\
-  3 & yes & --- & 0.624 & 0.1353 & 2.48 & 82 & 0.618 & 0.1221 & 2.24 & 78 \\
-  3 & yes & JK cat & 0.624 & 0.1357 & 2.49 & 82 & 0.620 & 0.1236 & 2.27 & 80 \\
-  3 & yes & JK max & 0.626 & 0.1370 & 2.52 & 83 & 0.620 & 0.1234 & 2.27 & 79 \\
-  3 & yes & DropEdge & 0.626 & 0.1341 & 2.46 & 84 & 0.622 & 0.1237 & 2.27 & 81 \\
-  3 & yes & JK cat + DropEdge & \textbf{0.629} & 0.1362 & 2.50 & \textbf{85} & \textbf{0.624} & 0.1248 & 2.29 & \textbf{83} \\
-  3 & yes & JK max + DropEdge & 0.625 & 0.1359 & 2.50 & 83 & 0.622 & 0.1238 & 2.28 & 81 \\
-  \addlinespace[4pt]
-  6 & no & --- & 0.526 & 0.0671 & 1.23 & 17 & 0.524 & 0.0635 & 1.17 & 16 \\
-  6 & no & JK cat & 0.617 & \textbf{0.1415} & \textbf{2.60} & 78 & 0.621 & \textbf{0.1285} & \textbf{2.36} & 80 \\
-  6 & yes & --- & 0.624 & 0.1359 & 2.50 & 82 & 0.621 & 0.1225 & 2.25 & 80 \\
-  6 & yes & JK cat & 0.624 & 0.1352 & 2.48 & 82 & 0.622 & 0.1239 & 2.28 & 81 \\
-  \bottomrule
-  \end{tabular}
-  \end{table}
 
+\subsubsection{Oversmoothing}
+  
+For better understanding the phenomena that occurs with increased number of layers, the different oversmoothing
+methods were applied to see its influence on performance and oversmoothing phenomena.
+
+    \begin{table}[htbp]
+      \centering
+      \scriptsize
+      \caption{Transformers with oversmoothing methods applied}
+      \setlength{\tabcolsep}{2.5pt}
+      \label{tab:bayes-antiovs}
+      \begin{tabular}{cllcccccccc}
+      \toprule
+       &  &  & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
+      \cmidrule(lr){4-7}\cmidrule(lr){8-11}
+      $L$ & Residual & Method & AUC & AUPRC & Lift & \%AUC & AUC & AUPRC & Lift & \%AUC \\
+      \midrule
+      1 & no & --- & 0.621 & 0.1252 & 2.30 & 80 & 0.618 & 0.1192 & 2.19 & 78 \\
+      \addlinespace[4pt]
+      3 & no & --- & 0.546 & 0.0850 & 1.56 & 30 & 0.550 & 0.0752 & 1.38 & 33 \\
+      3 & no & JK cat & 0.606 & 0.1383 & 2.54 & 71 & 0.615 & 0.1235 & 2.27 & 76 \\
+      3 & no & JK max & 0.622 & 0.1372 & 2.52 & 81 & 0.619 & 0.1240 & 2.28 & 79 \\
+      3 & no & DropEdge & 0.546 & 0.0800 & 1.47 & 30 & 0.547 & 0.0726 & 1.33 & 31 \\
+      3 & no & JK cat + DropEdge & 0.623 & 0.1386 & 2.55 & 81 & 0.623 & 0.1249 & 2.30 & 82 \\
+      3 & no & JK max + DropEdge & 0.626 & 0.1389 & 2.55 & 84 & 0.622 & 0.1219 & 2.24 & 81 \\
+      3 & yes & --- & 0.624 & 0.1353 & 2.48 & 82 & 0.618 & 0.1221 & 2.24 & 78 \\
+      3 & yes & JK cat & 0.624 & 0.1357 & 2.49 & 82 & 0.620 & 0.1236 & 2.27 & 80 \\
+      3 & yes & JK max & 0.626 & 0.1370 & 2.52 & 83 & 0.620 & 0.1234 & 2.27 & 79 \\
+      3 & yes & DropEdge & 0.626 & 0.1341 & 2.46 & 84 & 0.622 & 0.1237 & 2.27 & 81 \\
+      3 & yes & JK cat + DropEdge & \textbf{0.629} & 0.1362 & 2.50 & \textbf{85} & \textbf{0.624} & 0.1248 & 2.29 & \textbf{83} \\
+      3 & yes & JK max + DropEdge & 0.625 & 0.1359 & 2.50 & 83 & 0.622 & 0.1238 & 2.28 & 81 \\
+      \addlinespace[4pt]
+      6 & no & --- & 0.526 & 0.0671 & 1.23 & 17 & 0.524 & 0.0635 & 1.17 & 16 \\
+      6 & no & JK cat & 0.617 & \textbf{0.1415} & \textbf{2.60} & 78 & 0.621 & \textbf{0.1285} & \textbf{2.36} & 80 \\
+      6 & yes & --- & 0.624 & 0.1359 & 2.50 & 82 & 0.621 & 0.1225 & 2.25 & 80 \\
+      6 & yes & JK cat & 0.624 & 0.1352 & 2.48 & 82 & 0.622 & 0.1239 & 2.28 & 81 \\
+      \bottomrule
+      \end{tabular}
+      \end{table}
+
+%dodac HCR oversmoothing 
   \begin{table}[htbp]
     \centering
     \footnotesize
@@ -113,141 +216,3 @@ The results for the presented experiments are following.
     \end{tabular}
     \end{table}
 
-
-\subsubsection{Proxy dataset}
-
-
-% =====================================================================
-%  PROXY DATASET RESULTS (Hetionet, cut A, proxy3_clean)
-%  1552 compounds, 20 endpoints, seed 42, conv_type = transformer,
-%  hidden = 64, batch = 8, lr = 1e-3, dropedge = 0.0
-%  Jumping knowledge: NOT used in any configuration.
-%
-%  PREAMBLE:
-%    \usepackage{booktabs}
-%    \usepackage{siunitx}
-%    \sisetup{detect-all, table-number-alignment=center}
-%
-%  Epoch selected on the validation set; test metrics recorded at the
-%  end of training.
-% =====================================================================
-
-
-% ---------------------------------------------------------------------
-% TABLE 1 - full observability regime
-% ---------------------------------------------------------------------
-\begin{table}[H]
-  \centering
-  \caption{Results under full observability on the proxy dataset. The
-    epoch was selected on the validation set. \texttt{---} in the HCR
-    column denotes a model without the HCR branch. Lift is AUPRC
-    divided by the prevalence baseline. Jumping knowledge was not used
-    in any configuration.}
-  \label{tab:proxy-full}
-  \sisetup{table-format=1.3}
-  \begin{tabular}{ccl SSS SSS}
-    \toprule
-    & & & \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
-    \cmidrule(lr){4-6}\cmidrule(lr){7-9}
-    $L$ & Residual & HCR & {AUC} & {AUPRC} & {Lift} & {AUC} & {AUPRC} & {Lift} \\
-    \midrule
-    1 & no  & ---            & 0.757 & 0.188 & 7.92  & 0.664 & 0.120 & 6.49 \\
-    1 & no  & nonlin.\ 9D    & 0.763 & 0.207 & 8.75  & 0.657 & 0.120 & 6.47 \\
-    1 & no  & typed 41D      & 0.759 & 0.194 & 8.17  & 0.663 & 0.116 & 6.29 \\
-    \addlinespace[2pt]
-    1 & yes & ---            & 0.756 & 0.196 & 8.26  & 0.669 & 0.106 & 5.72 \\
-    1 & yes & nonlin.\ 9D    & 0.756 & 0.201 & 8.49  & 0.670 & 0.135 & 7.31 \\
-    1 & yes & typed 41D      & 0.754 & 0.185 & 7.79  & 0.671 & 0.124 & 6.71 \\
-    \midrule
-    3 & no  & ---            & 0.756 & 0.199 & 8.38  & {\bfseries 0.722} & 0.152 & 8.24 \\
-    3 & no  & nonlin.\ 9D    & 0.805 & 0.275 & 11.62 & 0.686 & 0.169 & 9.14 \\
-    3 & no  & typed 41D      & 0.812 & 0.243 & 10.26 & 0.678 & 0.154 & 8.32 \\
-    \addlinespace[2pt]
-    3 & yes & ---            & 0.799 & 0.225 & 9.48  & 0.685 & 0.166 & 8.97 \\
-    3 & yes & nonlin.\ 9D    & 0.814 & 0.235 & 9.90  & 0.714 & 0.183 & 9.92 \\
-    3 & yes & typed 41D      & 0.802 & 0.255 & 10.76 & 0.678 & 0.151 & 8.16 \\
-    \midrule
-    6 & no  & ---            & 0.610 & 0.121 & 5.11  & 0.585 & 0.077 & 4.14 \\
-    6 & no  & nonlin.\ 9D    & 0.782 & 0.210 & 8.86  & 0.680 & 0.174 & 9.42 \\
-    6 & no  & typed 41D      & 0.794 & 0.235 & 9.89  & 0.680 & 0.126 & 6.84 \\
-    \addlinespace[2pt]
-    6 & yes & ---            & 0.817 & 0.255 & 10.77 & 0.728 & 0.173 & 9.36 \\
-    6 & yes & nonlin.\ 9D    & {\bfseries 0.832} & {\bfseries 0.310} & {\bfseries 13.06} & {\bfseries 0.760} & 0.179 & 9.70 \\
-    6 & yes & typed 41D      & 0.815 & 0.284 & 11.99 & 0.744 & {\bfseries 0.239} & {\bfseries 12.91} \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-
-% ---------------------------------------------------------------------
-% TABLE 2 - bedside observability regime
-% ---------------------------------------------------------------------
-\begin{table}[H]
-  \centering
-  \caption{Results under restricted (\emph{bedside}) observability,
-    $L=3$.}
-  \label{tab:proxy-bedside}
-  \sisetup{table-format=1.3}
-  \begin{tabular}{cl SS SSS}
-    \toprule
-    & & \multicolumn{2}{c}{Validation} & \multicolumn{3}{c}{Test} \\
-    \cmidrule(lr){3-4}\cmidrule(lr){5-7}
-    Residual & HCR & {AUC} & {Lift} & {AUC} & {AUPRC} & {Lift} \\
-    \midrule
-    no  & ---             & 0.568 & 4.20  & 0.556 & 0.062 & 3.36 \\
-    no  & lin.\ 41D       & 0.730 & 10.09 & 0.681 & 0.150 & 8.10 \\
-    no  & nonlin.\ 41D    & 0.751 & 9.39  & 0.678 & 0.154 & 8.35 \\
-    no  & typed 41D       & 0.753 & 9.45  & 0.679 & 0.135 & 7.31 \\
-    \addlinespace[2pt]
-    yes & ---             & 0.568 & 4.39  & 0.555 & 0.076 & 4.14 \\
-    yes & lin.\ 41D       & 0.732 & 10.78 & 0.683 & 0.168 & 9.10 \\
-    yes & nonlin.\ 41D    & 0.754 & 10.24 & 0.679 & 0.164 & 8.89 \\
-    yes & typed 41D       & 0.754 & 10.18 & 0.678 & 0.173 & 9.33 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-
-% ---------------------------------------------------------------------
-% TABLE 3 - representation smoothing metrics
-% ---------------------------------------------------------------------
-\begin{table}[H]
-  \centering
-  \caption{Representation smoothing metrics under full observability,
-    measured on the validation set. By the conventional reading, lower
-    MAD and higher cosine similarity indicate stronger smoothing.
-    Validation AUC is repeated for comparison. Note that residual
-    configurations appear more smoothed by every metric while
-    performing better.}
-  \label{tab:proxy-oversmoothing}
-  \sisetup{table-format=1.4}
-  \begin{tabular}{ccl SSSS S[table-format=1.3]}
-    \toprule
-    $L$ & Residual & HCR & {MAD} & {Cos.\ sim.} & {Cos.\ sim.\ (ep.)} & {Dirichlet} & {AUC} \\
-    \midrule
-    1 & no  & ---         & 0.7691 & 0.6216 & 0.8246 & 0.2706 & 0.757 \\
-    1 & no  & nonlin.\ 9D & 0.7629 & 0.6142 & 0.7844 & 0.2495 & 0.763 \\
-    1 & no  & typed 41D   & 0.7684 & 0.6191 & 0.8148 & 0.2706 & 0.759 \\
-    \addlinespace[2pt]
-    1 & yes & ---         & 0.7363 & 0.7042 & 0.7606 & 0.5724 & 0.756 \\
-    1 & yes & nonlin.\ 9D & 0.7448 & 0.6946 & 0.7060 & 0.5048 & 0.756 \\
-    1 & yes & typed 41D   & 0.7410 & 0.7026 & 0.7899 & 0.5022 & 0.754 \\
-    \midrule
-    3 & no  & ---         & 0.6515 & 0.6798 & 0.9582 & 0.1175 & 0.756 \\
-    3 & no  & nonlin.\ 9D & 0.7067 & 0.6641 & 0.8365 & 0.0904 & 0.805 \\
-    3 & no  & typed 41D   & 0.7235 & 0.6314 & 0.7333 & 0.0972 & 0.812 \\
-    \addlinespace[2pt]
-    3 & yes & ---         & 0.4842 & 0.8319 & 0.7772 & 0.3712 & 0.799 \\
-    3 & yes & nonlin.\ 9D & 0.5517 & 0.7782 & 0.7752 & 0.3905 & 0.814 \\
-    3 & yes & typed 41D   & 0.5113 & 0.8275 & 0.7132 & 0.4044 & 0.802 \\
-    \midrule
-    6 & no  & ---         & 0.7060 & 0.6530 & 0.8604 & 0.1024 & 0.610 \\
-    6 & no  & nonlin.\ 9D & 0.7101 & 0.6495 & 0.7815 & 0.0892 & 0.782 \\
-    6 & no  & typed 41D   & 0.7222 & 0.6408 & 0.8657 & 0.0949 & 0.794 \\
-    \addlinespace[2pt]
-    6 & yes & ---         & 0.5634 & 0.7975 & 0.7949 & 0.3143 & 0.817 \\
-    6 & yes & nonlin.\ 9D & 0.5030 & 0.8174 & 0.6658 & 0.2636 & 0.832 \\
-    6 & yes & typed 41D   & 0.5623 & 0.8095 & 0.8472 & 0.3930 & 0.815 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
