@@ -244,3 +244,17 @@ data/processed/
 
 # macOS
 .DS_Store
+
+#latex
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
