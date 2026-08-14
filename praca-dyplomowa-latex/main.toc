@@ -1,9 +1,0 @@
-\babel@toc {polish}{}\relax 
-\contentsline {section}{\numberline {1\relax .\enspace }Wstęp}{9}{section.1}%
-\contentsline {section}{\numberline {2\relax .\enspace }Cel pracy}{10}{section.2}%
-\contentsline {section}{\numberline {3\relax .\enspace }Przegląd literaratury}{11}{section.3}%
-\contentsline {section}{\numberline {4\relax .\enspace }Opis rozwiązania}{12}{section.4}%
-\contentsline {section}{\numberline {5\relax .\enspace }Wyniki ewaluacji eksperymentalnej}{13}{section.5}%
-\contentsline {section}{\numberline {6\relax .\enspace }Podsumowanie}{14}{section.6}%
-\contentsline {section}{Spis rysunków}{15}{section.6}%
-\contentsline {section}{Spis tabel}{15}{section.6}%
