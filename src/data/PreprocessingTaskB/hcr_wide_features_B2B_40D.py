@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-"""
+"""HCR (Duda) jako "wide" sciezka Wide&Deep dla Task B - binarne pary
+predyktor<->endpoint, wprost wg sekcji 9.1/9.2 dokumentu HCR/GHCR.
 
 Rozniczka wzgledem "bezpiecznej" wersji edge-level (miedzy sasiadami w DAG,
 cohort-level, bez etykiet): TUTAJ wspolczynnik a_11^(e) jest liczony z
@@ -24,9 +25,7 @@ build_patient_dag_heterodata.py (dolaczenie) i gnn_node.py (dodanie
 do logitu w forward()).
 """
 
-from typing import Dict, List, Optional, Tuple
-
-import hashlib
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -53,81 +52,14 @@ def get_binary_direct_parents(
         parents_by_endpoint[ep] = binary_parents
     return parents_by_endpoint
 
-#limit not only to binary relation between parent and endpoint, but also to the parent node type (drug_exposure, mechanism, adr_or_intermediate_state, patient_context)
-def get_direct_parents_by_type(
-    nodes: pd.DataFrame,
-    edges: pd.DataFrame,
-    target_endpoints: List[str],
-    excluded_nodes: set,
-) -> Dict[str, List[Tuple[str, str]]]:
 
-    value_type = infer_value_types(nodes)
-    parents_by_endpoint: Dict[str, List[Tuple[str, str]]] = {}
-    for ep in target_endpoints:
-        parents = edges.loc[edges["target"] == ep, "source"].tolist()
-        typed_parents = [
-            (p, value_type.get(p, "binary")) for p in parents if p not in excluded_nodes
-        ]
-        parents_by_endpoint[ep] = typed_parents
-    return parents_by_endpoint
-
-
-# parent endpoint nodes
-PARENT_NODE_TYPES = ["drug_exposure", "mechanism", "adr_or_intermediate_state", "patient_context"]
-
-# calcualtion for node type to encode different encoders per type
-def get_direct_parents_by_node_type(
-    nodes: pd.DataFrame,
-    edges: pd.DataFrame,
-    target_endpoints: List[str],
-    excluded_nodes: set,
-) -> Dict[str, Dict[str, List[Tuple[str, str]]]]:
-
-    value_type = infer_value_types(nodes)
-    node_type_map = dict(zip(nodes["node"], nodes["node_type"]))
-    result: Dict[str, Dict[str, List[Tuple[str, str]]]] = {}
-    for ep in target_endpoints:
-        parents = edges.loc[edges["target"] == ep, "source"].tolist()
-        by_type: Dict[str, List[Tuple[str, str]]] = {nt: [] for nt in PARENT_NODE_TYPES}
-        for p in parents:
-            if p in excluded_nodes:
-                continue
-            nt = node_type_map.get(p)
-            if nt not in PARENT_NODE_TYPES:
-                print(f"[get_direct_parents_by_node_type] Pomijam rodzica '{p}' "
-                      f"(endpoint={ep}) - nieoczekiwany node_type={nt!r}, "
-                      f"spoza PARENT_NODE_TYPES={PARENT_NODE_TYPES}.")
-                continue
-            by_type[nt].append((p, value_type.get(p, "binary")))
-        result[ep] = by_type
-    return result
-
-#reliability of edges: mechanistic_confidence * evidence_weights
-def get_edge_reliability_weights(
-    edges: pd.DataFrame,
-    parents_by_endpoint: Dict[str, List],
-) -> Dict[str, Dict[str, float]]:
-
-    weights: Dict[str, Dict[str, float]] = {}
-    for ep, parents in parents_by_endpoint.items():
-        parent_names = [p[0] if isinstance(p, tuple) else p for p in parents]
-        ep_weights: Dict[str, float] = {}
-        for p in parent_names:
-            row = edges[(edges["source"] == p) & (edges["target"] == ep)]
-            if len(row) == 0:
-                ep_weights[p] = 1.0
-                continue
-            conf = row["mechanistic_confidence"].iloc[0]
-            evid = row["evidence_weight"].iloc[0]
-            conf = float(conf) if pd.notna(conf) else 1.0
-            evid = float(evid) if pd.notna(evid) else 1.0
-            ep_weights[p] = float(np.clip(conf * evid, 1e-3, None))
-        weights[ep] = ep_weights
-    return weights
-
-#value type based on nodes file 
 def infer_value_types(nodes: pd.DataFrame) -> Dict[str, str]:
-
+    """value_type z metadanych, z fallbackiem dla wezlow gdzie kolumna jest
+    pusta (patrz analiza: 106/155 wezlow nie ma zadeklarowanego value_type -
+    w tym WSZYSTKIE zmienne ciagle z patient_context, np. age/baseline_egfr).
+    Fallback bazuje na znanej liscie zmiennych ciaglych/count z patient_context;
+    wszystko inne bez deklaracji traktowane jako binarne (co odpowiada
+    faktycznej strukturze reszty grafu - patrz weryfikacja w rozmowie)."""
     continuous_pc = {
         "age", "baseline_alt_ast", "baseline_egfr", "baseline_potassium",
         "baseline_sodium", "monitoring_intensity",
@@ -148,8 +80,9 @@ def infer_value_types(nodes: pd.DataFrame) -> Dict[str, str]:
             result[node] = "binary"
     return result
 
-#binary approach
+
 def _phi1_binary(values: np.ndarray, p: float) -> np.ndarray:
+    """Standaryzowany kontrast binarny: (x-p)/sqrt(p(1-p))."""
     denom = np.sqrt(max(p * (1.0 - p), 1e-12))
     return (values - p) / denom
 
@@ -200,110 +133,43 @@ PAIR_EVIDENCE_CHANNELS = [
     "a11", "nmi", "scaled_log_or", "rd", "scaled_log_lift",  # classical4 + a11
     "prevalence_parent", "prevalence_endpoint",              # marginesy (E3)
     "support",                                                 # jaki % train mial oba zmierzone
-    "s_evidence"
 ]
 N_PAIR_EVIDENCE_CHANNELS = len(PAIR_EVIDENCE_CHANNELS)
 
-#legendre for continous / count relation
-def _legendre_psi(u: np.ndarray, degree: int = 4) -> np.ndarray:
-    """[N, degree] macierz przesunietych, znormalizowanych wielomianow
-    Legendre'a: psi_k(u) = sqrt(2k+1)*P_k(2u-1), k=1..degree, u w (0,1)
-    (sekcja 5 dokumentu HCR Task A)."""
-    x = 2.0 * u - 1.0
-    P = [np.ones_like(x), x]
-    for k in range(2, degree + 1):
-        P.append(((2 * k - 1) * x * P[-1] - (k - 1) * P[-2]) / k)
-    return np.stack([np.sqrt(2 * k + 1) * P[k] for k in range(1, degree + 1)], axis=1)
 
-
-def _train_ecdf_transform(x_train: np.ndarray, x_query: np.ndarray, eps: float = 1e-4) -> np.ndarray:
-    """Pseudo-obserwacja u=EDF_train(x) w (0,1), dopasowana WYLACZNIE na
-    train, zastosowana do dowolnych wartosci x_query (w tym spoza zakresu
-    train - wtedy przycieta do (eps, 1-eps), analogicznie do standardowego
-    zachowania EDF poza obserwowanym zakresem)."""
-    sorted_train = np.sort(x_train)
-    N = len(sorted_train)
-    ranks = np.searchsorted(sorted_train, x_query, side="right")
-    u = (ranks - 0.5) / N
-    return np.clip(u, eps, 1 - eps)
-
-#jitter for continous
-def _deterministic_jitter(patient_ids: np.ndarray, var_name: str, seed: int = 0) -> np.ndarray:
-    """xi_i w (0,1), deterministyczne z (patient_id, nazwa_zmiennej, seed) -
-    powtarzalne miedzy uruchomieniami, bez zaleznosci od globalnego RNG"""
-    xi = np.empty(len(patient_ids), dtype=np.float64)
-    for i, pid in enumerate(patient_ids):
-        h = hashlib.sha256(f"{pid}_{var_name}_{seed}".encode()).hexdigest()
-        xi[i] = (int(h[:16], 16) % 10_000_000) / 10_000_000.0
-    return xi
-
-
-def _count_to_uniform(
-    x_train: np.ndarray, x_query: np.ndarray, patient_ids_query: np.ndarray,
-    var_name: str, seed: int = 0, eps: float = 1e-4,
-) -> np.ndarray:
-    """Deterministyczny distributional jitter dla count (sekcja 6):
-    u = F_C(c^-) + xi*P(C=c), rozklada remisy wewnatrz skoku dystrybuanty
-    zamiast jednego wspolnego midranku."""
-    values, counts = np.unique(x_train, return_counts=True)
-    N = len(x_train)
-    cdf_left: Dict[float, float] = {}
-    pmf: Dict[float, float] = {}
-    cum = 0.0
-    for v, c in zip(values, counts):
-        cdf_left[v] = cum / N
-        pmf[v] = c / N
-        cum += c
-    max_val = values[-1] if len(values) else 0.0
-
-    def _lookup(v: float) -> Tuple[float, float]:
-        if v in cdf_left:
-            return cdf_left[v], pmf[v]
-        # wartosc spoza train (widziana tylko w valid/test) - bezpieczny,
-        # udokumentowany fallback: traktuj jak "powyzej zakresu train"
-        if v > max_val:
-            return 1.0 - eps, eps
-        return eps, eps
-
-    cdf_arr = np.empty(len(x_query))
-    pmf_arr = np.empty(len(x_query))
-    for i, v in enumerate(x_query):
-        cdf_arr[i], pmf_arr[i] = _lookup(v)
-
-    xi = _deterministic_jitter(patient_ids_query, var_name, seed)
-    u = cdf_arr + xi * pmf_arr
-    return np.clip(u, eps, 1 - eps)
-
-
-def _pairwise_coefficients_loo(
-    y_train: np.ndarray, basis_train: np.ndarray, train_positions: np.ndarray, n_total: int,
-) -> Tuple[np.ndarray, np.ndarray]:
-
-    N = len(y_train)
-    K = basis_train.shape[1]
-    p_e_full = float(y_train.mean())
-    denom_full = np.sqrt(max(p_e_full * (1 - p_e_full), 1e-12))
-
-    S_g = basis_train.sum(axis=0)                      # [K]
-    S_Yg = (y_train[:, None] * basis_train).sum(axis=0)  # [K]
-    a_full = (S_Yg / N - p_e_full * (S_g / N)) / denom_full  # [K]
-
-    p_e_loo = (N * p_e_full - y_train) / (N - 1)                       # [N]
-    g_mean_loo = (S_g[None, :] - basis_train) / (N - 1)                # [N,K]
-    Yg_mean_loo = (S_Yg[None, :] - y_train[:, None] * basis_train) / (N - 1)  # [N,K]
-    cov_loo = Yg_mean_loo - p_e_loo[:, None] * g_mean_loo
-    denom_loo = np.sqrt(np.clip(p_e_loo * (1 - p_e_loo), 1e-12, None))
-    a_loo = cov_loo / denom_loo[:, None]
-
-    return a_loo, a_full
-
-#nonlinear pair coder
 def compute_hcr_pair_evidence(
     samples_df: pd.DataFrame,
     parents_by_endpoint: Dict[str, List[str]],
     train_patient_ids: set,
 ) -> dict:
- 
+    """Wersja "E3+E4" (nieliniowy koder par) zamiast pojedynczej, liniowo
+    wazonej liczby s_p,e (to byla wersja "E5 linear" z hcr_wide_features -
+    patrz compute_hcr_wide_scores). Zamiast sumowac rodzicow do jednej
+    liczby PRZED wejsciem do modelu, zwracamy per-rodzica WEKTOR dowodowy
+    (9 kanalow, PAIR_EVIDENCE_CHANNELS) - nieliniowe polaczenie dzieje sie
+    W MODELU (HCRPairEncoder w gnn_common.py), nie tutaj. To jest zgodne
+    z glownym wnioskiem architektury Task A: "encode each statistical pair
+    nonlinearly before mixing it with other pair roles" - plaska konkatenacja/
+    suma PRZED nieliniowoscia byla ich najgorszym wariantem (B2, gorszy niz
+    baseline).
+
+    Padding: rozna liczba rodzicow per endpoint (1-12) -> wszystkie
+    endpointy paddowane do wspolnego max_parents, z maska (1=prawdziwy
+    rodzic, 0=padding). Model MUSI uzyc maski przy poolingu (masked mean),
+    inaczej padding (zera) zanizy wynik dla endpointow z mniejsza liczba
+    rodzicow.
+
+    Zwraca slownik:
+        "endpoint_order": lista nazw endpointow, w kolejnosci uzytej w tensorach
+        "features": np.ndarray [n_patients, n_endpoints, max_parents, 9]
+        "mask":     np.ndarray [n_patients, n_endpoints, max_parents] (1.0/0.0)
+        "patient_id": np.ndarray [n_patients] (kolejnosc wierszy jak w samples_df)
+
+    Leakage: DOKLADNIE ten sam mechanizm co w compute_hcr_wide_scores -
+    train dostaje w pelni scisly leave-one-out (a11/nmi/OR/RD/lift razem,
+    z tej samej, jednej tabeli kontyngencji p_r_loo/p_e_loo/p11_loo per
+    pacjent), valid/test dostaja pelny (nie-LOO) wspolczynnik z train.
+    """
     if "patient_id" not in samples_df.columns:
         raise ValueError("samples_df musi zawierac kolumne 'patient_id'.")
 
@@ -388,7 +254,6 @@ def compute_hcr_pair_evidence(
             block[train_positions, 6] = p_r_loo
             block[train_positions, 7] = p_e_loo
             # support (8) i marginesy pelne (6,7) dla valid/test zostaja jak wyzej
-            block[:, 9] = block[:, 1] * block[:, 0] # a11 * phi1_patient
 
             features[:, e_idx, r_idx, :] = block
             mask[:, e_idx, r_idx] = 1.0
@@ -401,7 +266,22 @@ def compute_hcr_pair_evidence(
     }
 
 
-# --- "enriched 40D" version (+ 1 activation channel for patient) ---
+# --- Wersja "enriched 40D" (+ 1 kanal aktywacji pacjenta = 41 lacznie) ---
+# Odwzorowuje uklad 40 slotow z dokumentu Task A (sekcja 8), dla binary-binary:
+#   0-15  : splaszczona macierz 4x4 (aktywne tylko [0,0]=a11, reszta padding)
+#   16-19 : energia calkowita, srednia energia, udzial niskiego rzedu, max|a_jk|
+#   20-23 : marginesy U (rodzic): prevalencja, entropia, [rezerwa x2 dla przyszlych
+#           continuous/count - skosnosc/rozrzut, dzis 0 bo binary ma tylko 1 parametr]
+#   24-27 : marginesy V (endpoint): jw.
+#   28-31 : joint activity (p11), nadwyzka nad niezaleznoscia, log-lift, rzadkosc
+#   32    : support (N_train / N_wszystkich)
+#   33    : maska estymowalnosci (0/1 - czy p_r,p_e sa w bezpiecznym zakresie)
+#   34-36 : one-hot typu U (binary/count/continuous) - dzis zawsze [1,0,0]
+#   37-39 : one-hot typu V - dzis zawsze [1,0,0]
+# + kanal 40 (dolozony NA KONCU, poza jej 40D): phi1_patient - aktywacja
+#   PACJENTA. U kolezanki h(U,V) jest czysto kohortowe (Task A nie ma pojedynczego
+#   pacjenta przypisanego do kandydackiej krawedzi); u nas jest to konieczne, bo
+#   przewidujemy KONKRETNEGO pacjenta - stad 41, nie 40, kanalow.
 PAIR_EVIDENCE_CHANNELS_40D = (
     [f"matrix_{i}" for i in range(16)]
     + ["energy_total", "energy_mean", "energy_low_order_frac", "energy_max_abs"]
@@ -412,10 +292,9 @@ PAIR_EVIDENCE_CHANNELS_40D = (
     + ["type_U_binary", "type_U_count", "type_U_continuous"]
     + ["type_V_binary", "type_V_count", "type_V_continuous"]
     + ["phi1_patient"]
-    + ["s_evidence"]
 )
 N_PAIR_EVIDENCE_CHANNELS_40D = len(PAIR_EVIDENCE_CHANNELS_40D)
-assert N_PAIR_EVIDENCE_CHANNELS_40D == 42, N_PAIR_EVIDENCE_CHANNELS_40D
+assert N_PAIR_EVIDENCE_CHANNELS_40D == 41, N_PAIR_EVIDENCE_CHANNELS_40D
 
 
 def _binary_entropy(p: np.ndarray, eps: float = 1e-6) -> np.ndarray:
@@ -427,10 +306,21 @@ def compute_hcr_pair_evidence_40d(
     samples_df: pd.DataFrame,
     parents_by_endpoint: Dict[str, List[str]],
     train_patient_ids: set,
-    edges: Optional[pd.DataFrame] = None,
 ) -> dict:
-  
-    reliability = get_edge_reliability_weights(edges, parents_by_endpoint) if edges is not None else None
+    """Wzbogacona wersja compute_hcr_pair_evidence - 41 kanalow zamiast 9,
+    wiernie odwzorowujaca uklad 40D z dokumentu HCR Task A (padded matrix +
+    energia + marginesy + joint activity/rzadkosc + support + maska + typy),
+    plus 1 kanal aktywacji pacjenta (patrz uzasadnienie w komentarzu wyzej).
+
+    Leakage: DOKLADNIE ten sam mechanizm co compute_hcr_pair_evidence -
+    wszystkie statystyki zalezne od etykiety endpointu (a11 w macierzy,
+    energia, joint_activity, excess_over_independence, log_lift) licz one
+    z TEJ SAMEJ, juz zweryfikowanej trojki p_r_loo/p_e_loo/p11_loo per
+    pacjent treningowy (scisly leave-one-out, nie przyblizenie). Marginesy
+    czysto jednostronne (prevalencja/entropia rodzica) rowniez LOO'wane dla
+    spojnosci, mimo ze same w sobie nie tworza przecieku etykiety - to samo
+    podejscie "lepiej dmuchac na zimne", ktore przyjelysmy wczesniej.
+    """
     if "patient_id" not in samples_df.columns:
         raise ValueError("samples_df musi zawierac kolumne 'patient_id'.")
 
@@ -519,7 +409,6 @@ def compute_hcr_pair_evidence_40d(
                 block[:, 37] = 1.0  # type_V_binary
                 # 40: aktywacja pacjenta
                 block[:, 40] = phi1
-                block[:, 41] = block[:, 0] * block[:, 40]   # matrix_0 * phi1_patient
                 return block
 
             denom_loo_x = np.sqrt(np.clip(p_r_loo * (1 - p_r_loo), 1e-12, None))
@@ -532,7 +421,7 @@ def compute_hcr_pair_evidence_40d(
 
             features[:, e_idx, r_idx, :] = block_full
             features[train_positions, e_idx, r_idx, :] = block_train
-            mask[:, e_idx, r_idx] = reliability[endpoint][r] if reliability is not None else 1.0
+            mask[:, e_idx, r_idx] = 1.0
 
     return {
         "endpoint_order": endpoint_order,
@@ -540,149 +429,6 @@ def compute_hcr_pair_evidence_40d(
         "mask": mask,
         "patient_id": samples_df["patient_id"].to_numpy(),
     }
-
-
-def compute_hcr_pair_evidence_mixed(
-    samples_df: pd.DataFrame,
-    parents_by_endpoint: Dict[str, List[Tuple[str, str]]],
-    train_patient_ids: set,
-    edges: Optional[pd.DataFrame] = None,
-    seed: int = 0,
-) -> dict:
-
-    if "patient_id" not in samples_df.columns:
-        raise ValueError("samples_df musi zawierac kolumne 'patient_id'.")
-
-    train_mask = samples_df["patient_id"].isin(train_patient_ids)
-    train_df = samples_df.loc[train_mask]
-    n_train = len(train_df)
-    if n_train < 2:
-        raise ValueError("Za malo pacjentow treningowych do policzenia HCR (potrzeba >= 2).")
-    n_patients = len(samples_df)
-    train_positions = np.flatnonzero(train_mask.to_numpy())
-    all_patient_ids = samples_df["patient_id"].to_numpy()
-    train_patient_ids_arr = train_df["patient_id"].to_numpy()
-
-    reliability = get_edge_reliability_weights(edges, parents_by_endpoint) if edges is not None else None
-
-    endpoint_order = list(parents_by_endpoint.keys())
-    max_parents = max((len(p) for p in parents_by_endpoint.values()), default=0)
-    if max_parents == 0:
-        raise ValueError("Zaden endpoint nie ma zadnych rodzicow - sprawdz parents_by_endpoint.")
-
-    type_onehot = {"binary": (1.0, 0.0, 0.0), "count": (0.0, 1.0, 0.0), "continuous": (0.0, 0.0, 1.0)}
-
-    features = np.zeros(
-        (n_patients, len(endpoint_order), max_parents, N_PAIR_EVIDENCE_CHANNELS_40D), dtype=np.float32
-    )
-    mask = np.zeros((n_patients, len(endpoint_order), max_parents), dtype=np.float32)
-
-    for e_idx, endpoint in enumerate(endpoint_order):
-        parents = parents_by_endpoint[endpoint]
-        if not parents:
-            continue
-        if endpoint not in samples_df.columns:
-            raise ValueError(f"Brak kolumny endpointu '{endpoint}' w samples_df.")
-
-        y_train = train_df[endpoint].to_numpy(dtype=float)
-        p_e_full = float(y_train.mean())
-
-        for r_idx, (r, r_type) in enumerate(parents):
-            if r not in samples_df.columns:
-                raise ValueError(f"Brak kolumny rodzica '{r}' w samples_df (endpoint={endpoint}).")
-
-            x_train = train_df[r].to_numpy(dtype=float)
-            x_all = samples_df[r].to_numpy(dtype=float)
-
-            if r_type == "binary":
-                p_r_full = float(x_train.mean())
-                basis_train = ((x_train - p_r_full) / np.sqrt(max(p_r_full * (1 - p_r_full), 1e-12)))[:, None]
-                basis_all = ((x_all - p_r_full) / np.sqrt(max(p_r_full * (1 - p_r_full), 1e-12)))[:, None]
-                marg1, marg2 = p_r_full, _binary_entropy(np.array([p_r_full]))[0]
-            elif r_type in ("count", "continuous"):
-                if r_type == "continuous":
-                    u_train = _train_ecdf_transform(x_train, x_train)
-                    u_all = _train_ecdf_transform(x_train, x_all)
-                else:  # count
-                    u_train = _count_to_uniform(x_train, x_train, train_patient_ids_arr, r, seed)
-                    u_all = _count_to_uniform(x_train, x_all, all_patient_ids, r, seed)
-                basis_train = _legendre_psi(u_train, degree=4)
-                basis_all = _legendre_psi(u_all, degree=4)
-                # Skosnosc (train-only) jako bezskalowy deskryptor ksztaltu
-                # marginesu - pozycja 2 (kurtoza) zarezerwowana na przyszlosc.
-                x_std = x_train.std()
-                skew = float(((x_train - x_train.mean()) ** 3).mean() / (x_std ** 3 + 1e-12)) if x_std > 1e-8 else 0.0
-                marg1, marg2 = skew, 0.0
-            else:
-                raise ValueError(f"Nieznany value_type={r_type!r} dla rodzica '{r}'.")
-
-            a_loo, a_full = _pairwise_coefficients_loo(y_train, basis_train, train_positions, n_patients)
-            K = basis_train.shape[1]
-
-            energy_full = float((a_full ** 2).sum())
-            energy_loo = (a_loo ** 2).sum(axis=1)  # [N_train]
-
-            block = np.zeros((n_patients, N_PAIR_EVIDENCE_CHANNELS_40D), dtype=np.float32)
-
-            block[:, 0:K] = a_full[None, :]
-            block[:, 16] = energy_full
-            block[:, 17] = energy_full / max(K, 1)
-            block[:, 18] = (a_full[0] ** 2) / energy_full if energy_full > 1e-12 else 0.0
-            block[:, 19] = float(np.abs(a_full).max()) if K else 0.0
-            block[:, 20] = marg1
-            block[:, 21] = marg2
-            block[:, 24] = p_e_full
-            block[:, 25] = _binary_entropy(np.array([p_e_full]))[0]
-            block[:, 32] = float(n_train / n_patients) if n_patients else 0.0
-            block[:, 33] = 1.0
-            block[:, 34:37] = type_onehot[r_type]
-            block[:, 37:40] = type_onehot["binary"]  # V (endpoint) zawsze binarny
-            block[:, 40] = basis_all[:, 0]  # aktywacja pacjenta = 1. wspolrzedna bazy
-  
-            block[train_positions, 0:K] = a_loo
-            block[train_positions, 16] = energy_loo
-            block[train_positions, 17] = energy_loo / max(K, 1)
-            with np.errstate(divide="ignore", invalid="ignore"):
-                block[train_positions, 18] = np.where(energy_loo > 1e-12, (a_loo[:, 0] ** 2) / energy_loo, 0.0)
-            block[train_positions, 19] = np.abs(a_loo).max(axis=1) if K else 0.0
-            block[train_positions, 40] = basis_train[:, 0]
-            block[:, 41] = block[:, 0] * block[:, 40]
-            
-
-            features[:, e_idx, r_idx, :] = block
-            mask_val = (reliability[endpoint][r] if reliability is not None else 1.0)
-            mask[:, e_idx, r_idx] = mask_val
-
-    return {
-        "endpoint_order": endpoint_order,
-        "features": features,
-        "mask": mask,
-        "patient_id": samples_df["patient_id"].to_numpy(),
-    }
-
-
-def compute_hcr_pair_evidence_by_node_type(
-    samples_df: pd.DataFrame,
-    parents_by_endpoint_by_type: Dict[str, Dict[str, List[Tuple[str, str]]]],
-    train_patient_ids: set,
-    edges: Optional[pd.DataFrame] = None,
-    seed: int = 0,
-) -> Dict[str, Optional[dict]]:
-
-    out: Dict[str, Optional[dict]] = {}
-    for nt in PARENT_NODE_TYPES:
-        parents_this_type = {
-            ep: by_type.get(nt, [])
-            for ep, by_type in parents_by_endpoint_by_type.items()
-        }
-        has_any = any(len(v) > 0 for v in parents_this_type.values())
-        if not has_any:
-            out[nt] = None
-            continue
-        out[nt] = compute_hcr_pair_evidence_mixed(
-            samples_df, parents_this_type, train_patient_ids, edges=edges, seed=seed
-        )
-    return out
 
 
 def compute_hcr_wide_scores(
@@ -690,7 +436,20 @@ def compute_hcr_wide_scores(
     parents_by_endpoint: Dict[str, List[str]],
     train_patient_ids: set,
 ) -> pd.DataFrame:
+    """Zwraca DataFrame indeksowany patient_id, kolumny = endpointy z
+    parents_by_endpoint, wartosci = s_p,e = suma po rodzicach
+    a_r^(e) * phi_1(x_pr) (agregacja: prosta suma, patrz sekcja 9.2 -
+    dokument nie narzuca konkretnego agregatora poza "Aggregator").
 
+    Wspolczynniki a_r^(e):
+    - dla pacjentow TRENINGOWYCH: dokladny leave-one-out (bez wlasnej etykiety)
+    - dla pacjentow VALID/TEST: pelny wspolczynnik z CALEGO train (bezpieczne -
+      te zbiory nigdy nie wspoluczestnicza w dopasowaniu wspolczynnikow)
+
+    Standaryzacja p_r (predyktora) liczona raz na train (jak reszta
+    pipeline'u, np. compute_norm_stats) - NIE wymaga cross-fittingu, bo nie
+    uzywa etykiety endpointu, wiec nie ma tam ryzyka leakage etykiety.
+    """
     if "patient_id" not in samples_df.columns:
         raise ValueError("samples_df musi zawierac kolumne 'patient_id'.")
 
@@ -727,7 +486,18 @@ def compute_hcr_wide_scores(
             p_r_full = float(x_train.mean())
 
             # --- pelny, SCISLE POPRAWNY zamkniety wzor leave-one-out ---
-
+            # W pierwszej wersji tego modulu standaryzacja (p_r, p_e) byla
+            # liczona z CALEGO train i tylko licznik korelacji byl LOO - to
+            # zostawialo slaby (rzedu 1/N), ale realny przeciek etykiety przez
+            # p_e. Ponizej p_r, p_e SA REFITOWANE per pacjent w zamknietej
+            # formie (bez petli), wiec wynik jest identyczny z brute-force
+            # LOO (zweryfikowane numerycznie do bledu zaokraglenia float64).
+            #
+            # Wyprowadzenie: dla kowariancji z wylaczonym i-tym pacjentem
+            #   cov_(-i) = (n11 - x_i*y_i)/(N-1) - p_r_(-i)*p_e_(-i)
+            # gdzie n11 = suma x*y na CALYM train (n_11 = liczba wspolwystapien),
+            # a p_r_(-i), p_e_(-i) to srednie z pominieciem pacjenta i (rowniez
+            # zamkniete, bez petli).
             n11 = float((x_train * y_train).sum())
             p_r_loo = (N * p_r_full - x_train) / (N - 1)
             p_e_loo = (N * p_e_full - y_train) / (N - 1)
@@ -748,6 +518,15 @@ def compute_hcr_wide_scores(
             phi_x_all = _phi1_binary(x_all, p_r_full)
             score_full += a_full * phi_x_all
 
+            # WAZNE: standaryzacja WLASNEJ wartosci pacjenta w wersji LOO
+            # rowniez musi uzywac p_r_loo (nie p_r_full) - inaczej wynik nie
+            # jest prawdziwym LOO, mimo ze a_loo samo w sobie jest poprawne
+            # (zlapane i poprawione podczas weryfikacji numerycznej wzgledem
+            # brute-force: bez tego wystepowala roznica ~0.001 na pacjenta).
+            # UWAGA: _phi1_binary zaklada SKALARNE p (max() na tablicy dzialaby
+            # bledne - redukcja zamiast elementwise) - p_r_loo jest tablica
+            # (osobna wartosc per pacjent), wiec liczymy wprost, nie przez
+            # _phi1_binary.
             denom_loo_x = np.sqrt(np.clip(p_r_loo * (1 - p_r_loo), 1e-12, None))
             phi_x_train_loo = (x_train - p_r_loo) / denom_loo_x
             score_train_loo += a_loo * phi_x_train_loo
@@ -759,20 +538,4 @@ def compute_hcr_wide_scores(
 
         out[endpoint] = score_full
 
-    return out
-
-#technical helper: keep only parents that have a column in samples_df (added for proxy model, where some parents are not observed in the data)
-def keep_observed(parents_by_endpoint, samples_df):
-
-    observed = set(samples_df.columns)
-
-    def _name(p):
-        return p[0] if isinstance(p, (tuple, list)) else p
-
-    out = {}
-    for ep, parents in parents_by_endpoint.items():
-        if isinstance(parents, dict):
-            out[ep] = {t: [p for p in lst if _name(p) in observed] for t, lst in parents.items()}
-        else:
-            out[ep] = [p for p in parents if _name(p) in observed]
     return out

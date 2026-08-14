@@ -24,7 +24,6 @@ from models.TaskB.gnn_common import (
     get_node_mask,
 )
 from data.PreprocessingTaskB.hcr_wide_features import N_PAIR_EVIDENCE_CHANNELS, PARENT_NODE_TYPES
-from data.PreprocessingTaskB.hcr_triple_features import N_TRIPLE_EVIDENCE_CHANNELS
 
 CONV_REGISTRY = {
     "sage": SAGEConv,
@@ -474,16 +473,21 @@ class TargetedPatientDAGNodeClassifier(_PatientDAGGNNBase):
         )
 
         self.use_hcr_wide = bool(getattr(cfg.model, "use_hcr_wide", False))
+        # hcr_wide_mode: "linear" (dotychczasowe: pojedyncza wyuczona waga per
+        # endpoint * s_p,e) albo "nonlinear" (HCRPairEncoder: maly wspoldzielony
+        # MLP koduje kazdego rodzica osobno, maskowana srednia po rodzicach,
+        # potem liniowy head -> skalar). Patrz uzasadnienie architektoniczne
+        # przy klasie HCRPairEncoder w gnn_common.py - plaska suma/konkatenacja
+        # przed nieliniowoscia byla najgorszym wariantem w analogicznej ablacji
+        # Task A (B2: gorzej niz brak HCR w ogole).
         self.hcr_wide_mode = str(getattr(cfg.model, "hcr_wide_mode", "linear")).lower()
-        if self.use_hcr_wide and self.hcr_wide_mode not in {"linear", "nonlinear", "typed_concat", "triple"}:
+        if self.use_hcr_wide and self.hcr_wide_mode not in {"linear", "nonlinear", "typed_concat"}:
             raise ValueError(
                 f"cfg.model.hcr_wide_mode={self.hcr_wide_mode!r} nieznany. "
                 "Dostepne: 'linear', 'nonlinear', 'typed_concat'."
             )
 
         self.hcr_wide_weight = None
-        self.hcr_endpoint_weight = None
-        self.hcr_type_gate = None
         self.hcr_pair_encoder = None
         self.hcr_type_encoders = None
         if self.use_hcr_wide and self.hcr_wide_mode == "linear":
@@ -494,14 +498,38 @@ class TargetedPatientDAGNodeClassifier(_PatientDAGGNNBase):
             hcr_hidden_dim = int(getattr(cfg.model, "hcr_hidden_dim", 8))
             hcr_embed_dim = int(getattr(cfg.model, "hcr_embed_dim", 4))
             hcr_dropout = float(getattr(cfg.model, "hcr_dropout", 0.0))
-            # MUSI odpowiadac funkcji uzytej przy budowie danych 
+            # MUSI odpowiadac funkcji uzytej przy budowie danych:
+            #   9  -> compute_hcr_pair_evidence (podstawowa wersja)
+            #   41 -> compute_hcr_pair_evidence_40d (wzbogacona, wg schematu Task A)
+            # Niezgodnosc da czytelny blad ksztaltu przy pierwszym forward(),
+            # nie ciche obciecie/wypelnienie danych.
             hcr_evidence_dim = int(getattr(cfg.model, "hcr_evidence_dim", N_PAIR_EVIDENCE_CHANNELS))
             self.hcr_pair_encoder = HCRPairEncoder(
                 in_channels=hcr_evidence_dim,
                 hidden_dim=hcr_hidden_dim, embed_dim=hcr_embed_dim, dropout=hcr_dropout,
             )
-            self.hcr_endpoint_weight = nn.Parameter(torch.zeros(len(requested)))
+            # out_head w HCRPairEncoder jest zwykla warstwa Linear (nie
+            # inicjalizowana na zero jak w wariancie liniowym) - PyTorch domyslnie
+            # daje jej mala, losowa wage (Kaiming/uniform), wiec wklad do logitu
+            # na starcie jest niewielki, ale NIE dokladnie zerowy jak w
+            # wariancie linear. To swiadoma roznica: MLP z zerowa inicjalizacja
+            # wszystkich warstw nie uczy sie w ogole (martwy gradient przez
+            # symetrie wag), wiec pelne "startuje identycznie jak bez HCR" nie
+            # jest tu osiagalne bez utraty trenowalnosci calej podsieci.
         elif self.use_hcr_wide and self.hcr_wide_mode == "typed_concat":
+            # Osobny, NIEWSPOLDZIELONY encoder per typ wezla rodzica
+            # (PARENT_NODE_TYPES: drug_exposure/mechanism/
+            # adr_or_intermediate_state/patient_context) - analogicznie do
+            # AZ/AG/ZG w Task A, tylko kluczowane typem wezla zamiast rola
+            # strukturalna (u nas rodzice sa wymienni W OBREBIE typu, ale
+            # RODZAJ dowodu miedzy typami moze niesc inne znaczenie - patrz
+            # rozmowa o "silna zaleznosc z lekiem" vs "z markerem posrednim").
+            #
+            # Fuzja: embeddingi z kazdego typu SA KONKATENOWANE (nie
+            # dodawane jako skalar do logitu) razem z reprezentacja z GNN,
+            # analogicznie do g_final = g_graph ⊕ g_HCR w Task A - stad
+            # glowica musi przyjac SZERSZE wejscie (patrz rozszerzenie
+            # self.head ponizej).
             hcr_evidence_dim = int(getattr(cfg.model, "hcr_evidence_dim", N_PAIR_EVIDENCE_CHANNELS))
             hcr_hidden_dim = int(getattr(cfg.model, "hcr_hidden_dim", 8))
             hcr_embed_dim = int(getattr(cfg.model, "hcr_embed_dim", 4))
@@ -510,11 +538,7 @@ class TargetedPatientDAGNodeClassifier(_PatientDAGGNNBase):
                 nt: HCRPairEncoder(hcr_evidence_dim, hcr_hidden_dim, hcr_embed_dim, hcr_dropout)
                 for nt in PARENT_NODE_TYPES
             })
-            self.hcr_type_gate = nn.Parameter(torch.ones(len(requested), len(PARENT_NODE_TYPES)))
-            # __init__, w gałęzi typed_concat
-            self.hcr_triple_encoder = HCRPairEncoder(N_TRIPLE_EVIDENCE_CHANNELS, hcr_hidden_dim, hcr_embed_dim, hcr_dropout)
-            total_hcr_dim = hcr_embed_dim * (len(PARENT_NODE_TYPES) + 1)   # +1 na trojki
-            #total_hcr_dim = hcr_embed_dim * len(PARENT_NODE_TYPES)
+            total_hcr_dim = hcr_embed_dim * len(PARENT_NODE_TYPES)
             # Nadpisujemy glowice zbudowana w bazowej klasie (przyjmowala
             # tylko head_in_dim z GNN) - teraz musi przyjac
             # head_in_dim + total_hcr_dim (self.head_in_dim zapisany przez
@@ -522,13 +546,6 @@ class TargetedPatientDAGNodeClassifier(_PatientDAGGNNBase):
             self.head = NodeClassificationHead(
                 self.head_in_dim + total_hcr_dim, dropout=float(getattr(cfg.model, "dropout", 0.2))
             )
-        elif self.use_hcr_wide and self.hcr_wide_mode == "triple":
-            hcr_hidden_dim = int(getattr(cfg.model, "hcr_hidden_dim", 8))
-            hcr_embed_dim = int(getattr(cfg.model, "hcr_embed_dim", 4))
-            hcr_dropout = float(getattr(cfg.model, "hcr_dropout", 0.0))
-            self.hcr_pair_encoder = HCRPairEncoder(
-                in_channels=N_TRIPLE_EVIDENCE_CHANNELS,
-                hidden_dim=hcr_hidden_dim, embed_dim=hcr_embed_dim, dropout=hcr_dropout)
 
     def _select_targets(self, full_tensor: torch.Tensor, batch_size: int, n_endpoint_nodes_per_graph: int) -> torch.Tensor:
         offsets = torch.arange(batch_size, device=full_tensor.device) * n_endpoint_nodes_per_graph
@@ -554,40 +571,15 @@ class TargetedPatientDAGNodeClassifier(_PatientDAGGNNBase):
             else:
                 target_z = target_z_all[self.target_local_idx]
 
-            # type_embeddings = []
-            # for node_type in PARENT_NODE_TYPES:
-            #     features, mask = get_targeted_pair_evidence_named(
-            #         data, self.target_local_idx, self.target_node_type,
-            #         feature_attr=f"hcr_typed_{node_type}_features",
-            #         mask_attr=f"hcr_typed_{node_type}_mask",
-            #     )
-            #     embed = self.hcr_type_encoders[node_type].pooled_embedding(features, mask)
-            #     type_embeddings.append(embed)
-
             type_embeddings = []
-            for i, node_type in enumerate(PARENT_NODE_TYPES):
+            for node_type in PARENT_NODE_TYPES:
                 features, mask = get_targeted_pair_evidence_named(
                     data, self.target_local_idx, self.target_node_type,
                     feature_attr=f"hcr_typed_{node_type}_features",
                     mask_attr=f"hcr_typed_{node_type}_mask",
                 )
                 embed = self.hcr_type_encoders[node_type].pooled_embedding(features, mask)
-                # Brama per (endpoint, typ): kolumna i macierzy [n_targets, n_types].
-                # repeat powiela caly wektor -> wzorzec [ep0..epN, ep0..epN, ...],
-                # zgodny z kolejnoscia z _select_targets (pacjent-nadrzednie).
-                gate = self.hcr_type_gate[:, i]
-                gate = gate.repeat(batch_size) if batch_size > 1 else gate
-                type_embeddings.append(embed * gate.unsqueeze(-1))
-                # forward, po pętli po typach
-            
-            if getattr(self, "hcr_triple_encoder", None) is not None:
-                tf, tm = get_targeted_pair_evidence(data, self.target_local_idx, self.target_node_type)
-                type_embeddings.append(self.hcr_triple_encoder.pooled_embedding(tf, tm))
-
-            hcr_fused = torch.cat(type_embeddings, dim=-1)
-            fused = torch.cat([target_z, hcr_fused], dim=-1)
-            return self.head(fused).squeeze(-1)
-
+                type_embeddings.append(embed)
             # Kolejnosc konkatenacji = kolejnosc PARENT_NODE_TYPES - MUSI byc
             # spojna z tym, jak zbudowano dane (deterministyczna, ta sama
             # stala lista w hcr_wide_features.py i tutaj).
@@ -616,20 +608,13 @@ class TargetedPatientDAGNodeClassifier(_PatientDAGGNNBase):
             wide = get_targeted_wide_scores(data, self.target_local_idx, self.target_node_type)
             weight = self.hcr_wide_weight.repeat(batch_size) if batch_size > 1 else self.hcr_wide_weight
             return deep_logits + weight * wide
-        
-
 
         # hcr_wide_mode == "nonlinear": ta sama logika indeksowania
         # (get_targeted_pair_evidence uzywa offsets+target_local_idx identycznie
         # jak get_targeted_wide_scores/_select_targets), wiec features/mask sa
         # juz w ksztalcie [batch*n_targets, max_parents, 9] - zgodnym z
         # deep_logits [batch*n_targets] po HCRPairEncoder.forward().
-        if self.hcr_wide_mode in ("nonlinear", "triple"):
-            features, mask = get_targeted_pair_evidence(data, self.target_local_idx, self.target_node_type)
-            hcr_contribution = self.hcr_pair_encoder(features, mask)
-            if self.hcr_endpoint_weight is not None:
-                weight = self.hcr_endpoint_weight.repeat(batch_size) if batch_size > 1 else self.hcr_endpoint_weight
-                hcr_contribution = weight * hcr_contribution
-            return deep_logits + hcr_contribution
+        features, mask = get_targeted_pair_evidence(data, self.target_local_idx, self.target_node_type)
+        hcr_contribution = self.hcr_pair_encoder(features, mask)
+        return deep_logits + hcr_contribution
 
-        raise ValueError(f"Nieznany hcr_wide_mode: {self.hcr_wide_mode!r}")

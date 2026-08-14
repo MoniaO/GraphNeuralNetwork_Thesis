@@ -9,7 +9,7 @@ from torch import nn
 from torch_geometric.data import HeteroData
 from torch_geometric.nn import HeteroConv, SAGEConv, GraphConv, GATv2Conv, TransformerConv
 
-from models.TaskB.gnn_common import (
+from src.models.TaskB.gnn_common_20260806 import (
     DEFAULT_TARGET_ENDPOINTS,
     NodeClassificationHead,
     get_targeted_labels,

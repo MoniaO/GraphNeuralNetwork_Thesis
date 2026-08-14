@@ -27,6 +27,10 @@ from data.PreprocessingTaskB.hcr_wide_features import (
     PARENT_NODE_TYPES
 )
 
+from data.PreprocessingTaskB.hcr_triple_features import (
+    get_triples_by_endpoint,
+    compute_hcr_triple_evidence
+)
 
 from data.PreprocessingTaskB.build_patient_dag_heterodata_regime import (
     load_shared_hetero_topology,
@@ -152,6 +156,19 @@ def build_loaders(cfg: DictConfig):
             hcr_pair_evidence_by_type = compute_hcr_pair_evidence_by_node_type(
                     samples_df, parents_by_endpoint_by_type, train_patient_ids, edges=edges_df
                 )
+            pair_evidence = None
+            if bool(getattr(cfg.model, "hcr_use_triples", True)):
+                triples = get_triples_by_endpoint(nodes_df, edges_df, target_endpoints, excluded_nodes, set(samples_df.columns))
+            print(f"[HCR triple] trojek per endpoint: {[len(v) for v in triples.values()]}")
+            pair_evidence = compute_hcr_triple_evidence(samples_df, triples, train_patient_ids)
+
+        elif hcr_wide_mode == "triple":
+            observed = set(samples_df.columns)
+            triples = get_triples_by_endpoint(
+                nodes_df, edges_df, target_endpoints, excluded_nodes, observed)
+            pair_evidence = compute_hcr_triple_evidence(samples_df, triples, train_patient_ids)
+            print(f"[HCR triple] trojek per endpoint: "
+                f"{ {ep: len(v) for ep, v in triples.items()} }")
         else:
                 raise ValueError(f"cfg.model.hcr_wide_mode={hcr_wide_mode!r} nieznane (linear/nonlinear/typed_concat).")
 
@@ -303,7 +320,7 @@ def build_run_name(cfg: DictConfig) -> str:
     use_hcr_hid_dim    = f"_{getattr(cfg.model, 'hcr_hidden_dim', '')}" if detailed else ""
 
     return (
-        f"TaskB_{cfg.model.hide_direct_parents}EG{use_hcr_str}{use_hcr_mode}{use_hcr_parent}{use_hcr_dim}{use_hcr_hid_dim}_{cfg.model.name}_s{cfg.training.seed}"
+        f"TaskB_{cfg.model.hide_direct_parents}EGopt3{use_hcr_str}{use_hcr_mode}{use_hcr_parent}{use_hcr_dim}{use_hcr_hid_dim}_{cfg.model.name}_s{cfg.training.seed}"
         f"_{targets_str}_{cfg.model.conv_type}_{cfg.data.name}_{scenario_str}_{regime}_{residual_str}"
         f"_ep{cfg.training.epochs}_L{cfg.model.num_layers}"
         f"_lr{cfg.training.lr}_hid{cfg.model.hidden_dim}"
@@ -359,6 +376,18 @@ def main(cfg: DictConfig) -> None:
     optimizer_name = str(getattr(cfg.training, "optimizer", "adam")).lower()
     lr = float(cfg.training.lr)
     weight_decay = float(getattr(cfg.training, "weight_decay", 0.0))
+
+    gate_names = ("hcr_type_gate", "hcr_endpoint_weight", "hcr_wide_weight")
+    gate_params, other_params = [], []
+    for name, p in model.named_parameters():
+        (gate_params if any(g in name for g in gate_names) else other_params).append(p)
+
+    groups = [{"params": other_params, "weight_decay": weight_decay}]
+
+    if gate_params:
+        groups.append({"params": gate_params, "weight_decay": 0.0})
+        print(f"[optim] {len(gate_params)} parametrow bramy HCR bez weight_decay")
+
 
     if optimizer_name == "adamw":
         optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)

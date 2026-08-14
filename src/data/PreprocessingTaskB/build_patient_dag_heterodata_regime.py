@@ -10,6 +10,8 @@ import torch
 from torch_geometric.data import HeteroData
 from torch_geometric.loader import DataLoader
 
+from data.PreprocessingTaskB.hcr_wide_features import N_PAIR_EVIDENCE_CHANNELS, PARENT_NODE_TYPES
+
 
 ENDPOINT_NODE_TYPE = "clinical_endpoint"
 
@@ -43,7 +45,9 @@ REGIME_VISIBLE_TYPES: Dict[str, set] = {
         "patient_context", "drug_exposure",
         "adr_or_intermediate_state", "observation_or_selection",
     },
-    "bedside": {"patient_context", "drug_exposure"},
+    "bedside": {"patient_context"
+                #, "drug_exposure"
+    }
 }
 
 
@@ -59,7 +63,21 @@ LAYER_ENCODINGS = {"numeric", "onehot"}
 
 
 def _build_layer_columns(nodes: pd.DataFrame, layer_encoding: str) -> Tuple[pd.DataFrame, List[str]]:
-    #Dokleja do `nodes` kolumny reprezentujace warstwe topologiczna DAG-a,
+    """Dokleja do `nodes` kolumny reprezentujace warstwe topologiczna DAG-a,
+    w wybranym kodowaniu. Zwraca (nodes_z_dolozonymi_kolumnami, lista_nazw_kolumn).
+
+    "numeric" - jeden skalar (1.0-6.0). Tanie, ale narzuca zalozenie, ze
+        warstwa 3 jest "blizej" warstwy 4 niz warstwy 1 (odleglosc liniowa) -
+        zalozenie obronne, bo warstwy MAJA sens porzadkowy (kierunek
+        przyczynowy 1->6), ale niekoniecznie prawdziwe (skok 2->3 nie musi
+        "znaczyc" tyle samo co 5->6 dla reprezentacji wezla).
+    "onehot" - N kolumn binarnych (N = liczba unikalnych warstw, tu 6), po
+        jednej jedynce na wezel. Drozsze (6x wiecej wymiarow tej cechy), ale
+        bez zalozenia o odlegosci - model sam uczy sie, czy i jak warstwy sa
+        ze soba powiazane. Kolejnosc kolumn = posortowane nazwy warstw
+        (sortowanie alfabetyczne pokrywa sie tu z numeryczna kolejnoscia
+        dzieki prefiksowi "1_"/"2_"/... w nazwach warstw).
+    """
     if layer_encoding not in LAYER_ENCODINGS:
         raise ValueError(f"layer_encoding musi byc w {LAYER_ENCODINGS}, otrzymano {layer_encoding!r}.")
 
@@ -109,7 +127,9 @@ def load_shared_hetero_topology(cfg) -> dict:
         local_idx_by_type[ntype][name] = local_idx
         global_to_local[name] = (ntype, local_idx)
 
-    # --- (D) warstwa topologiczna, dolaczana do cech statycznych cfg.data.dataset.layer_encoding 
+    # --- (D) warstwa topologiczna, dolaczana do cech statycznych - kodowanie
+    # wybierane przez cfg.data.dataset.layer_encoding ("numeric" domyslnie,
+    # "onehot" jako alternatywa do przetestowania, patrz _build_layer_columns).
     layer_encoding = str(getattr(dataset_cfg, "layer_encoding", "numeric"))
     nodes, layer_cols = _build_layer_columns(nodes, layer_encoding)
     static_cols = STATIC_FEATURE_COLS + layer_cols
@@ -120,6 +140,10 @@ def load_shared_hetero_topology(cfg) -> dict:
         for ntype, names in node_names_by_type.items()
     }
 
+    # Fillna medianą per kolumna (nie zerem) - zero bylo semantycznie "najmniej
+    # rzadki / najnizszy priorytet" dla rarity_weight/node_priority_weight, co jest
+    # odwrotne do intencji przy skali 1-10. Dla kolumn onehot mediana nie ma
+    # efektu (brak NaN w one-hot z construkcji), wiec bezpieczne dla obu trybow.
     static_feats_by_type: Dict[str, torch.Tensor] = {}
     for ntype in node_types:
         sub = nodes[nodes["node_type"] == ntype].set_index("node").loc[node_names_by_type[ntype], static_cols]
@@ -138,7 +162,19 @@ def load_shared_hetero_topology(cfg) -> dict:
         ]
     )
 
-    # ---  wezly bedace potomkami endpointow (leakage strukturalny) - wykluczenie ---
+    # --- (C2) wezly bedace POTOMKAMI endpointow (leakage strukturalny) ---
+    # DAG zawiera wezly typu "czy zdarzenie zostalo udokumentowane"
+    # (np. hospital_contact, fall_reported, adr_reported, mood_screening_done),
+    # ktore sa DZIECMI endpointow (Hospitalization -> hospital_contact,
+    # effect_size=1.00; Falls -> fall_reported, effect_size=1.00; itd.).
+    # Kierunek przyczynowy jest odwrotny niz sugeruje intuicja: to endpoint
+    # powoduje zapis dokumentacyjny, nie na odwrot. Uzycie takiego wezla jako
+    # cechy wejsciowej to outcome leakage - i to czesto dla WIELU endpointow
+    # naraz (np. adr_reported jest dzieckiem AKI, DILI i GI_bleeding jednoczesnie).
+    # recommended_use w CSV NIE flaguje tych wezlow (widnieja jako
+    # "feature_or_target"), wiec wykrywamy je strukturalnie: kazdy nie-endpointowy
+    # wezel osiagalny z ktoregokolwiek endpointu (transytywnie, na wypadek
+    # dluzszych lancuchow w przyszlych rewizjach spec) jest wykluczany.
     endpoint_names_raw = set(nodes.loc[nodes["is_endpoint"].astype(bool), "node"])
     dag_for_descendants = nx.from_pandas_edgelist(
         edges[["source", "target"]], "source", "target", create_using=nx.DiGraph
@@ -149,7 +185,24 @@ def load_shared_hetero_topology(cfg) -> dict:
         endpoint_descendants |= nx.descendants(dag_for_descendants, ep)
     endpoint_descendants -= endpoint_names_raw  # endpointy same siebie nie wykluczaja
 
-    excluded_nodes = excluded_latent | endpoint_descendants
+    endpoint_descendants -= endpoint_names_raw  # endpointy same siebie nie wykluczaja
+
+    # Wezly, ktorych WARTOSC jest ukrywana. Wezel ZOSTAJE w topologii i
+    # normalnie propaguje - excluded_nodes dziala wylacznie na liscie kolumn
+    # wartosci (linia ~428), nie na nodes ani edges. Sluzy do testu, czy
+    # glebokosc odzyskuje przewage, gdy informacja lezy dalej niz jeden hop.
+    hidden_value_nodes: set = set()
+    if bool(getattr(cfg.model, "hide_direct_parents", False)):
+        for ep in endpoint_names_raw:
+            hidden_value_nodes |= set(dag_for_descendants.predecessors(ep))
+        hidden_value_nodes -= endpoint_names_raw
+        print(
+            f"[build_patient_dag_heterodata] UKRYTO wartosci "
+            f"{len(hidden_value_nodes)} bezposrednich rodzicow endpointow "
+            f"(wezly zostaja w grafie i propaguja)"
+        )
+
+    excluded_nodes = excluded_latent | endpoint_descendants | hidden_value_nodes
 
     _leak_only = endpoint_descendants - excluded_latent
     if _leak_only:
@@ -158,7 +211,9 @@ def load_shared_hetero_topology(cfg) -> dict:
             f"jako potomkow endpointow (leakage): {sorted(_leak_only)}"
         )
 
-    # (src_type, dst_type) zamiast (src_type, edge_type, dst_type) 
+    # --- (B) klucz relacji: (src_type, dst_type) zamiast (src_type, edge_type, dst_type) ---
+    # edge_type trafia jako one-hot do edge_attr, zamiast tworzyc osobny modul
+    # konwolucyjny na kazda z 47 (czesto 1-2 krawedziowych) relacji.
     missing = (set(edges["source"]) | set(edges["target"])) - set(global_to_local)
     if missing:
         raise ValueError(f"Edges reference nodes missing from nodes file: {sorted(missing)}")
@@ -261,6 +316,60 @@ def compute_norm_stats(
 # 2. Budowa jednego HeteroData per pacjent
 # ---------------------------------------------------------------------------
 
+def _remap_pair_evidence_to_full_endpoints(
+    pair_evidence: Optional[dict],
+    samples_df: pd.DataFrame,
+    node_names_by_type: Dict[str, List[str]],
+    endpoint_type: str,
+    global_to_local: dict,
+    n_endpoint_nodes: int,
+    default_n_channels: int,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Przemapowuje wynik compute_hcr_pair_evidence*/_mixed (w LOKALNEJ
+    kolejnosci endpoint_order) na PELNY uklad n_endpoint_nodes (13) lokalnych
+    indeksow endpointow - wydzielone z build_patient_hetero_graphs, zeby nie
+    powielac tej samej ~35-liniowej logiki osobno dla hcr_pair_evidence i
+    (nowo) dla kazdego z 4 typow w hcr_pair_evidence_by_type.
+
+    Zwraca (features [n_patients, n_endpoint_nodes, max_parents, C],
+    mask [n_patients, n_endpoint_nodes, max_parents]) - zera, gdy
+    pair_evidence=None (np. zaden endpoint nie mial rodzica danego typu).
+    """
+    max_parents_used = pair_evidence["features"].shape[2] if pair_evidence is not None else 0
+    n_channels = pair_evidence["features"].shape[-1] if pair_evidence is not None else default_n_channels
+
+    features = torch.zeros(
+        (len(samples_df), n_endpoint_nodes, max(max_parents_used, 1), n_channels), dtype=torch.float32
+    )
+    mask = torch.zeros((len(samples_df), n_endpoint_nodes, max(max_parents_used, 1)), dtype=torch.float32)
+
+    if pair_evidence is None:
+        return features, mask
+
+    pe_patient_ids = pair_evidence["patient_id"]
+    pe_endpoint_order = pair_evidence["endpoint_order"]
+    pe_index_by_pid = {int(pid): i for i, pid in enumerate(pe_patient_ids)}
+    row_order = np.array(
+        [pe_index_by_pid[int(pid)] for pid in samples_df["patient_id"]], dtype=np.int64
+    )
+    used_endpoints = [e for e in pe_endpoint_order if e in node_names_by_type[endpoint_type]]
+    if not used_endpoints:
+        return features, mask
+
+    local_positions = torch.tensor([global_to_local[e][1] for e in used_endpoints], dtype=torch.long)
+    source_positions = torch.tensor([pe_endpoint_order.index(e) for e in used_endpoints], dtype=torch.long)
+
+    feats_reordered = torch.tensor(
+        pair_evidence["features"][row_order][:, source_positions.numpy(), :, :], dtype=torch.float32
+    )
+    mask_reordered = torch.tensor(
+        pair_evidence["mask"][row_order][:, source_positions.numpy(), :], dtype=torch.float32
+    )
+    features[:, local_positions, :, :] = feats_reordered
+    mask[:, local_positions, :] = mask_reordered
+    return features, mask
+
+
 def build_patient_hetero_graphs(
     samples_df: pd.DataFrame,
     topology: dict,
@@ -268,6 +377,8 @@ def build_patient_hetero_graphs(
     norm_stats: Optional[Dict[str, Tuple[float, float]]] = None,
     exclude_cols: Optional[List[str]] = None,
     hcr_wide_df: Optional[pd.DataFrame] = None,
+    hcr_pair_evidence: Optional[dict] = None,
+    hcr_pair_evidence_by_type: Optional[Dict[str, Optional[dict]]] = None,
 ) -> List[HeteroData]:
     """
     hcr_wide_df: opcjonalny DataFrame z compute_hcr_wide_scores (patient_id +
@@ -279,6 +390,31 @@ def build_patient_hetero_graphs(
         zeby PyG batching mial spojna strukture atrybutow miedzy grafami w
         batchu (niespojna obecnosc atrybutu miedzy pacjentami w tym samym
         batchu jest cichym zrodlem bledow przy kolacji).
+
+    hcr_pair_evidence: opcjonalny wynik compute_hcr_pair_evidence() -
+        {"endpoint_order": [...], "features": [n_patients, n_endpoints_uzytych,
+        max_parents, 9], "mask": [n_patients, n_endpoints_uzytych, max_parents],
+        "patient_id": [...]}. endpoint_order to LOKALNA kolejnosc uzyta przy
+        liczeniu (kolejnosc kluczy w parents_by_endpoint - NIE pokrywa sie z
+        pelna lista 13 endpointow w grafie). Przy dolaczaniu przemapowujemy
+        kazdy endpoint z endpoint_order na jego WLASCIWY lokalny indeks wsrod
+        WSZYSTKICH wezlow typu clinical_endpoint (global_to_local[e][1]) -
+        DOKLADNIE ta sama logika co dla hcr_wide_df powyzej, tylko teraz
+        docelowy tensor ma DWA dodatkowe wymiary (max_parents, 9) zamiast
+        pojedynczej liczby na endpoint.
+        Jak hcr_wide: DOLACZANE ZAWSZE (zera + maska-zer, gdy None), zeby
+        struktura atrybutow byla spojna miedzy pacjentami w kazdym batchu.
+
+    hcr_pair_evidence_by_type: opcjonalny wynik
+        compute_hcr_pair_evidence_by_node_type() - {node_type: wynik_jak_wyzej
+        | None}. Dla trybu modelu hcr_wide_mode="typed_concat" (osobny
+        encoder per PARENT_NODE_TYPES: drug_exposure/mechanism/
+        adr_or_intermediate_state/patient_context). Dla kazdego typu z
+        PARENT_NODE_TYPES dolaczamy PARE atrybutow
+        hcr_typed_{node_type}_features / _mask (TA SAMA logika przemapowania
+        co dla hcr_pair_evidence, powtorzona per typ). Gdy dany typ ma wynik
+        None (zaden endpoint nie mial rodzica tego typu) - dolaczane sa zera,
+        model musi to obslugiwac (pusty wklad z tego encodera).
     """
     if observability_regime not in REGIME_VISIBLE_TYPES:
         raise ValueError(
@@ -335,7 +471,10 @@ def build_patient_hetero_graphs(
         samples_df[available_endpoints].apply(pd.to_numeric, errors="coerce").fillna(0.0).to_numpy(dtype=np.float32)
     )
 
-    # --- HCR "wide" (Wide&Deep)
+    # --- HCR "wide" (Wide&Deep): wektor s_p,e per pacjent, wyrownany do TYCH
+    # SAMYCH lokalnych indeksow co y/y_mask powyzej. Dolaczany ZAWSZE (zera,
+    # jesli hcr_wide_df=None), zeby atrybut byl spojny strukturalnie miedzy
+    # wszystkimi pacjentami w kazdym batchu.
     n_endpoint_nodes = len(node_names_by_type[endpoint_type])
     hcr_wide_values = torch.zeros((len(samples_df), n_endpoint_nodes), dtype=torch.float32)
     if hcr_wide_df is not None:
@@ -351,6 +490,98 @@ def build_patient_hetero_graphs(
             )
             hcr_wide_values[:, local_positions] = aligned_values
             print(f"[build_patient_dag_heterodata] HCR wide dolaczone dla endpointow: {used_endpoints}")
+
+    # --- HCR "pair evidence" (nieliniowy koder par - HCRPairEncoder): wektor
+    # dowodowy per (pacjent, rodzic, endpoint), wyrownany do TYCH SAMYCH
+    # lokalnych indeksow endpointow co y/hcr_wide powyzej. compute_hcr_pair_evidence
+    # zwraca tensory w LOKALNEJ kolejnosci endpoint_order (kolejnosc kluczy w
+    # parents_by_endpoint, ktora NIE musi pokrywac sie z pelna lista 13
+    # wezlow typu clinical_endpoint) - przemapowujemy je tutaj na wlasciwe
+    # globalne lokalne indeksy, DOKLADNIE jak dla hcr_wide powyzej, tylko
+    # zamiast pojedynczej liczby przenosimy caly blok [max_parents, 9].
+    if hcr_pair_evidence is not None:
+        max_parents_used = hcr_pair_evidence["features"].shape[2]
+    else:
+        max_parents_used = 0  # brak danych - tensory zerowe o zerowej "glebokosci" rodzicow
+    n_pair_channels = (
+        hcr_pair_evidence["features"].shape[-1] if hcr_pair_evidence is not None
+        else N_PAIR_EVIDENCE_CHANNELS
+    )
+
+    hcr_pair_features_values = torch.zeros(
+        (len(samples_df), n_endpoint_nodes, max(max_parents_used, 1), n_pair_channels), dtype=torch.float32
+    )
+    hcr_pair_mask_values = torch.zeros(
+        (len(samples_df), n_endpoint_nodes, max(max_parents_used, 1)), dtype=torch.float32
+    )
+    if hcr_pair_evidence is not None:
+        pe_patient_ids = hcr_pair_evidence["patient_id"]
+        pe_endpoint_order = hcr_pair_evidence["endpoint_order"]
+        # Wyrownanie wierszy (pacjentow) miedzy hcr_pair_evidence a samples_df -
+        # oba MUSZA miec te sama liczbe i tozsamosc pacjentow (compute_hcr_pair_evidence
+        # jest wolane na tym samym samples_df), ale nie zakladamy identycznej
+        # KOLEJNOSCI wierszy - budujemy jawne mapowanie po patient_id, tak samo
+        # ostroznie jak przy hcr_wide_df.set_index("patient_id") powyzej.
+        pe_index_by_pid = {int(pid): i for i, pid in enumerate(pe_patient_ids)}
+        row_order = np.array(
+            [pe_index_by_pid[int(pid)] for pid in samples_df["patient_id"]], dtype=np.int64
+        )
+        used_endpoints_pair = [e for e in pe_endpoint_order if e in node_names_by_type[endpoint_type]]
+        if used_endpoints_pair:
+            local_positions_pair = torch.tensor(
+                [global_to_local[e][1] for e in used_endpoints_pair], dtype=torch.long
+            )
+            source_positions = torch.tensor(
+                [pe_endpoint_order.index(e) for e in used_endpoints_pair], dtype=torch.long
+            )
+            feats_reordered = torch.tensor(
+                hcr_pair_evidence["features"][row_order][:, source_positions.numpy(), :, :],
+                dtype=torch.float32,
+            )
+            mask_reordered = torch.tensor(
+                hcr_pair_evidence["mask"][row_order][:, source_positions.numpy(), :],
+                dtype=torch.float32,
+            )
+            hcr_pair_features_values[:, local_positions_pair, :, :] = feats_reordered
+            hcr_pair_mask_values[:, local_positions_pair, :] = mask_reordered
+            print(f"[build_patient_dag_heterodata] HCR pair evidence dolaczone dla endpointow: {used_endpoints_pair}")
+
+    # --- HCR "typed_concat": osobny tensor features/mask DLA KAZDEGO TYPU
+    # WEZLA rodzica (PARENT_NODE_TYPES) - analogicznie do hcr_pair_evidence
+    # powyzej, ale powtorzone per typ, przy uzyciu wspolnego helpera
+    # _remap_pair_evidence_to_full_endpoints (unikamy powielania ~35 linii
+    # logiki remapowania 4-krotnie). Kazdy typ dostaje WLASNA pare atrybutow
+    # hcr_typed_{node_type}_features/_mask - model (typed_concat) czyta je
+    # osobno i koduje kazdy typ NIEWSPOLDZIELONYM encoderem.
+    hcr_typed_features: Dict[str, torch.Tensor] = {}
+    hcr_typed_mask: Dict[str, torch.Tensor] = {}
+
+    typed_n_channels = N_PAIR_EVIDENCE_CHANNELS
+    if hcr_pair_evidence_by_type is not None:
+        for _pe in hcr_pair_evidence_by_type.values():
+            if _pe is not None:
+                typed_n_channels = int(_pe["features"].shape[-1])
+                break
+
+    for node_type in PARENT_NODE_TYPES:
+        pe_for_type = hcr_pair_evidence_by_type.get(node_type) if hcr_pair_evidence_by_type is not None else None
+        feats, msk = _remap_pair_evidence_to_full_endpoints(
+            pe_for_type, samples_df, node_names_by_type, endpoint_type,
+            global_to_local, n_endpoint_nodes, typed_n_channels
+            #N_PAIR_EVIDENCE_CHANNELS,
+        )
+        assert feats.shape[-1] == typed_n_channels, (
+            f"typ {node_type}: {feats.shape[-1]} kanalow zamiast {typed_n_channels} - "
+            "niezgodnosc funkcji budujacej dowod parowy z hcr_evidence_dim"
+        )
+        hcr_typed_features[node_type] = feats
+        hcr_typed_mask[node_type] = msk
+        if pe_for_type is not None:
+            print(f"[build_patient_dag_heterodata] HCR typed ({node_type}) dolaczone: "
+                  f"{[e for e in pe_for_type['endpoint_order'] if e in node_names_by_type[endpoint_type]]}")
+        else:
+            print(f"[build_patient_dag_heterodata] HCR typed ({node_type}): brak obserwowanych "
+                  f"rodzicow - tensor zerowy o {typed_n_channels} kanalach")
 
     n_patients = len(samples_df)
     patient_ids = samples_df["patient_id"].to_numpy() if "patient_id" in samples_df else np.arange(n_patients)
@@ -387,10 +618,19 @@ def build_patient_hetero_graphs(
         y_mask[endpoint_local_idx] = True
         data[endpoint_type].y = y
         data[endpoint_type].y_mask = y_mask
-        # HCR "wide" 
+        # HCR "wide" - patrz komentarz przy hcr_wide_values powyzej. Dolaczane
+        # ZAWSZE (zera domyslnie), zeby atrybut byl obecny spojnie na kazdym
+        # pacjencie niezaleznie od tego, czy hcr_wide_df zostalo podane.
         data[endpoint_type].hcr_wide = hcr_wide_values[i]
+        data[endpoint_type].hcr_pair_features = hcr_pair_features_values[i]
+        data[endpoint_type].hcr_pair_mask = hcr_pair_mask_values[i]
+        # HCR "typed_concat" - jedna para atrybutow per typ wezla rodzica
+        for node_type in PARENT_NODE_TYPES:
+            setattr(data[endpoint_type], f"hcr_typed_{node_type}_features", hcr_typed_features[node_type][i])
+            setattr(data[endpoint_type], f"hcr_typed_{node_type}_mask", hcr_typed_mask[node_type][i])
 
         # Wspolna topologia krawedzi + edge_attr (waga + metadane audytu + one-hot
+        # typu relacji), identyczna dla kazdego pacjenta (struktura DAG jest stala).
         for key, eidx in edge_index_dict.items():
             data[key].edge_index = eidx
             data[key].edge_attr = edge_attr_dict[key]

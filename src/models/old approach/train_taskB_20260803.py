@@ -22,7 +22,7 @@ from data.PreprocessingTaskB.build_patient_dag_heterodata_regime import (
     META_COLS,
 )
 from evaluation.syntetic_evaluator_node import SynEvaluatorNode
-from models.TaskB.gnn_node import (
+from src.models.TaskB.gnn_node_nohcr_per_endpoint import (
     SimplePatientDAGNodeClassifier,
     TargetedPatientDAGNodeClassifier,
     get_targeted_labels,
