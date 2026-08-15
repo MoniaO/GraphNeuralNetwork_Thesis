@@ -1,13 +1,14 @@
 \newpage % Rozdziały zaczynamy od nowej strony.
 \subsubsection{Oversmoothing methods}
-\label{subsec:oversmoothing}
+\label{subsubsec:oversmoothing}
 
 
-Residual connections (use_residual) switch the effective per-layer propagation operator from the (nilpotent, on a DAG without self-loops) 
+Residual connections switch the effective per-layer propagation operator from the
+(nilpotent, on a DAG without self-loops) 
 adjacency operator , which is the standard formalization of the over-smoothing regime and is the mechanism 
 through which multi-layer signal survives on a directed acyclic structure.
 
-PairNorm (Zhao & Akoglu, 2020) re-centers and re-scales node representations after each layer to keep the pairwise distance between representations from collapsing, without preventing the underlying mixing.
+PairNorm (Zhao et Akoglu, 2020) re-centers and re-scales node representations after each layer to keep the pairwise distance between representations from collapsing, without preventing the underlying mixing.
 
 DropEdge (Rong et al., 2020) randomly removes a fraction of edges independently in every layer during training, slowing the rate of information mixing and acting as a structural regularizer.
 
