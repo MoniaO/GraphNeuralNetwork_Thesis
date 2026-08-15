@@ -7,9 +7,20 @@
     nohyphenation=false
 ]{szablon/eiti/eiti-thesis}
 
+\usepackage{booktabs}
+\usepackage{siunitx}
+%\usepackage[english]{babel}
+
+\sisetup{detect-all, table-number-alignment=center}
+\setlength{\emergencystretch}{3em}
+
 \langpol
 \graphicspath{{rysunki/}}
 \addbibresource{bibliografia.bib}
+\renewcommand{\tablename}{Table}
+\renewcommand{\figurename}{Figure}
+
+
 
 % Dodanie usuwa jedno z ostrzeżeń
 \usepackage{csquotes}
@@ -17,6 +28,9 @@
 \usepackage{float}
 \usepackage{subfig}
 \usepackage{amsmath}
+\usepackage{placeins}
+\usepackage{enumitem}
+\usepackage{cleveref}
 
 \begin{document}
 
@@ -37,11 +51,22 @@
 \cleardoublepage % Zaczynamy od nieparzystej strony
 \pagestyle{headings}
 \input{rozdzialy/1-wstep}
+\input{rozdzialy/1a-preliminary}
 \input{rozdzialy/2-cel-pracy}
 \input{rozdzialy/3-przeglad-literatury}
+\input{rozdzialy/3a-architecture}
+\input{rozdzialy/3b-HCR}
+\input{rozdzialy/4-opis-danych}
 \input{rozdzialy/4-opis-rozwiazania}
+\input{rozdzialy/4a-taska-opis-rozwiazania}
+\input{rozdzialy/4b-taskb-opis-rozwiazania}
 \input{rozdzialy/5-ewaluacja-eksperymentalna}
-\input{rozdzialy/6-podsumowanie}
+\input{rozdzialy/5a-taska-ewaluacja-eksperymentalna}
+\input{rozdzialy/5b-taskb-ewaluacja-eksperymentalna}
+\input{rozdzialy/6-models-benchmark}
+\input{rozdzialy/6a-taska-models-benchmark}
+\input{rozdzialy/6b-taskb-models-benchmark}
+\input{rozdzialy/7-podsumowanie}
 
 \cleardoublepage % Zaczynamy od nieparzystej strony
 \printbibliography
