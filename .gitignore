@@ -226,6 +226,22 @@ __marimo__/
 outputs/*
 !outputs/Wave 0-11 podsumowanie/
 !outputs/Wave 0-11 podsumowanie/**
+# FINAL 14.08.2026 — docs + summaries (not checkpoints / run trees)
+!outputs/taskA_FINAL_14.08.2026/
+!outputs/taskA_FINAL_14.08.2026/**
+outputs/taskA_FINAL_14.08.2026/runs/
+outputs/taskA_FINAL_14.08.2026/logs/
+outputs/taskA_FINAL_14.08.2026/learning_curves/FINAL/
+outputs/taskA_FINAL_14.08.2026/learning_curves/from_11.08_S10/
+outputs/taskA_FINAL_14.08.2026/edge_pathway_report/from_11.08_S10/
+# Stage A/C 11.08 — keep markdown/json decision tables only (not runs / progress dumps)
+!outputs/taskA_final_large_grid_11.08.2026/
+!outputs/taskA_final_large_grid_11.08.2026/**
+outputs/taskA_final_large_grid_11.08.2026/stage_a/runs/
+outputs/taskA_final_large_grid_11.08.2026/stage_c/runs/
+outputs/taskA_final_large_grid_11.08.2026/logs/
+outputs/taskA_final_large_grid_11.08.2026/stage_a/progress_every10_11.08.2026/
+outputs/taskA_final_large_grid_11.08.2026/stage_c/progress_every10_11.08.2026/
 multirun/
 
 # Weights & Biases
@@ -235,6 +251,7 @@ wandb-debug.log
 # Dane (zazwyczaj zbyt duże do repo)
 data/raw/
 data/processed/
+data/JODIE/
 *.h5
 *.hdf5
 

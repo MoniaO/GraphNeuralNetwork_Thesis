@@ -1,0 +1,81 @@
+{
+  "block_name": "taskA_final_large_grid_11.08.2026",
+  "created_at": "2026-08-11",
+  "candidate_seed": 20260722,
+  "candidate_seed_follows_training_seed": false,
+  "screening_seeds": [20260721, 20260722, 20260723],
+  "final_seeds": [20260721, 20260722, 20260723, 20260724, 20260725],
+  "scenarios": [
+    "clean",
+    "hidden_confounder",
+    "selection_bias",
+    "no_overlap",
+    "noisy_documentation",
+    "multihospital"
+  ],
+  "selection_metric": "auprc",
+  "selection_split": "valid",
+  "test_for_selection": false,
+  "stage_a": {
+    "g_stat": "zeros_24",
+    "fusion_dim": 88,
+    "backbones": ["rgcn_matched", "hgt", "hetero_gatv2"],
+    "shared_grid": {
+      "hidden_dim": [32, 64],
+      "n_layers": [2, 3, 4],
+      "dropout": [0.1, 0.25],
+      "lr": [0.001, 0.0003]
+    },
+    "fixed": {
+      "weight_decay": 0.0005,
+      "epochs": 200,
+      "patience": 40,
+      "grad_clip": 1.0
+    },
+    "refinement": {
+      "hgt_heads": [4, 8],
+      "gat_heads": [2, 4, 8],
+      "rgcn_num_bases": [4, 8, "full"]
+    }
+  },
+  "stage_c_variants": [
+    "S0_NONE",
+    "S1_NMI",
+    "S2_JACCARD_ACTIVE",
+    "S3_COSINE_ACTIVE",
+    "S4_HCR_BINARY_ONLY",
+    "S5_META8",
+    "S6_HCR_MATRIX16",
+    "S7_HCR_COMPACT24",
+    "S8_HCR_COMPACT32",
+    "S9_HCR_COMPACT36",
+    "S10_HCR_FULL40"
+  ],
+  "status": "STAGE_C_STARTED",
+  "frozen_backbone": {
+    "backbone": "hgt",
+    "hidden_dim": 32,
+    "n_layers": 2,
+    "dropout": 0.25,
+    "lr": 0.001,
+    "heads": 4,
+    "heads_8_refine": "lost_0.705_vs_0.729"
+  },
+  "smoke": {
+    "hgt": "ok",
+    "hetero_gatv2": "ok",
+    "rgcn_matched": "ok",
+    "candidate_seed_check": "training=20260721 candidate=20260722",
+    "g_stat": "zeros_24 via fusion88"
+  },
+  "code_paths": {
+    "fusion_decoder": "src/taskA_final_large_grid_11_08_2026/fusion88_decoder.py",
+    "rgcn_matched": "src/taskA_final_large_grid_11_08_2026/rgcn_matched.py",
+    "stage_a_grid": "src/taskA_final_large_grid_11_08_2026/stage_a_grid.py",
+    "stage_a_runner": "src/taskA_final_large_grid_11_08_2026/stage_a_runner.py",
+    "stage_c_package": "src/taskA_final_large_grid_11_08_2026/stage_c/",
+    "stage_c_runner": "src/taskA_final_large_grid_11_08_2026/stage_c_runner.py",
+    "cli_stage_a": "scripts/run_taskA_stage_a_backbone_11.08.2026.py",
+    "cli_stage_c": "scripts/run_taskA_stage_c_stats_11.08.2026.py"
+  }
+}

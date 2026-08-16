@@ -1,0 +1,73 @@
+{
+  "block": "taskA_final_large_grid_11.08.2026",
+  "stage": "A",
+  "decision": "FREEZE_BACKBONE_FOR_NEXT_STEPS",
+  "decided_at": "2026-08-11T16:31:00Z",
+  "selection_rule": "mean valid AUPRC on clean shared screen (3 seeds); test sealed not used",
+  "user_choice": "HGT Top-1; constrain to L2 (2 layers)",
+  "frozen": {
+    "backbone": "hgt",
+    "config_id": "hgt__h32__L2__d0.25__lr0.001__hd4__shared",
+    "hidden_dim": 32,
+    "n_layers": 2,
+    "dropout": 0.25,
+    "lr": 0.001,
+    "heads": 4,
+    "weight_decay": 0.0005,
+    "epochs": 200,
+    "patience": 40,
+    "grad_clip": 1.0,
+    "decoder": "fusion88",
+    "hcr": "none",
+    "g_stat": "zeros_24",
+    "candidate_seed": 20260722,
+    "candidate_fingerprint": "0fe55c7a270f198b",
+    "screening_seeds": [20260721, 20260722, 20260723]
+  },
+  "clean_screen_metrics": {
+    "mean_valid_auprc": 0.7287914649748141,
+    "std_valid_auprc": 0.009116554516909913,
+    "mean_valid_auc": 0.8572268135904499,
+    "per_seed": [
+      {
+        "seed": 20260721,
+        "valid_auprc": 0.722285728426401,
+        "valid_auc": 0.850358126721763,
+        "best_epoch": 100
+      },
+      {
+        "seed": 20260722,
+        "valid_auprc": 0.7392114882097963,
+        "valid_auc": 0.8602754820936639,
+        "best_epoch": 123
+      },
+      {
+        "seed": 20260723,
+        "valid_auprc": 0.7248771782882447,
+        "valid_auc": 0.8610468319559229,
+        "best_epoch": 97
+      }
+    ]
+  },
+  "not_selected_note": "RGCN/SAGE/GAT and HGT Top-2 kept as baselines only; not frozen for stats attach.",
+  "heads_refine": {
+    "heads_4_mean_valid_auprc": 0.7288,
+    "heads_8_mean_valid_auprc": 0.7045,
+    "winner": 4,
+    "note": "heads=8 lost refine; Stage C uses heads=4"
+  },
+  "stage_c": {
+    "status": "STARTED",
+    "heads": 4,
+    "backbone_retune": false
+  },
+  "next_allowed": [
+    "Stage C statistical screen S0–S10 on frozen HGT heads=4",
+    "optional: remaining scenarios after clean screen"
+  ],
+  "hard_stops": [
+    "do not use sealed test for selection",
+    "do not retune graph + stats together",
+    "do not retune backbone hypers per statistical variant"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "block_id": "taskA_FINAL_14.08.2026",
+  "model_name": "FINAL_14.08.2026",
+  "created": "2026-08-14",
+  "parent_campaign": "taskA_final_large_grid_11.08.2026",
+  "frozen": {
+    "backbone": "hgt",
+    "hidden_dim": 32,
+    "n_layers": 2,
+    "dropout": 0.25,
+    "lr": 0.001,
+    "heads": 4,
+    "decoder": "fusion88_stat",
+    "stat_variant": "S10_HCR_FULL40",
+    "stat_raw_dim": 40,
+    "candidate_seed": 20260722
+  },
+  "encoders": ["mlp", "kan_shallow"],
+  "scenarios": [
+    "clean",
+    "hidden_confounder",
+    "selection_bias",
+    "no_overlap",
+    "noisy_documentation",
+    "multihospital"
+  ],
+  "final_seeds": [20260721, 20260722, 20260723, 20260724, 20260725],
+  "planned_jobs": 60,
+  "selection_metric": "valid_auprc",
+  "wandb_group": "TaskA_FINAL_14_08_2026",
+  "outputs_root": "outputs/taskA_FINAL_14.08.2026"
+}

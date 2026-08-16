@@ -74,6 +74,17 @@ def build_taskA_encoder(cfg: Any, metadata: tuple) -> BaseHeteroEncoder:
             activation=activation,
         )
 
+    if name in {"rgcn_matched", "hetero_rgcn_matched"}:
+        from taskA_final_large_grid_11_08_2026.rgcn_matched import (
+            HeteroRGCNMatchedEncoder,
+        )
+
+        bases_raw = getattr(cfg.model, "num_bases", 8)
+        return HeteroRGCNMatchedEncoder(
+            **common,
+            num_bases=bases_raw,
+        )
+
     raise ValueError(f"Unknown Task A matched encoder: {name}")
 
 

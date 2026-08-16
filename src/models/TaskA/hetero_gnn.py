@@ -37,6 +37,8 @@ MATCHED_ENCODER_NAMES = {
     "hetero_gatv2",
     "gatv2",
     "hgt",
+    "rgcn_matched",
+    "hetero_rgcn_matched",
 }
 
 
@@ -821,7 +823,49 @@ class HeteroReconGNN(nn.Module):
             getattr(decoder_cfg, "name", "hcr_mlp") if decoder_cfg is not None else "hcr_mlp"
         ).strip().lower()
 
-        if self.use_hcr and decoder_name in {
+        if decoder_name in {
+            "fusion88",
+            "fusion_88",
+            "graph_fusion88",
+            "stage_a_fusion88",
+            "fusion88_stat",
+            "stage_c_fusion88",
+        }:
+            from taskA_final_large_grid_11_08_2026.fusion88_decoder import (
+                build_fusion88_decoder,
+            )
+            from taskA_final_large_grid_11_08_2026.stage_c.stat_encoder import (
+                Fusion88StatDecoder,
+                build_stage_c_decoder,
+            )
+
+            # Stage C: Fusion88StatDecoder when stat_raw_dim / stat_variant set;
+            # S0 stays on plain Fusion88Decoder (exact zeros g_stat path).
+            wants_stat = decoder_name in {"fusion88_stat", "stage_c_fusion88"}
+            if not wants_stat and decoder_cfg is not None:
+                wants_stat = (
+                    getattr(decoder_cfg, "stat_raw_dim", None) is not None
+                    or bool(getattr(decoder_cfg, "force_zero_stat", False))
+                )
+            if not wants_stat:
+                exp = getattr(cfg, "experiment", None)
+                sv = str(getattr(exp, "stat_variant", "") or "").upper()
+                wants_stat = bool(sv) or "STAGE_C" in str(
+                    getattr(exp, "variant", "") or ""
+                ).upper()
+
+            if wants_stat:
+                self.decoder = build_stage_c_decoder(cfg, hidden_channels)
+                self.fusion88_stat = isinstance(self.decoder, Fusion88StatDecoder)
+            else:
+                self.decoder = build_fusion88_decoder(cfg, hidden_channels)
+                self.fusion88_stat = False
+            self.hcr_dim = 0
+            self.residual_fusion = False
+            self.wave7c = False
+            self.fusion88 = True
+            self.use_hcr = False
+        elif self.use_hcr and decoder_name in {
             "wave7c",
             "wave7c_b2",
             "hcr_wave7c",
@@ -832,6 +876,7 @@ class HeteroReconGNN(nn.Module):
             self.hcr_dim = int(getattr(self.decoder, "hcr_dim", 120))
             self.residual_fusion = False
             self.wave7c = True
+            self.fusion88 = False
         elif self.use_hcr and decoder_name in {
             "residual_fusion",
             "hcr_residual_fusion",
@@ -843,6 +888,7 @@ class HeteroReconGNN(nn.Module):
             self.hcr_dim = int(getattr(self.decoder, "hcr_dim", 120))
             self.residual_fusion = True
             self.wave7c = False
+            self.fusion88 = False
         elif self.use_hcr:
             if decoder_cfg is not None and getattr(decoder_cfg, "hcr_dim", None) is not None:
                 self.hcr_dim = int(decoder_cfg.hcr_dim)
@@ -857,6 +903,7 @@ class HeteroReconGNN(nn.Module):
             )
             self.residual_fusion = False
             self.wave7c = False
+            self.fusion88 = False
         else:
             self.decoder = LinkDecoder(
                 hidden_channels=hidden_channels,
@@ -864,6 +911,7 @@ class HeteroReconGNN(nn.Module):
             )
             self.residual_fusion = False
             self.wave7c = False
+            self.fusion88 = False
 
         self.num_layers = number_of_layers
 
@@ -1003,6 +1051,19 @@ class HeteroReconGNN(nn.Module):
         flat_embeddings = self.encode_flat(
             data
         )
+
+        if getattr(self, "fusion88", False):
+            # Stage A: g_stat omitted → zeros(24).
+            # Stage C: pass attached stat_raw [N,3,D] + role masks when present;
+            # Fusion88StatDecoder encodes them; plain Fusion88Decoder ignores extras.
+            return self.decoder(
+                embeddings=flat_embeddings,
+                source=data.link_source_idx,
+                target=data.link_target_idx,
+                g_stat=getattr(data, "g_stat", None),
+                stat_raw=getattr(data, "stat_raw", None),
+                stat_role_masks=getattr(data, "stat_role_masks", None),
+            )
 
         if self.use_hcr:
             hcr_features = getattr(data, "hcr_features", None)

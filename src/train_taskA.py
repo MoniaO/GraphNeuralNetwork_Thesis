@@ -299,6 +299,23 @@ def main(cfg: DictConfig) -> None:
             test_data,
             device="cpu",
         )
+
+    # Stage C (Final Large Grid 11.08.2026): statistical S0–S10 on frozen backbone.
+    # Owns its own train-only fit; requires hcr=none so Wave7C attach does not run.
+    from taskA_final_large_grid_11_08_2026.stage_c.attach import (
+        fit_and_attach_stage_c_stats,
+        stage_c_enabled,
+    )
+
+    if stage_c_enabled(cfg):
+        fit_and_attach_stage_c_stats(
+            cfg,
+            train_data,
+            valid_data,
+            test_data,
+            device="cpu",
+        )
+
     if hcr_enabled(cfg) and (
         hcr_encoder is not None or getattr(train_data, "hcr_features", None) is not None
     ):
