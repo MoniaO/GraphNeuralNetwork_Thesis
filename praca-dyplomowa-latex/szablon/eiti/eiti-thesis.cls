@@ -252,8 +252,8 @@
 % Wybór języka pracy
 %--------------------------------
 \newcommand{\langpol}{
-    \newcommand{\@lang}{polish}
-    \usepackage[polish]{babel}
+    \newcommand{\@lang}{english}
+    \usepackage[english]{babel}
 
 	\newtheorem{theorem}{Twierdzenie}
 	\newtheorem{lemma}{Lemat}

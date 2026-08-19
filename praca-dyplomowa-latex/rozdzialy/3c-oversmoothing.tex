@@ -1,5 +1,5 @@
 \newpage % Rozdziały zaczynamy od nowej strony.
-\subsubsection{Oversmoothing methods}
+\subsubsection{Metrics}
 \label{subsubsec:oversmoothing}
 
 
@@ -14,6 +14,21 @@ DropEdge (Rong et al., 2020) randomly removes a fraction of edges independently 
 
 Jumping Knowledge (Xu et al., 2018) aggregates the outputs of all layers (via concatenation, cat, or elementwise max) rather than only the last one, letting a node fall back on a shallower, less-smoothed representation when the deepest layer has become uninformative.
 
-
+\emph{Lift} is the AUPRC divided by the prevalence baseline, that is, the
+factor by which the model improves over a random ranking; at a mean
+prevalence of $5.5\%$ a lift of $2.3$ corresponds to an AUPRC of $0.125$.
+\emph{\%~ceiling} is defined as
+%
+\begin{equation}
+  \frac{\mathrm{AUC} - 0.5}{\mathrm{AUC}_{\mathrm{Bayes}} - 0.5} \cdot 100\%,
+  \label{eq:pct-ceiling}
+\end{equation}
+%
+where $\mathrm{AUC}_{\mathrm{Bayes}} = 0.651$ is the Bayes ceiling averaged
+over the same eight endpoints. It expresses the
+share of attainable signal recovered by the model. Both terms are subtracted
+by $0.5$ so that a random classifier scores $0\%$.
+Unless stated otherwise, the epoch is selected on the validation set and
+test metrics are reported from that epoch.
 
 

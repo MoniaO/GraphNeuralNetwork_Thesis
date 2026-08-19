@@ -21,8 +21,8 @@
 \addbibresource{bibliografia.bib}
 \renewcommand{\tablename}{Table}
 \renewcommand{\figurename}{Figure}
-
-
+\renewcommand{\listfigurename}{List of Figures}
+\renewcommand{\listtablename}{List of Tables}
 
 % Dodanie usuwa jedno z ostrzeżeń
 \usepackage{csquotes}
@@ -33,6 +33,8 @@
 \usepackage{placeins}
 \usepackage{enumitem}
 \usepackage{cleveref}
+\usepackage{longtable}
+\usepackage{makecell}
 
 \begin{document}
 
@@ -52,8 +54,8 @@
 % Rozdziały
 \cleardoublepage % Zaczynamy od nieparzystej strony
 \pagestyle{headings}
-\input{rozdzialy/1-wstep}
 \input{rozdzialy/1a-preliminary}
+\input{rozdzialy/1-wstep}
 \input{rozdzialy/2-cel-pracy}
 \input{rozdzialy/3-przeglad-literatury}
 \input{rozdzialy/3a-architecture}
@@ -70,9 +72,16 @@
 \input{rozdzialy/6a-taska-models-benchmark}
 \input{rozdzialy/6b-taskb-models-benchmark}
 \input{rozdzialy/7-podsumowanie}
+%\input{rozdzialy/dodatek}
+
+\cleardoublepage
+\appendix{Appendix}
+\label{appendix-list}
+\input{rozdzialy/dodatek}
 
 \cleardoublepage % Zaczynamy od nieparzystej strony
 \printbibliography
+
 
 % Spisy (opcjonalne)
 \newpage

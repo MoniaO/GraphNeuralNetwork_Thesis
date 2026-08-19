@@ -1,0 +1,63 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global/global}
+    \entry{toonsi2025causal}{misc}{}{}
+      \name{author}{3}{}{%
+        {{hash=3e934154ffd79c812c64c0ff335b28cb}{%
+           family={Toonsi},
+           familyi={T\bibinitperiod},
+           given={Sara},
+           giveni={S\bibinitperiod}}}%
+        {{hash=ad7ced8a345e5a21186b7da66edc5aed}{%
+           family={Schofield},
+           familyi={S\bibinitperiod},
+           given={Paul\bibnamedelima N.},
+           giveni={P\bibinitperiod\bibinitdelim N\bibinitperiod}}}%
+        {{hash=a81b00475159efd1b4eb63d61d8c4748}{%
+           family={Hoehndorf},
+           familyi={H\bibinitperiod},
+           given={Robert},
+           giveni={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{f67a192ef21dca7858e57bed0dc4cb44}
+      \strng{fullhash}{40b642f700262f5527e1e72e1feb1c94}
+      \strng{fullhashraw}{40b642f700262f5527e1e72e1feb1c94}
+      \strng{bibnamehash}{40b642f700262f5527e1e72e1feb1c94}
+      \strng{authorbibnamehash}{40b642f700262f5527e1e72e1feb1c94}
+      \strng{authornamehash}{f67a192ef21dca7858e57bed0dc4cb44}
+      \strng{authorfullhash}{40b642f700262f5527e1e72e1feb1c94}
+      \strng{authorfullhashraw}{40b642f700262f5527e1e72e1feb1c94}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{arXiv preprint arXiv:2505.06949}
+      \field{note}{Preprint, not yet peer-reviewed}
+      \field{title}{Causal knowledge graph analysis identifies adverse drug effects}
+      \field{year}{2025}
+    \endentry
+  \enddatalist
+  \missing{he2016deep}
+  \missing{liu2022convnet}
+  \missing{redmon2016you}
+\endrefsection
+\endinput
+

@@ -1,0 +1,128 @@
+\subsubsection{Oversmoothing}
+  
+As collapse was observed with increased number of layes, it was checked how it corresponds with oversmoothing
+and how different techniques handle the issue. 
+In \cref{tab:oversmoothing-stat} there are shown results for oversmoothing metrics for different 
+oversmoothing methods applied in models and HCR configurations. 
+
+    % \begin{table}[htbp]
+    %   \centering
+    %   \scriptsize
+    %   \caption{Transformers with oversmoothing methods applied}
+    %   \setlength{\tabcolsep}{2.5pt}
+    %   \label{tab:bayes-antiovs}
+    %   \begin{tabular}{cllcccccccc}
+    %   \toprule
+    %    &  &  & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
+    %   \cmidrule(lr){4-7}\cmidrule(lr){8-11}
+    %   $L$ & Residual & Method & AUC & AUPRC & Lift & \%AUC & AUC & AUPRC & Lift & \%AUC \\
+    %   \midrule
+    %   1 & no & --- & 0.621 & 0.1252 & 2.30 & 80 & 0.618 & 0.1192 & 2.19 & 78 \\
+    %   \addlinespace[4pt]
+    %   3 & no & --- & 0.546 & 0.0850 & 1.56 & 30 & 0.550 & 0.0752 & 1.38 & 33 \\
+    %   3 & no & JK cat & 0.606 & 0.1383 & 2.54 & 71 & 0.615 & 0.1235 & 2.27 & 76 \\
+    %   3 & no & JK max & 0.622 & 0.1372 & 2.52 & 81 & 0.619 & 0.1240 & 2.28 & 79 \\
+    %   3 & no & DropEdge & 0.546 & 0.0800 & 1.47 & 30 & 0.547 & 0.0726 & 1.33 & 31 \\
+    %   3 & no & JK cat + DropEdge & 0.623 & 0.1386 & 2.55 & 81 & 0.623 & 0.1249 & 2.30 & 82 \\
+    %   3 & no & JK max + DropEdge & 0.626 & 0.1389 & 2.55 & 84 & 0.622 & 0.1219 & 2.24 & 81 \\
+    %   3 & yes & --- & 0.624 & 0.1353 & 2.48 & 82 & 0.618 & 0.1221 & 2.24 & 78 \\
+    %   3 & yes & JK cat & 0.624 & 0.1357 & 2.49 & 82 & 0.620 & 0.1236 & 2.27 & 80 \\
+    %   3 & yes & JK max & 0.626 & 0.1370 & 2.52 & 83 & 0.620 & 0.1234 & 2.27 & 79 \\
+    %   3 & yes & DropEdge & 0.626 & 0.1341 & 2.46 & 84 & 0.622 & 0.1237 & 2.27 & 81 \\
+    %   3 & yes & JK cat + DropEdge & \textbf{0.629} & 0.1362 & 2.50 & \textbf{85} & \textbf{0.624} & 0.1248 & 2.29 & \textbf{83} \\
+    %   3 & yes & JK max + DropEdge & 0.625 & 0.1359 & 2.50 & 83 & 0.622 & 0.1238 & 2.28 & 81 \\
+    %   \addlinespace[4pt]
+    %   6 & no & --- & 0.526 & 0.0671 & 1.23 & 17 & 0.524 & 0.0635 & 1.17 & 16 \\
+    %   6 & no & JK cat & 0.617 & \textbf{0.1415} & \textbf{2.60} & 78 & 0.621 & \textbf{0.1285} & \textbf{2.36} & 80 \\
+    %   6 & yes & --- & 0.624 & 0.1359 & 2.50 & 82 & 0.621 & 0.1225 & 2.25 & 80 \\
+    %   6 & yes & JK cat & 0.624 & 0.1352 & 2.48 & 82 & 0.622 & 0.1239 & 2.28 & 81 \\
+    %   \bottomrule
+    %   \end{tabular}
+    %   \end{table}
+
+%dodac HCR oversmoothing 
+  \begin{table}[htbp]
+    \centering
+    \footnotesize
+    \caption{Oversmoothing metrics}
+    \label{tab:oversmoothing-stat}
+    \begin{tabular}{cllccccccc}
+    \toprule
+    $L$ & Residual & Metoda & MAD & CosSim & Rank & DirE & Std & $E_L/E_0$ & $\mathrm{MAD}_L/\mathrm{MAD}_0$ \\
+    \midrule
+    1 & no & --- & 0.882 & 0.571 & 0.229 & 0.178 & 0.168 & 0.115 & 1.585 \\
+    \addlinespace[4pt]
+    3 & no & --- & 0.799 & 0.630 & 0.125 & 0.041 & 0.083 & 0.057 & 0.898 \\
+    3 & no & JK cat & 0.837 & 0.603 & 0.070 & 0.098 & 0.088 & 0.018 & 1.138 \\
+    3 & no & JK max & 0.766 & 0.669 & 0.208 & 0.271 & 0.197 & 0.019 & 1.088 \\
+    3 & no & DropEdge & 0.750 & 0.652 & 0.135 & 0.053 & 0.086 & 0.042 & 0.871 \\
+    3 & no & JK cat + DropEdge & 0.827 & 0.610 & 0.073 & 0.073 & 0.082 & 0.020 & 1.093 \\
+    3 & no & JK max + DropEdge & 0.727 & 0.687 & 0.190 & 0.175 & 0.153 & 0.024 & 1.161 \\
+    3 & yes & --- & 0.774 & 0.689 & 0.180 & 0.189 & 0.182 & 0.098 & 1.112 \\
+    3 & yes & JK cat & 0.826 & 0.630 & 0.104 & 0.219 & 0.174 & 0.038 & 1.024 \\
+    3 & yes & JK max & 0.630 & 0.816 & 0.315 & 0.337 & 0.219 & 0.059 & 1.039 \\
+    3 & yes & DropEdge & 0.784 & 0.682 & 0.169 & 0.110 & 0.143 & 0.102 & 1.102 \\
+    3 & yes & JK cat + DropEdge & 0.826 & 0.633 & 0.099 & 0.215 & 0.177 & 0.047 & 0.984 \\
+    3 & yes & JK max + DropEdge & 0.678 & 0.799 & 0.271 & 0.279 & 0.206 & 0.066 & 1.094 \\
+    \addlinespace[4pt]
+    6 & no & --- & 0.808 & 0.634 & 0.125 & 0.049 & 0.094 & 0.080 & 0.781 \\
+    6 & no & JK cat & 0.813 & 0.611 & 0.037 & 0.053 & 0.056 & 0.012 & 1.068 \\
+    6 & yes & --- & 0.756 & 0.702 & 0.133 & 0.096 & 0.135 & 0.056 & 1.055 \\
+    6 & yes & JK cat & 0.823 & 0.652 & 0.056 & 0.163 & 0.127 & 0.017 & 0.939 \\
+    \bottomrule
+    \end{tabular}
+    \end{table}
+
+
+  % =====================================================================
+%  Oversmoothing metrics: no HCR vs typed+triple, with and without
+%  residual connections. TransformerConv, synthetic dataset, clean
+%  scenario, full observability, aggr = sum, seed 42, 200 epochs,
+%  no jumping knowledge, no DropEdge.
+%  Metrics measured on the validation set at the end of training;
+%  \% ceil. is the test-set performance for the same run.
+%
+%  MAD / CosSim / Rank / DirE  - averaged over all node types
+%  MAD_ep / CosSim_ep          - restricted to endpoint nodes
+%  E_L/E_0                     - Dirichlet energy relative to the input layer
+%
+%  PREAMBLE: \usepackage{booktabs}\usepackage{multirow}
+% =====================================================================
+
+\begin{table}[htbp]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \caption{Representation statistics for the model without HCR and with
+    the combined typed and triple variant.}
+  \label{tab:oversmoothing-summary}
+  \begin{tabular}{llcccccccc}
+    \toprule
+    & & & \multicolumn{4}{c}{All node types} & \multicolumn{2}{c}{Endpoints only} & \\
+    \cmidrule(lr){4-7}\cmidrule(lr){8-9}
+    Residual & HCR & $L$ & MAD & CosSim & Rank & $E_L/E_0$ & MAD$_{\mathrm{ep}}$ & CosSim$_{\mathrm{ep}}$ & \% ceil. \\
+    \midrule
+    \multirow{6}{*}{no}
+      & \multirow{3}{*}{---}
+                       & 1 & 0.870 & 0.579 & 0.208 & 0.107 & 1.177 & 0.459 & 79.6 \\
+    & & 3 & 0.810 & 0.627 & 0.130 & 0.077 & 1.191 & 0.491 & 34.5 \\
+    & & 6 & 0.815 & 0.622 & 0.117 & 0.095 & 1.166 & 0.489 &  0.0 \\
+    \cmidrule(lr){2-10}
+      & \multirow{3}{*}{typed+triple}
+                       & 1 & 0.884 & 0.570 & 0.219 & 0.107 & 1.240 & 0.412 & 81.4 \\
+    & & 3 & 0.804 & 0.624 & 0.117 & 0.056 & 1.181 & 0.458 & 77.0 \\
+    & & 6 & 0.809 & 0.619 & 0.120 & 0.095 & 1.165 & 0.448 & 74.5 \\
+    \midrule
+    \multirow{6}{*}{yes}
+      & \multirow{3}{*}{---}
+                       & 1 & 0.717 & 0.735 & 0.315 & 0.446 & 0.996 & 0.557 & 79.0 \\
+    & & 3 & 0.764 & 0.674 & 0.143 & 0.076 & 1.235 & 0.314 & 79.7 \\
+    & & 6 & 0.766 & 0.679 & 0.128 & 0.063 & 1.219 & 0.431 & 79.4 \\
+    \cmidrule(lr){2-10}
+      & \multirow{3}{*}{typed+triple}
+                       & 1 & 0.756 & 0.695 & 0.307 & 0.447 & 1.190 & 0.348 & 77.6 \\
+    & & 3 & 0.776 & 0.650 & 0.135 & 0.076 & 1.350 & 0.145 & 77.5 \\
+    & & 6 & 0.772 & 0.655 & 0.125 & 0.044 & 1.255 & 0.312 & 78.1 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
