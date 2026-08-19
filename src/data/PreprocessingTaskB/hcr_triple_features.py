@@ -40,7 +40,7 @@ dziala bez zadnej zmiany, zmienia sie tylko in_channels i znaczenie slotu.
 
 from __future__ import annotations
 
-from typing import Dict, List, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import networkx as nx
 import numpy as np
@@ -73,39 +73,115 @@ def get_triples_by_endpoint(
     excluded_nodes: Set[str],
     observed_columns: Set[str],
     max_triples: int = 40,
+    binary_only: bool = True,
+    samples_df: Optional[pd.DataFrame] = None,
+    train_patient_ids: Optional[Set[int]] = None,
 ) -> Dict[str, List[Tuple[str, str]]]:
     """Zwraca {endpoint: [(dziadek, rodzic), ...]} dla sciezek G -> P -> E.
 
     Oba wezly musza miec OBSERWOWANA wartosc per pacjent - inaczej nie da sie
     policzyc tabeli 2x2x2. To ten sam warunek co keep_visible dla par.
 
-    max_triples ogranicza liczbe slotow; ranking po liczbie wspolnych
-    obserwacji, NIE po etykiecie (zeby nie robic selekcji cech po celu).
+    binary_only=True (domyslnie): oba wezly musza miec value_type="binary".
+
+    DLACZEGO. _triple_stats liczy prewalencje jako suma/n, czyli traktuje
+    wartosc jako zero-jedynkowa. Dla wezla ciaglego (age, baseline_egfr) albo
+    licznikowego (nephrotoxin_load) daje to bezsensowna "prewalencje" i
+    zaszumione a111.
+
+    Poprawne rozszerzenie wymagaloby bazy Legendre'a jak dla par - ale trojka
+    ciagla dawalaby wtedy tensor 4x4x4, czyli 64 wspolczynniki szacowane z
+    tabeli o osmiu komorkach. Przy prewalencji endpointow rzedu kilku procent
+    jest to nieestymowalne (por. dokument HCR Task A, sekcja 7.2: tabela
+    2x2x2 ma wyzsza wariancje niz pary, zwlaszcza przy rzadkich komorkach).
+
+    max_triples ogranicza liczbe slotow; ranking po kolejnosci w grafie,
+    NIE po etykiecie (zeby nie robic selekcji cech po celu).
     """
     G = nx.DiGraph()
     G.add_nodes_from(nodes_df["node"])
     G.add_edges_from(zip(edges_df["source"], edges_df["target"]))
+    value_type = dict(zip(nodes_df["node"], nodes_df.get("value_type", pd.Series(dtype=str))))
+
+    def usable(node: str) -> bool:
+        if node in excluded_nodes or node not in observed_columns:
+            return False
+        if binary_only and str(value_type.get(node)) != "binary":
+            return False
+        return True
+
+    # Wsparcie pary (dziadek, rodzic) do rankingu - liczone raz, na splicie
+    # treningowym. Bez samples_df ranking sie nie odbywa i brany jest
+    # porzadek grafu (patrz komentarz przy sortowaniu).
+    support: Optional[Dict[Tuple[str, str], float]] = None
+    if samples_df is not None:
+        rows = samples_df
+        if train_patient_ids is not None and "patient_id" in samples_df.columns:
+            rows = samples_df[samples_df["patient_id"].isin(train_patient_ids)]
+        support = {}
 
     out: Dict[str, List[Tuple[str, str]]] = {}
     endpoint_set = set(target_endpoints)
+    n_skipped = 0
     for ep in target_endpoints:
         if ep not in G:
             out[ep] = []
             continue
         triples = []
         for parent in G.predecessors(ep):
-            if parent in excluded_nodes or parent not in observed_columns:
-                continue
             if parent in endpoint_set:      # inny endpoint jako rodzic = wyciek
                 continue
+            if not usable(parent):
+                n_skipped += 1
+                continue
             for grand in G.predecessors(parent):
-                if grand in excluded_nodes or grand not in observed_columns:
-                    continue
                 if grand in endpoint_set:
                     continue
+                if not usable(grand):
+                    n_skipped += 1
+                    continue
+                if support is not None and (grand, parent) not in support:
+                    if grand in rows.columns and parent in rows.columns:
+                        support[(grand, parent)] = float(
+                            (rows[grand].to_numpy() * rows[parent].to_numpy()).sum())
                 triples.append((grand, parent))
+
+        # RANKING: po wspolwystepowaniu dziadka i rodzica na splicie
+        # treningowym, malejaco; remisy rozstrzygane alfabetycznie, zeby
+        # wynik byl deterministyczny miedzy uruchomieniami.
+        # NIE uzywa etykiety endpointu - inaczej byloby to selekcja cech
+        # po celu, ktora musialaby wejsc do walidacji krzyzowej.
+        if support is not None and len(triples) > max_triples:
+            triples.sort(key=lambda gp: (-support.get(gp, 0.0), gp[0], gp[1]))
         out[ep] = triples[:max_triples]
+    if binary_only and n_skipped:
+        print(f"[HCR triple] pominieto {n_skipped} wezlow niebinarnych "
+              f"(value_type != 'binary')")
     return out
+
+
+def _all_eight_cells(
+    n111, nG, nP, nE, nGP, nGE, nPE, n
+) -> List[np.ndarray]:
+    """Wszystkie OSIEM komorek tabeli 2x2x2 (G, P, E).
+
+    Wczesniejsza wersja sprawdzala tylko piec, przez co maska estymowalnosci
+    przepuszczala trojki z pusta komorka n010, n001 albo n000 - czyli
+    dokladnie te, przy ktorych a111 jest najbardziej niestabilne.
+
+    Indeksowanie: n_{gpe}, np. n101 to G=1, P=0, E=1.
+    Wyprowadzenie przez wlaczenia i wylaczenia:
+        n100 = nG - nGP - nGE + n111
+        n000 = n - nG - nP - nE + nGP + nGE + nPE - n111
+    """
+    n110 = nGP - n111
+    n101 = nGE - n111
+    n011 = nPE - n111
+    n100 = nG - nGP - nGE + n111
+    n010 = nP - nGP - nPE + n111
+    n001 = nE - nGE - nPE + n111
+    n000 = n - nG - nP - nE + nGP + nGE + nPE - n111
+    return [n111, n110, n101, n011, n100, n010, n001, n000]
 
 
 def _triple_stats(
@@ -215,9 +291,11 @@ def compute_hcr_triple_evidence(
                 block[:, i] = full[key][0]
             block[:, 8] = 1.0                       # support (komplet danych)
 
-            # estymowalnosc: najmniejsza komorka 2x2x2 musi miec MIN_CELL obs.
-            cells = [c["n111"], c["nGP"] - c["n111"], c["nGE"] - c["n111"],
-                     c["nPE"] - c["n111"], c["nG"] - c["nGP"] - c["nGE"] + c["n111"]]
+            # estymowalnosc: KAZDA z osmiu komorek 2x2x2 musi miec MIN_CELL obs.
+            cells = _all_eight_cells(
+                c["n111"], c["nG"], c["nP"], c["nE"],
+                c["nGP"], c["nGE"], c["nPE"], c["n"],
+            )
             block[:, 9] = 1.0 if min(cells) >= MIN_CELL else 0.0
 
             # aktywacje pacjenta z marginesow PELNYCH (dla valid/test)
@@ -256,6 +334,11 @@ def compute_hcr_triple_evidence(
             features[:, e_idx, t_idx, :] = block
             mask[:, e_idx, t_idx] = 1.0
 
+    n_slots = int(mask[0].sum())
+    n_estimable = int(((features[0, :, :, 9] > 0) & (mask[0] > 0)).sum())
+    print(f"[HCR triple] estymowalnych: {n_estimable} / {n_slots} trojek "
+          f"(min. {MIN_CELL} obserwacji w kazdej z 8 komorek)")
+
     # KONTRAKT: builder (build_patient_hetero_graphs) wymaga dokladnie tych
     # kluczy - "patient_id" sluzy do ustalenia row_order, czyli wyrownania
     # wierszy tensora z kolejnoscia pacjentow w grafach. Bez niego KeyError.
@@ -266,4 +349,6 @@ def compute_hcr_triple_evidence(
         "mask": mask,
         "patient_id": samples_df["patient_id"].to_numpy(),
         "channels": TRIPLE_EVIDENCE_CHANNELS,
+        "n_triples": n_slots,
+        "n_estimable": n_estimable,
     }

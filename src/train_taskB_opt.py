@@ -143,7 +143,7 @@ def build_loaders(cfg: DictConfig):
                     raise ValueError(f"hcr_evidence_dim={hcr_evidence_dim} nieobslugiwane dla scope='binary' (9 lub 41).")
             elif hcr_parent_scope == "all":
                 if hcr_evidence_dim != 42:
-                    raise ValueError("hcr_parent_scope='all' wymaga hcr_evidence_dim=41.")
+                    raise ValueError("hcr_parent_scope='all' wymaga hcr_evidence_dim=42.")
                 parents_by_endpoint_type = keep_observed(get_direct_parents_by_type(nodes_df, edges_df, target_endpoints, excluded_nodes), samples_df)
                 pair_evidence = compute_hcr_pair_evidence_mixed(samples_df, parents_by_endpoint_type, train_patient_ids, edges=edges_df)
             else:
@@ -157,15 +157,20 @@ def build_loaders(cfg: DictConfig):
                     samples_df, parents_by_endpoint_by_type, train_patient_ids, edges=edges_df
                 )
             pair_evidence = None
-            if bool(getattr(cfg.model, "hcr_use_triples", True)):
-                triples = get_triples_by_endpoint(nodes_df, edges_df, target_endpoints, excluded_nodes, set(samples_df.columns))
-            print(f"[HCR triple] trojek per endpoint: {[len(v) for v in triples.values()]}")
-            pair_evidence = compute_hcr_triple_evidence(samples_df, triples, train_patient_ids)
+            if bool(getattr(cfg.model, "hcr_use_triples", False)):
+                triples = get_triples_by_endpoint(nodes_df, edges_df, target_endpoints, excluded_nodes, set(samples_df.columns), 
+                                                  samples_df=samples_df, train_patient_ids=train_patient_ids)
+                print(f"[HCR triple] trojek per endpoint: {[len(v) for v in triples.values()]}")
+                pair_evidence = compute_hcr_triple_evidence(samples_df, triples, train_patient_ids)
+                topology["triple_stats"] = {
+                    "n_triples": pair_evidence["n_triples"],
+                    "n_estimable": pair_evidence["n_estimable"],
+                }
 
         elif hcr_wide_mode == "triple":
             observed = set(samples_df.columns)
             triples = get_triples_by_endpoint(
-                nodes_df, edges_df, target_endpoints, excluded_nodes, observed)
+                nodes_df, edges_df, target_endpoints, excluded_nodes, observed, samples_df=samples_df, train_patient_ids=train_patient_ids)
             pair_evidence = compute_hcr_triple_evidence(samples_df, triples, train_patient_ids)
             print(f"[HCR triple] trojek per endpoint: "
                 f"{ {ep: len(v) for ep, v in triples.items()} }")
@@ -320,7 +325,7 @@ def build_run_name(cfg: DictConfig) -> str:
     use_hcr_hid_dim    = f"_{getattr(cfg.model, 'hcr_hidden_dim', '')}" if detailed else ""
 
     return (
-        f"TaskB_{cfg.model.hide_direct_parents}EGopt3{use_hcr_str}{use_hcr_mode}{use_hcr_parent}{use_hcr_dim}{use_hcr_hid_dim}_{cfg.model.name}_s{cfg.training.seed}"
+        f"TaskB_{cfg.model.hide_direct_parents}EGoptTR{cfg.model.hcr_use_triples}{use_hcr_str}{use_hcr_mode}{use_hcr_parent}{use_hcr_dim}{use_hcr_hid_dim}_{cfg.model.name}_s{cfg.training.seed}"
         f"_{targets_str}_{cfg.model.conv_type}_{cfg.data.name}_{scenario_str}_{regime}_{residual_str}"
         f"_ep{cfg.training.epochs}_L{cfg.model.num_layers}"
         f"_lr{cfg.training.lr}_hid{cfg.model.hidden_dim}"
@@ -390,9 +395,9 @@ def main(cfg: DictConfig) -> None:
 
 
     if optimizer_name == "adamw":
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+        optimizer = torch.optim.AdamW(groups, lr=lr, weight_decay=weight_decay)
     else:
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+        optimizer = torch.optim.Adam(groups, lr=lr, weight_decay=weight_decay)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", factor=0.5, patience=5, min_lr=1e-5)
 
@@ -543,9 +548,14 @@ def main(cfg: DictConfig) -> None:
             if getattr(model, "hcr_type_gate", None) is not None:
                 # macierz [n_targets, n_types] -> po jednej serii na pare
                 gate = model.hcr_type_gate.detach().cpu()
-                for j, ep in enumerate(model.target_endpoint_names):
-                    for i, nt in enumerate(PARENT_NODE_TYPES):
-                        log_dict[f"hcr_gate/{ep}/{nt}"] = float(gate[j, i])
+                block_names = list(PARENT_NODE_TYPES)
+                if gate.size(1) == len(block_names) + 1:
+                    block_names.append("triple")
+                for j, ep_name in enumerate(model.target_endpoint_names):
+                    for i, nt in enumerate(block_names):
+                        log_dict[f"hcr_gate/{ep_name}/{nt}"] = float(gate[j, i])
+                log_dict["hcr_gate/max_abs"] = float(gate.abs().max())
+                log_dict["hcr_gate/mean_abs"] = float(gate.abs().mean())
 
             if do_full_eval:
                 log_dict.update({
@@ -629,15 +639,25 @@ def main(cfg: DictConfig) -> None:
                 wandb.summary[f"final/test/{key}"] = value
 
         # po zakonczeniu treningu, przy najlepszym checkpointu
+# po zakonczeniu treningu, przy najlepszym checkpointu
             if getattr(model, "hcr_type_gate", None) is not None:
                 gate = model.hcr_type_gate.detach().cpu()
-                # Jesli brama nie ruszyla sie z zera, lim=0 daje vmin=vmax i pusty
-                # obraz - a to jest wlasnie przypadek, ktory chcemy zobaczyc.
+
+                # Etykiety kolumn MUSZA isc za rzeczywista szerokoscia macierzy:
+                # przy wlaczonych trojkach jest ich piec, nie cztery.
+                block_names = list(PARENT_NODE_TYPES)
+                if gate.size(1) == len(block_names) + 1:
+                    block_names.append("triple")
+
+                # Jesli brama nie ruszyla sie z wartosci poczatkowej, lim moze
+                # byc zerem - vmin=vmax daje pusty obraz, a to jest wlasnie
+                # przypadek, ktory chcemy zobaczyc.
                 lim = max(float(gate.abs().max()), 1e-6)
                 fig, ax = plt.subplots(figsize=(6, 8))
-                im = ax.imshow(gate.numpy(), aspect="auto", cmap="RdBu_r", vmin=-lim, vmax=lim)
-                ax.set_xticks(range(len(PARENT_NODE_TYPES)))
-                ax.set_xticklabels(PARENT_NODE_TYPES, rotation=45, ha="right")
+                im = ax.imshow(gate.numpy(), aspect="auto", cmap="RdBu_r",
+                               vmin=-lim, vmax=lim)
+                ax.set_xticks(range(len(block_names)))
+                ax.set_xticklabels(block_names, rotation=45, ha="right")
                 ax.set_yticks(range(len(model.target_endpoint_names)))
                 ax.set_yticklabels(model.target_endpoint_names)
                 ax.set_title(f"max |gate| = {float(gate.abs().max()):.4f}")
@@ -645,7 +665,7 @@ def main(cfg: DictConfig) -> None:
                 fig.tight_layout()
                 wandb.summary["hcr_gate_matrix"] = wandb.Image(fig)
                 plt.close(fig)
-                # liczby, zeby dalo sie je odczytac bez ogladania obrazka
+
                 wandb.summary["hcr_gate/max_abs"] = float(gate.abs().max())
                 wandb.summary["hcr_gate/mean_abs"] = float(gate.abs().mean())
 
@@ -655,6 +675,13 @@ def main(cfg: DictConfig) -> None:
                 for name, v in zip(model.target_endpoint_names, w.tolist()):
                     wandb.summary[f"hcr_endpoint_weight/{name}"] = v
                 wandb.summary["hcr_endpoint_weight/max_abs"] = float(w.abs().max())
+
+            ts = topology.get("triple_stats")
+            if ts:
+                wandb.summary["hcr_triple/n_triples"] = ts["n_triples"]
+                wandb.summary["hcr_triple/n_estimable"] = ts["n_estimable"]
+                wandb.summary["hcr_triple/frac_estimable"] = (
+                    ts["n_estimable"] / max(ts["n_triples"], 1))
 
     finally:
         if use_wandb:

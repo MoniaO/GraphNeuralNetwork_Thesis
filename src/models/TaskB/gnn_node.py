@@ -510,10 +510,16 @@ class TargetedPatientDAGNodeClassifier(_PatientDAGGNNBase):
                 nt: HCRPairEncoder(hcr_evidence_dim, hcr_hidden_dim, hcr_embed_dim, hcr_dropout)
                 for nt in PARENT_NODE_TYPES
             })
-            self.hcr_type_gate = nn.Parameter(torch.ones(len(requested), len(PARENT_NODE_TYPES)))
+            self.hcr_triple_encoder=None
             # __init__, w gałęzi typed_concat
-            self.hcr_triple_encoder = HCRPairEncoder(N_TRIPLE_EVIDENCE_CHANNELS, hcr_hidden_dim, hcr_embed_dim, hcr_dropout)
-            total_hcr_dim = hcr_embed_dim * (len(PARENT_NODE_TYPES) + 1)   # +1 na trojki
+            if bool(getattr(cfg.model, "hcr_use_triples", False)):
+                self.hcr_triple_encoder = HCRPairEncoder(
+                    N_TRIPLE_EVIDENCE_CHANNELS, hcr_hidden_dim,
+                    hcr_embed_dim, hcr_dropout)
+            n_blocks = len(PARENT_NODE_TYPES) + (1 if self.hcr_triple_encoder else 0)
+            self.hcr_type_gate = nn.Parameter(torch.ones(len(requested), n_blocks))
+
+            total_hcr_dim = hcr_embed_dim * n_blocks   # +1 na trojki
             #total_hcr_dim = hcr_embed_dim * len(PARENT_NODE_TYPES)
             # Nadpisujemy glowice zbudowana w bazowej klasie (przyjmowala
             # tylko head_in_dim z GNN) - teraz musi przyjac
@@ -582,7 +588,14 @@ class TargetedPatientDAGNodeClassifier(_PatientDAGGNNBase):
             
             if getattr(self, "hcr_triple_encoder", None) is not None:
                 tf, tm = get_targeted_pair_evidence(data, self.target_local_idx, self.target_node_type)
-                type_embeddings.append(self.hcr_triple_encoder.pooled_embedding(tf, tm))
+                embed = self.hcr_triple_encoder.pooled_embedding(tf, tm)
+                gate = self.hcr_type_gate[:, -1]
+                gate = gate.repeat(batch_size) if batch_size > 1 else gate
+                type_embeddings.append(embed * gate.unsqueeze(-1))
+
+            expected = self.hcr_type_gate.size(1)
+            assert len(type_embeddings) == expected, \
+                f"blokow HCR: {len(type_embeddings)}, oczekiwano {expected}"
 
             hcr_fused = torch.cat(type_embeddings, dim=-1)
             fused = torch.cat([target_z, hcr_fused], dim=-1)
