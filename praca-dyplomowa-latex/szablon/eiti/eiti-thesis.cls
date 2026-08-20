@@ -263,9 +263,9 @@
 	\newtheorem{assumption}{Założenie}
 
 	\AtBeginDocument{
-		\renewcommand{\listfigurename}{Spis rysunków}
-		\renewcommand{\listtablename}{Spis tabel}
-		\renewcommand{\tablename}{Tabela}
+		\renewcommand{\listfigurename}{List of Figures}
+		\renewcommand{\listtablename}{List of Tables}
+		\renewcommand{\tablename}{Table}
 	}
 }
 \newcommand{\langeng}{
@@ -471,7 +471,7 @@
 %--------------------------------
 \newcommand{\acronymlist}{
     \ifnum \pdf@strcmp{\@lang}{polish} = 0
-        \section*{Wykaz symboli i skrótów}
+        \section*{List of Symbols and Abbreviations}
     \fi
     \ifnum \pdf@strcmp{\@lang}{english} = 0
         \section*{List of Symbols and Abbreviations}
@@ -492,7 +492,7 @@
 
 \newcommand{\@appendixtitle}{
     \ifnum \pdf@strcmp{\@lang}{polish} = 0
-        Załącznik
+        Appendix
     \fi
     \ifnum \pdf@strcmp{\@lang}{english} = 0
         Appendix

@@ -103,39 +103,32 @@ In \cref{fig:updated_hetionet} there is presented the updated view of graph.
 % It generates similar results as models with residual connections, but what it is interesting on the benchamrk dataset
 % HCR combined with residual connections reaches the higher results than separated approach. 
 
-The proxy dataset reproduces the central pattern of the synthetic experiments,
-but with one difference that is worth stating carefully. The gain from HCR is
-again conditional on the state of the propagation path: at $L=6$ without
+The proxy dataset reproduces the central pattern of the synthetic experiments.
+The gain from HCR is conditional on the state of the propagation path: at $L=6$ without
 residual connections the baseline collapses to $0.585$ AUC on test, while every
 HCR variant recovers a substantial part of it, up to $0.757$ for
 \emph{typed+triple}. At $L=1$, where the receptive field of an endpoint
 coincides with the input of the HCR branch, no variant improves on the
 baseline, and the concatenated variants are slightly worse.
 
-The difference concerns the interaction between HCR and residual connections.
-On the synthetic data the two mechanisms did not add up: once the residual path
-restored the flow of information through depth, no HCR variant improved on the
-model without it. On the proxy dataset they do combine at $L=6$: the baseline
+Comparing to results from synthethic datasets, we can see that on the proxy dataset combination of residual connections and 
+HCR add up at $L=6$. The baseline
 reaches $0.585$ without either mechanism, $0.680$--$0.757$ with HCR alone,
 $0.728$ with residual alone, and $0.760$ with both. The combination is
 therefore better than either component in isolation.
 
-A structural explanation is available. In the synthetic graph the direct
+The reason is the stucture of data. In the synthetic graph the direct
 parents of an endpoint are observed, so the HCR branch and the one-hop
 receptive field read the same variables and the two mechanisms address the same
-bottleneck. In the Hetionet-derived graph the parents that carry per-compound
-values sit in layer 2, while layers 3 and 4 are latent relays; information must
+bottleneck. In the Hetionet-derived graph the the depth is more crucial as some of layers are latent. Information must
 therefore traverse several hops, and the residual path and the HCR bypass
-contribute at different points of that route. This is consistent with the depth
-curve on the proxy dataset, which rises monotonically with $L$ for
-\emph{typed+triple} without residual connections ($0.662$, $0.677$, $0.702$,
-$0.757$ at $L = 1, 2, 3, 6$) --- the opposite of the flat curve observed on the
-synthetic data.
+contribute at different points of that route. 
 
-The comparison is limited by unequal coverage: \emph{linear} and
-\emph{nonlin.\ all} were only run at $L=3$, and several depths are missing for
-individual variants. Differences below roughly $0.03$ AUC fall within the
-uncertainty of a single seed at $310$ validation compounds.
+Overall, combining a graph neural network with an HCR branch improves
+prediction on this dataset, and the improvement grows with depth. Whether an
+additional residual path helps or hinders depends on where the statistical
+evidence enters the model.
+
 
 % =====================================================================
 %  PROXY DATASET RESULTS (Hetionet, cut A, proxy3_clean)

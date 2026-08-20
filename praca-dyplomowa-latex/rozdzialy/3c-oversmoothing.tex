@@ -14,6 +14,11 @@ DropEdge (Rong et al., 2020) randomly removes a fraction of edges independently 
 
 Jumping Knowledge (Xu et al., 2018) aggregates the outputs of all layers (via concatenation, cat, or elementwise max) rather than only the last one, letting a node fall back on a shallower, less-smoothed representation when the deepest layer has become uninformative.
 
+Weisfeiler-Lehman --- two nodes with identical initial features and structurally equivalent neighborhoods 
+cannot be assigned distinct representations by any number of convolutional layers.
+
+leave-one-out
+
 \emph{Lift} is the AUPRC divided by the prevalence baseline, that is, the
 factor by which the model improves over a random ranking; at a mean
 prevalence of $5.5\%$ a lift of $2.3$ corresponds to an AUPRC of $0.125$.

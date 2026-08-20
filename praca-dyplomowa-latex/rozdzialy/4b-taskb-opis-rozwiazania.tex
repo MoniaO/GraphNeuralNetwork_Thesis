@@ -26,7 +26,7 @@ classification task was built based on:
     \item \textbf{per-scenario patient sample table} 
 \end{enumerate}
 
-Based on those items HeteroData object was created which was represented by objects type presented in the table
+Based on those items \texttt{HeteroData} object was created which was represented by objects type presented in the table
 
 \begin{table}[t]
     \centering
@@ -43,10 +43,11 @@ Based on those items HeteroData object was created which was represented by obje
         Keyed by \texttt{(src\_type, "to", dst\_type)} weighted by \texttt{edge\_attr} instead of using \texttt{edge\_type}. This keeps the number of distinct convolutional relation modules in \texttt{HeteroConv} small while still letting edge-type information reach the message function. \\
         \addlinespace
         Edge attributes (\texttt{edge\_attr}) &
-        A $1+3+|\text{edge types}|$-dimensional vector per relation: signed effect size, activation frequency, mechanistic confidence, evidence weight, and the edge-type one-hot. Convolutions consuming a scalar \texttt{edge\_weight} (GraphConv/GCN) receive only the signed effect-size column; convolutions consuming a full \texttt{edge\_attr} (GAT, Transformer) receive the whole vector. \\
+        %signed effect size, activation frequency, mechanistic confidence, evidence weight, and the edge-type one-hot. Convolutions consuming a scalar \texttt{edge\_weight} (GraphConv/GCN) receive only the signed effect-size column; convolutions consuming a full \texttt{edge\_attr} (GAT, Transformer) receive the whole vector. \\
+        Combination of \texttt{effect\_size} and \texttt{effect\_sign} \\
         \addlinespace
         Node features (\texttt{x}) &
-        Static audited attributes plus a topological-layer encoding (\texttt{numeric} or \texttt{onehot}, configurable), combined with the patient's own observed value for that node where the node is visible under the current observability regime. \\
+        The patient's observed values for that node where the node. \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -63,13 +64,12 @@ of patient.
 
 Two structural exclusion mechanisms are applied before any feature is computed: 
 \begin{enumerate}[label=\alph*)]
-    \item nodes flagged \texttt{exclude\_from\_observed\_model} or \texttt{is\_latent} in the audit (hidden confounders); 
+    \item nodes flagged \texttt{exclude\_from\_observed\_model} or \texttt{is\_latent} (hidden confounders); 
     \item nodes that are structural descendants of any endpoint in the DAG (e.g. documentation nodes such as 
     \texttt{hospital\_contact}, \texttt{fall\_reported}, which are caused by the endpoint rather than causal parents of it)
 \end{enumerate}
 
- are detected by graph descendant traversal and excluded from the feature set, even though they are 
- not explicitly flagged in the source data. All normalization statistics (mean/std for continuous node values) 
+ All normalization statistics (mean/std for continuous node values) 
  and all HCR evidence statistics (\cref{subsec:hcr_application}) are computed exclusively on the training split of patients, to 
  prevent both node-level and patient-level information leakage across splits.
  %trzeba dopisać wybor endpoints - dlaczego tak a nie inaczej
@@ -77,11 +77,11 @@ Two structural exclusion mechanisms are applied before any feature is computed:
 
 \subsubsection{Model architecture}
 
-The core architecture is a stack of heterogeneous graph convolutional layers wrapped in HeteroConv,
+The core architecture is a stack of heterogeneous graph convolutional layers wrapped in \texttt{HeteroConv},
 shared across relation types but parameterized identically for every patient graph. Four convolution backbones 
-are supported through a common registry and were benchmarked against each other: GraphSAGE, GraphConv 
-(GCN-style), GATv2, and TransformerConv. Because these operators were originally designed for homogeneous graphs,
-each is instantiated once per edge type inside HeteroConv, so the heterogeneous DAG is handled without 
+are supported through a common registry and were benchmarked against each other: GraphSAGE, and TransformerConv. 
+As these operators were originally designed for homogeneous graphs,
+each is instantiated once per edge type inside \texttt{HeteroConv}, so the heterogeneous DAG is handled without 
 collapsing node/edge types into a single homogeneous graph.
 As benefit of casual graph structure is possibility to encode deep structured path for node classification, 
 multiple number of layers was tested to choose the best model.  
@@ -89,20 +89,19 @@ multiple number of layers was tested to choose the best model.
 
 A design issue that was handled during experiments is the duplication of the self-transform across relations. 
 Several PyG convolution layers (SAGEConv, TransformerConv) internally add their own linear self-loop term,
- wrapped per-relation inside HeteroConv, this term is silently duplicated once per incoming 
+ wrapped per-relation inside \texttt{HeteroConv}, this term is silently duplicated once per incoming 
 relation type for a given node type. The implementation removes this internal duplication 
 (\texttt{root\_weight}=False for SAGE/Transformer) and replaces it with a single, explicit, 
-controlled self-transform per layer per node type, applied once in the shared encoder rather than once per relation. 
-For GAT-family layers, where the self-dependency is baked into the attention query and cannot be disabled, the explicit self-transform 
-acts as an additional controlled term on top of the irreducible built-in dependency. GraphConv/GCN, which has no 
-\texttt{root\_weight} parameter at all, is deliberately excluded from this mechanism, since its built-in self-transform 
-cannot be removed without reimplementing the layer.
+controlled self-transform per layer per node type. 
+% For GAT-family layers, where the self-dependency is baked into the attention query and cannot be disabled, the explicit self-transform 
+% acts as an additional controlled term on top of the irreducible built-in dependency. GraphConv/GCN, which has no 
+% \texttt{root\_weight} parameter at all, is deliberately excluded from this mechanism, since its built-in self-transform 
+% cannot be removed without reimplementing the layer.
 %node identity 
 
 A node-identity embedding, added after the input projection, was introduced to resolve a specific representational 
 collapse. Message-passing GNNs are bounded in expressive power by the 1-dimensional Weisfeiler-Lehman graph 
-isomorphism test: two nodes with identical initial features and structurally equivalent neighborhoods 
-cannot be assigned distinct representations by any number of convolutional layers. In the dataset, several 
+isomorphism test. In the dataset, several 
 endpoint nodes of the same type (e.g. Serotonin syndrome, Rhabdomyolysis, Lactic acidosis) share 
 identical static audited attributes (e.g. \texttt{severity\_weight}, observability) and comparable topological 
 positions, and were therefore indistinguishable to the model except through such positional cues.
@@ -161,10 +160,12 @@ only, using a closed-form re-weighting of the population statistic.
 
 \subsubsection{Training setup}
 
-Training iterates over patient graphs batched via PyTorch Geometric's DataLoader. The experiment were run with
+Training iterates over patient graphs batched via PyTorch Geometric's DataLoader. The experiments were run with
 targeted binary cross-entropy and focal loss with class-balance-aware weighting. 
-Weight and focal alpha were computed from the training split's endpoint prevalence, since adverse events 
+Weight and focal alpha were computed from the training split's endpoint prevalence, since clinical outcomes
 are rare and highly imbalanced. Model selection uses ReduceLROnPlateau on validation performance, and 
 evaluation is reported separately per endpoint and in aggregate, using AUROC, AUPRC, and prevalence-normalized 
-lift, alongside the representation-level over-smoothing diagnostics (MAD, cosine similarity, Dirichlet energy) 
-used to relate architectural choices. Due to rare events the main metric for model choice was AUPRC. 
+lift.
+%alongside the representation-level over-smoothing diagnostics (MAD, cosine similarity, Dirichlet energy) 
+%used to relate architectural choices. 
+Due to rare events the main metric for model choice was AUPRC. 
