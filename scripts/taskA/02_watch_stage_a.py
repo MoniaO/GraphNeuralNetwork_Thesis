@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""02 — watchdog Stage A (opcjonalny). Restartuje `01_run_stage_a_backbone.py`.
+"""02 — Stage A watchdog (optional). Restarts `01_run_stage_a_backbone.py`.
 
-Cel = pełna siatka shared (4 backbone × 24 × 3 seedy).
+Target = full shared grid (4 backbones × 24 × 3 seeds).
 """
 
 from __future__ import annotations

@@ -1,8 +1,8 @@
 # PROTOCOL — FINAL 14.08.2026
 
-## Freeze (nie ruszać)
+## Freeze (do not change)
 
-| Pole | Wartość |
+| Field | Value |
 |---|---|
 | backbone | HGT |
 | hidden | 32 |
@@ -14,7 +14,7 @@
 | epochs / patience | 200 / 40 |
 | decoder | `fusion88_stat` |
 | stat variant | `S10_HCR_FULL40` (D=40) |
-| candidate_seed | **20260722** (stały) |
+| candidate_seed | **20260722** (fixed) |
 | training seeds | 20260721 … 20260725 (5) |
 | selection | valid AUPRC |
 | test | sealed |
@@ -24,9 +24,9 @@
 - **MLP:** `++model.decoder.stat_pair_encoder=mlp` (D→16→8)
 - **KAN:** `++model.decoder.stat_pair_encoder=kan_shallow` (KANLinear D→8 + LN); `spline_l1=1e-5`
 
-## Zakazy
+## Do not
 
-- Nie retunować hypers HGT ani slicingu S10
-- Nie używać test AUPRC do wyboru modelu
-- Nie nadpisywać `outputs/taskA_final_large_grid_11.08.2026/`
-- Nie porównywać 1:1 z Wave11 Wave7C bez osobnej tabeli
+- Retune HGT hypers or S10 slicing
+- Use test AUPRC for model selection
+- Overwrite `outputs/taskA_final_large_grid_11.08.2026/`
+- Mix numbers from older stacks into the FINAL 14.08 table

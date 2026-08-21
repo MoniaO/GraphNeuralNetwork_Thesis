@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""08 — FINAL 14.08: S10 × MLP/KAN × 6 scenariuszy × 5 seedów (60 jobów)."""
+"""08 — FINAL 14.08: S10 × MLP/KAN × 6 scenarios × 5 seeds (60 jobs)."""
 
 from __future__ import annotations
 

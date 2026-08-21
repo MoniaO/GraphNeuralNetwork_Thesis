@@ -1,6 +1,6 @@
-"""Pary kandydatów (nazwa źródła, nazwa celu) z HeteroData.
+"""Candidate pairs (source name, target name) from HeteroData.
 
-Używane przy attach S10. Nie zmieniaj kolejności par — musi zgadzać się z logitami.
+Used when attaching S10. Do not reorder pairs — they must match the logits.
 """
 
 from __future__ import annotations

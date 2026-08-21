@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""05 — Stage C: S0–S10 na zamrożonym HGT. S10 wygrał i wszedł do FINAL."""
+"""05 — Stage C: S0–S10 on frozen HGT. S10 won and entered FINAL."""
 
 from __future__ import annotations
 

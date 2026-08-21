@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""03 — tabele decyzji Stage A (po 01). Selekcja: mean valid AUPRC."""
+"""03 — Stage A decision tables (after 01). Selection: mean valid AUPRC."""
 
 from __future__ import annotations
 

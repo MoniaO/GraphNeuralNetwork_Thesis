@@ -1,8 +1,8 @@
 
-"""Metryki link prediction. Selekcja modelu FINAL: wyłącznie valid AUPRC.
+"""Link-prediction metrics. FINAL model selection: valid AUPRC only.
 
-AUROC, Brier, F1 liczone są do logów, ale nie rankują checkpointu.
-Próg klasyfikacji z validation (`auto_threshold`).
+AUROC, Brier, F1 are logged but do not rank the checkpoint.
+Classification threshold comes from validation (`auto_threshold`).
 """
 
 from __future__ import annotations

@@ -1,18 +1,18 @@
-"""Liczy wektory cech pary S0–S10 (fit wyłącznie na pacjentach train).
+"""Compute S0–S10 pair-feature vectors (fit on train patients only).
 
-Co robi
--------
-Z macierzy pacjentów train buduje NMI / Jaccard / cosine / FULL40 (HCR 40D).
-`slice_full40` wycina prefiksy S5–S10 z tego samego wektora 40D.
+What it does
+------------
+From the train patient matrix builds NMI / Jaccard / cosine / FULL40 (HCR 40D).
+`slice_full40` cuts S5–S10 prefixes from the same 40D vector.
 
-Co wolno zmieniać
------------------
-Nowy rodzaj cechy = nowy wariant w variants.py + funkcja tutaj.
-Nie zmieniaj kolejności slotów FULL40 (HCR16, energy, marg, joint, META8).
+What you may change
+-------------------
+A new feature kind = a new variant in variants.py + a function here.
+Do not reorder FULL40 slots (HCR16, energy, marg, joint, META8).
 
-Czego nie ruszać dla FINAL
---------------------------
-Fit na train, zero G_true, zero cichej binaryzacji w S4.
+What not to touch for FINAL
+---------------------------
+Train-only fit, no G_true, no silent binarization in S4.
 """
 
 from __future__ import annotations

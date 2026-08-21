@@ -1,15 +1,15 @@
-"""Task A — rekonstrukcja skierowanych krawędzi na GSN v3.
+"""Task A — directed-edge reconstruction on GSN v3.
 
-Układ pakietu (czytaj od góry):
+Package layout (read top-down):
 
-  taskA.data           łączenie grafu, pacjentów i kandydatów
-  taskA.features       cechy S10 (40D × AZ/AG/ZG), attach train-only
-  taskA.models.encoder HGT (FINAL) oraz SAGE/GAT/RGCN (Stage A)
+  taskA.data           graph, patients, and candidates
+  taskA.features       S10 features (40D × AZ/AG/ZG), train-only attach
+  taskA.models.encoder HGT (FINAL) plus SAGE/GAT/RGCN (Stage A)
   taskA.models.decoder Fusion88 + MLP/KAN pair encoder
-  taskA.training       pętla train / early stop / test sealed
-  taskA.evaluation     AUPRC i metryki pomocnicze
+  taskA.training       train loop / early stop / sealed test
+  taskA.evaluation     AUPRC and auxiliary metrics
   taskA.experiments    Stage A → Stage C → FINAL 14.08
 
-Zamrożony stack FINAL: HGT h32 L2 d0.25 heads=4 + fusion88_stat + S10.
-Nie zmieniaj hypers z `experiments.final_14_08` jeśli chcesz odtworzyć tabelę 14.08.
+Frozen FINAL stack: HGT h32 L2 d0.25 heads=4 + fusion88_stat + S10.
+Do not change hypers in `experiments.final_14_08` if you want the 14.08 table.
 """

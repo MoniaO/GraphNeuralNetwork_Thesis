@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""06 — watchdog Stage C (opcjonalny, scenariusz clean, heads=4)."""
+"""06 — Stage C watchdog (optional, clean scenario, heads=4)."""
 import json, os, subprocess, sys, time
 from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]

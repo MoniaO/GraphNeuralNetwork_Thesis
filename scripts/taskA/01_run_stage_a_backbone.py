@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""01 — Stage A: wyścig encoderów (HGT wygrał). Kampania 11.08."""
+"""01 — Stage A: encoder race (HGT won). 11.08 campaign."""
 
 from __future__ import annotations
 

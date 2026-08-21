@@ -1,19 +1,19 @@
-# Konfiguracje Task A
+# Task A configs
 
-Hydra składa dane, model i flagę HCR. Publiczny model: **`hgt_fusion88`**.
+Hydra composes data, model, and the HCR flag. Public model: **`hgt_fusion88`**.
 
-## Grupy
+## Groups
 
-| Plik | Rola | Co wolno zmieniać |
+| File | Role | What you may change |
 |---|---|---|
-| `config.yaml` | trening, W&B, experiment | epochs, patience, lr, seed, `wandb.enabled` |
-| `data/dataset_v3.yaml` | GSN v3 + scenariusz | `scenario`, `candidate_seed` (FINAL = 20260722) |
-| `model/hgt_fusion88.yaml` | freeze HGT + Fusion88-stat | hypers encodera/dekodera — **nie ruszać dla 14.08** |
-| `hcr/none.yaml` | klasyczny HCR wyłączony | zostaw `enabled: false`; S10 wchodzi przez Stage C |
-| `taskA/experiments/stage_a_backbone.yaml` | protokół Stage A | tylko gdy powtarzasz wyścig backbone |
-| `taskA/features/context_registry.yaml` | budowa rejestru Z | ścieżki i seedy rejestru |
+| `config.yaml` | training, W&B, experiment | epochs, patience, lr, seed, `wandb.enabled` |
+| `data/dataset_v3.yaml` | GSN v3 + scenario | `scenario`, `candidate_seed` (FINAL = 20260722) |
+| `model/hgt_fusion88.yaml` | freeze HGT + Fusion88-stat | encoder/decoder hypers — **do not touch for 14.08** |
+| `hcr/none.yaml` | classical HCR off | leave `enabled: false`; S10 enters through Stage C |
+| `taskA/experiments/stage_a_backbone.yaml` | Stage A protocol | only if you rerun the backbone race |
+| `taskA/features/context_registry.yaml` | Z registry build | registry paths and seeds |
 
-Stage A / Stage C / FINAL nadpisują pola modelu w runnerze.
+Stage A / Stage C / FINAL override model fields in the runner.
 
 ```bash
 PYTHONPATH=src .venv/bin/python src/train_taskA.py \

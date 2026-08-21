@@ -1,17 +1,17 @@
-"""Encoder HGT — jedyny backbone FINAL 14.08.
+"""HGT encoder — the only FINAL 14.08 backbone.
 
-Co robi
--------
-Wspólna projekcja wejść typów węzłów + warstwy HGTConv (residual, LayerNorm).
-Zwraca słownik embeddingów per typ; LinkPredictor spłaszcza je do dekodera.
+What it does
+------------
+Shared per-type input projection + HGTConv layers (residual, LayerNorm).
+Returns a per-type embedding dict; LinkPredictor flattens it for the decoder.
 
-Co wolno zmieniać (nowy eksperyment)
+What you may change (new experiment)
 ------------------------------------
-hidden_dim, num_layers, heads, dropout, activation — przez Hydra `model.hgt.*`.
-hidden_dim musi być podzielne przez heads.
+hidden_dim, num_layers, heads, dropout, activation — via Hydra `model.hgt.*`.
+hidden_dim must be divisible by heads.
 
-Czego nie ruszać dla FINAL 14.08
---------------------------------
+What not to touch for FINAL 14.08
+---------------------------------
 h32, L2, heads=4, dropout=0.25, activation=leaky_relu, residual=True.
 """
 

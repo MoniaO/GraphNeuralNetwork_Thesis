@@ -1,4 +1,4 @@
-"""Projekcja cech każdego typu węzła do wspólnego hidden_dim (przed conv)."""
+"""Project each node-type feature vector to a shared hidden_dim (before conv)."""
 
 from __future__ import annotations
 

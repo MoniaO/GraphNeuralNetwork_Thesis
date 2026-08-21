@@ -1,47 +1,47 @@
 # Task A — Final Large Train Grid (11.08.2026)
 
-Osobny blok eksperymentalny. **Nie miesza** strojenia architektury grafowej
-z cechami statystycznymi.
+Separate experimental block. Does **not** mix graph-architecture tuning
+with statistical features.
 
-## Zasada
+## Rule
 
-| Stage | Cel | Statystyka |
+| Stage | Goal | Statistics |
 |---|---|---|
-| **A** | wybór backbone + hiperparametrów grafowych | `g_stat = 0` (24D zeros) |
-| **B** | zamrożenie zwycięskiego backbone | brak zmian |
-| **C** | porównanie wariantów S0–S10 | tylko tu zmienia się evidence |
+| **A** | choose backbone + graph hypers | `g_stat = 0` (24D zeros) |
+| **B** | freeze the winning backbone | no changes |
+| **C** | compare S0–S10 variants | evidence changes only here |
 
-**Test nie służy do selekcji** aż do zamrożenia architektury i reprezentacji.
+**Test is not used for selection** until architecture and representation are frozen.
 
-## Protokół danych (wspólny)
+## Shared data protocol
 
-- `candidate_seed = 20260722` (**nie** podąża za training seed)
-- te same patient/candidate splits, `G_train`, node features, loss, AUPRC
+- `candidate_seed = 20260722` (**does not** follow the training seed)
+- same patient/candidate splits, `G_train`, node features, loss, AUPRC
 - screening seeds: `20260721–23`
 - final confirmation: `20260721–25`
-- scenarios: wszystkie 6 GSN v3
+- scenarios: all 6 GSN v3
 - Stage A: `hcr=none`, `decoder=fusion88`
 
-## Uruchomienie Stage A
+## Run Stage A
 
 ```bash
 export GSN_PROJECT_ROOT="$HOME/Desktop/GSN Graphs dysertation 2026"
 export PYTHONPATH=src
 
-# jednostkowe
-.venv/bin/python -m pytest tests/test_fusion88_decoder_11_08_2026.py -q
+# unit
+.venv/bin/python -m pytest tests/taskA/test_decoder_fusion88.py -q
 
-# smoke (2 epoki, 1 konfiguracja HGT)
-.venv/bin/python scripts/01_run_stage_a_backbone.py --mode smoke
+# smoke (2 epochs, 1 HGT config)
+.venv/bin/python scripts/taskA/01_run_stage_a_backbone.py --mode smoke
 
-# pełny shared screen na clean × 3 seeds (~216 jobów)
-.venv/bin/python scripts/01_run_stage_a_backbone.py --mode shared_screen
+# full shared screen on clean × 3 seeds
+.venv/bin/python scripts/taskA/01_run_stage_a_backbone.py --mode shared_screen
 
-# policz joby
-.venv/bin/python scripts/01_run_stage_a_backbone.py --mode count
+# count jobs
+.venv/bin/python scripts/taskA/01_run_stage_a_backbone.py --mode count
 ```
 
-## Struktura bloku
+## Block layout
 
 ```
 outputs/taskA_final_large_grid_11.08.2026/
@@ -61,13 +61,11 @@ tests/taskA/
 
 ## Status
 
-- [x] Blok + protokół + manifest
+- [x] Block + protocol + manifest
 - [x] Fusion88 decoder (`4d→128→64`, g_stat zeros)
 - [x] `rgcn_matched` + type-specific projection
 - [x] Stage A grid + runner (candidate_seed frozen)
 - [x] Smoke Stage A (HGT / GAT / RGCN, 2 epochs)
-- [ ] Shared grid screen (~72 configs × 3 seeds = 216 jobs)
-- [ ] Top-2 × 6 scenarios
-- [ ] Stage B / C
-
-Kod historyczny Wave 0–11 **nie jest nadpisywany**; ten blok jest addytywny.
+- [x] Shared grid screen (HGT won; freeze heads=4)
+- [x] Stage C S0–S10 (S10 won)
+- [x] FINAL 14.08 lives in `outputs/taskA_FINAL_14.08.2026/`

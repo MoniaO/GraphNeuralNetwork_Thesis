@@ -1,20 +1,20 @@
-"""taskA.features — statystyczne cechy par (S0–S10) doklejane do krawędzi.
+"""taskA.features — pair statistics (S0–S10) attached to edges.
 
-Publiczne API (czytaj to):
-  variants.py   rejestr S0–S10; FINAL używa S10_HCR_FULL40 (40D)
-  compute.py    wyliczanie wektorów na train patients
-  attach.py     fit train-only → tensor stat_raw [N,3,D] + maski ról
+Public API (read this):
+  variants.py   S0–S10 registry; FINAL uses S10_HCR_FULL40 (40D)
+  compute.py    vector computation on train patients
+  attach.py     train-only fit → stat_raw [N,3,D] + role masks
 
-Wnętrze (nie tunuj, jeśli odtwarzasz S10):
-  pair_basis/hcr40/   bazy 40D pary (Legendre / discrete / packing)
-  context/coparent/   rejestr koparentów Z z G_train (nigdy G_true)
-  context/topology/   graf ze scored edges do budowy rejestru
+Internals (do not tune if you reproduce S10):
+  pair_basis/hcr40/   40D pair bases (Legendre / discrete / packing)
+  context/coparent/   coparent-Z registry from G_train (never G_true)
+  context/topology/   scored-edge graph used to build the registry
 
-Co wolno zmieniać:
-  - wariant S0–S10 w experiment.stat_variant (NOWY eksperyment, nie FINAL)
-  - nic w pair_basis/ jeśli chcesz te same 40 liczb co 14.08
+What you may change:
+  - S0–S10 variant in experiment.stat_variant (NEW experiment, not FINAL)
+  - nothing in pair_basis/ if you want the same 40 numbers as 14.08
 
-Czego nie ruszać dla FINAL:
-  - fit wyłącznie na pacjentach train
-  - Z z edge-context registry, nie z true graph
+What not to touch for FINAL:
+  - fit on train patients only
+  - Z from the edge-context registry, not from the true graph
 """

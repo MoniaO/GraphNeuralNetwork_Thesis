@@ -1,4 +1,4 @@
-"""GraphSAGE matched — tylko Stage A (przegrany z HGT). Nie używany w FINAL."""
+"""Matched GraphSAGE — Stage A only (lost to HGT). Not used in FINAL."""
 
 from __future__ import annotations
 

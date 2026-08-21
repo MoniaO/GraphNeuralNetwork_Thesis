@@ -1,24 +1,24 @@
-"""Dekoder krawędzi Fusion88 (gałąź grafowa + opcjonalny blok statystyczny).
+"""Fusion88 edge decoder (graph branch + optional statistical block).
 
-Co robi
--------
-Bierze embeddingi węzłów (z encodera) i parę (source, target).
-Buduje q_AG = [z_A || z_G || z_A*z_G || |z_A−z_G|] i ściska do g_graph ∈ R^64.
-Dokleja g_stat ∈ R^24 (zera w Stage A; MLP/KAN w Stage C / FINAL).
+What it does
+------------
+Takes node embeddings (from the encoder) and a (source, target) pair.
+Builds q_AG = [z_A || z_G || z_A*z_G || |z_A−z_G|] and compresses to g_graph ∈ R^64.
+Appends g_stat ∈ R^24 (zeros in Stage A; MLP/KAN in Stage C / FINAL).
 Fusion 88 → 64 → 1 logit.
 
   q_AG (4*d) → Linear → 128 → GELU → Dropout → Linear → 64 → GELU → LayerNorm
   [g_graph || g_stat] ∈ R^88 → 64 → GELU → Dropout → 1 logit
 
-Co wolno zmieniać (nowy eksperyment)
+What you may change (new experiment)
 ------------------------------------
-- dropout dekodera (domyślnie 0.2) — `model.decoder.dropout`
-- hidden_channels musi zgadzać się z encoderem (FINAL = 32)
+- decoder dropout (default 0.2) — `model.decoder.dropout`
+- hidden_channels must match the encoder (FINAL = 32)
 
-Czego nie ruszać dla FINAL 14.08
---------------------------------
+What not to touch for FINAL 14.08
+---------------------------------
 GRAPH_OUT=64, STAT_DIM=24, FUSION_DIM=88, GRAPH_MID=128.
-Zmiana tych liczb psuje porównywalność z tabelą 14.08.
+Changing these numbers breaks comparability with the 14.08 table.
 """
 
 from __future__ import annotations

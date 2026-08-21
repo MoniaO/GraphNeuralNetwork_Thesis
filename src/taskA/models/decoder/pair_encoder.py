@@ -1,24 +1,24 @@
-"""Encoder pary (MLP vs KAN) + Fusion88StatDecoder.
+"""Pair encoder (MLP vs KAN) + Fusion88StatDecoder.
 
-Co robi
--------
-Trzy niezależne encodery ról AZ / AG / ZG czytają surowe cechy S10 (D=40).
-Każda rola → latent 8-D; konkatenacja → g_stat ∈ R^24.
-Gałąź grafowa i head fusion są identyczne jak w Fusion88Decoder.
+What it does
+------------
+Three independent role encoders AZ / AG / ZG read raw S10 features (D=40).
+Each role → 8-D latent; concat → g_stat ∈ R^24.
+The graph branch and fusion head are identical to Fusion88Decoder.
 
 MLP (FINAL default): D → 16 → GELU → LN → Drop 0.1 → 8 → LN
-KAN (twin):          KANLinear(D→8) + LN  — ten sam latent, fair comparison
+KAN (twin):          KANLinear(D→8) + LN  — same latent, fair comparison
 
-Co wolno zmieniać (nowy eksperyment)
+What you may change (new experiment)
 ------------------------------------
 - `model.decoder.stat_pair_encoder` = mlp | kan_shallow
-- `model.decoder.pair_dropout` (MLP) i `spline_l1` (KAN)
-- `stat_raw_dim` musi = wariant (S10 = 40)
+- `model.decoder.pair_dropout` (MLP) and `spline_l1` (KAN)
+- `stat_raw_dim` must match the variant (S10 = 40)
 
-Czego nie ruszać dla FINAL 14.08
---------------------------------
-PAIR_LATENT=8, PAIR_HIDDEN=16, STAT_DIM=24, trzy unshared role heads.
-Nie dziel wag między rolami i nie zmieniaj szerokości latentu KAN.
+What not to touch for FINAL 14.08
+---------------------------------
+PAIR_LATENT=8, PAIR_HIDDEN=16, STAT_DIM=24, three unshared role heads.
+Do not share weights across roles or change the KAN latent width.
 """
 
 from __future__ import annotations

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""07 — watchdog Stage C S9+S10 × 6 scenariuszy (opcjonalny)."""
+"""07 — Stage C S9+S10 × 6 scenarios watchdog (optional)."""
 from __future__ import annotations
 
 import json

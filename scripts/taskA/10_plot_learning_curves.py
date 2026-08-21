@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""10 — krzywe uczenia z logów FINAL (CSV + PNG). Po 08."""
+"""10 — FINAL learning curves from logs (CSV + PNG). After 08."""
 
 from __future__ import annotations
 

@@ -1,38 +1,40 @@
-# Task A — mapa kodu
+# Task A — code map
 
-Rekonstrukcja skierowanych krawędzi na GSN v3. Czytaj katalogi **w tej kolejności**.
+Directed-edge reconstruction on GSN v3. Read the packages **in this order**.
 
 ```text
 src/taskA/
-  data/            1. graf, pacjenci, kandydaci
-  features/        2. cechy S10 (40D × AZ/AG/ZG), attach train-only
+  data/            1. graph, patients, candidates
+  features/        2. S10 features (40D × AZ/AG/ZG), train-only attach
   models/encoder/  3. HGT (FINAL) + SAGE/GAT/RGCN (Stage A)
   models/decoder/  4. Fusion88 + MLP/KAN pair encoder
-  models/          5. link_predictor.py skleja encoder z dekoderem
-  training/        6. pętla train / early stop / test sealed
-  evaluation/      7. AUPRC i metryki pomocnicze
+  models/          5. link_predictor.py wires encoder to decoder
+  training/        6. train loop / early stop / sealed test
+  evaluation/      7. AUPRC and auxiliary metrics
   experiments/     8. Stage A → Stage C → FINAL 14.08
 ```
 
-Entrypoint treningu: `src/train_taskA.py` → `taskA.training.train`.
-Skrypty odtwarzania (numerowane): `scripts/taskA/00_…` … `11_…` — patrz `scripts/README.md`.
+Training entrypoint: `src/train_taskA.py` → `taskA.training.train`.
+Reproduction scripts (numbered): `scripts/taskA/00_…` … `11_…` — see
+`scripts/taskA/README.md`.
 
-## Zamrożony stack FINAL 14.08
+## Frozen FINAL 14.08 stack
 
 HGT `h32 · L2 · dropout 0.25 · lr 1e-3 · heads=4` + Fusion88-stat + **S10_HCR_FULL40**.
-Twiny: MLP-stat vs KAN-stat. Selekcja: wyłącznie valid AUPRC.
+Twins: MLP-stat vs KAN-stat. Selection: valid AUPRC only.
 
-**Nie zmieniaj** liczb z `experiments/final_14_08/__init__.py` ani wymiarów
-`GRAPH_OUT=64`, `STAT_DIM=24`, `FUSION_DIM=88`, jeśli chcesz odtworzyć tabelę 14.08.
+**Do not change** the numbers in `experiments/final_14_08/__init__.py` or the
+dims `GRAPH_OUT=64`, `STAT_DIM=24`, `FUSION_DIM=88` if you want to reproduce
+the 14.08 table.
 
-## Co wolno zmieniać (nowy eksperyment)
+## What you may change (new experiment)
 
-| Warstwa | Gdzie | Typowe gałki |
+| Layer | Where | Typical knobs |
 |---|---|---|
-| dane | `configs/data/dataset_v3.yaml` | scenario, `candidate_seed` |
+| data | `configs/data/dataset_v3.yaml` | scenario, `candidate_seed` |
 | encoder | `configs/model/hgt_fusion88.yaml` | hidden, layers, heads, dropout |
-| dekoder | ten sam yaml, `decoder.*` | `stat_pair_encoder=mlp\|kan_shallow` |
-| cechy | `++experiment.stat_variant=` | S0–S10 (FINAL = S10) |
-| trening | `configs/config.yaml` → `training.*` | lr, epochs, patience, seed |
+| decoder | same yaml, `decoder.*` | `stat_pair_encoder=mlp\|kan_shallow` |
+| features | `++experiment.stat_variant=` | S0–S10 (FINAL = S10) |
+| training | `configs/config.yaml` → `training.*` | lr, epochs, patience, seed |
 
-Każdy plik `.py` na powierzchni pakietu ma na górze: **co robi** i **czego nie ruszać dla FINAL**.
+Each surface `.py` file starts with: **what it does** and **what not to touch for FINAL**.

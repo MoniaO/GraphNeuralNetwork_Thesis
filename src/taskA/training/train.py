@@ -1,20 +1,20 @@
-"""Pętla treningowa Task A (link prediction na GSN v3).
+"""Task A training loop (link prediction on GSN v3).
 
-Co robi
--------
-1. Ładuje graf (`taskA.data.load_graph`) — G_train tylko z dodatnich krawędzi train.
-2. Jeśli Stage C / FINAL: dokleja S10 (`taskA.features.attach`).
-3. Buduje LinkPredictor (HGT + Fusion88).
-4. Early stop na valid AUPRC; test liczony raz na końcu (sealed).
+What it does
+------------
+1. Loads the graph (`taskA.data.load_graph`) — G_train from positive train edges only.
+2. If Stage C / FINAL: attaches S10 (`taskA.features.attach`).
+3. Builds LinkPredictor (HGT + Fusion88).
+4. Early-stops on valid AUPRC; test is computed once at the end (sealed).
 
-Co wolno zmieniać
------------------
+What you may change
+-------------------
 `training.epochs`, `patience`, `lr`, `seed`, `device`, `wandb.enabled`.
-FINAL zamraża te wartości w `experiments.final_14_08.FROZEN`.
+FINAL freezes these in `experiments.final_14_08.FROZEN`.
 
-Czego nie ruszać dla FINAL
---------------------------
-selection_metric=auprc, test sealed, pos_weight z train, candidate_seed=20260722.
+What not to touch for FINAL
+---------------------------
+selection_metric=auprc, sealed test, pos_weight from train, candidate_seed=20260722.
 """
 
 from __future__ import annotations

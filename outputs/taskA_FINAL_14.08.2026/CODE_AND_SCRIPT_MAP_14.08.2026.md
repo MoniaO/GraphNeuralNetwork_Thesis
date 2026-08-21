@@ -1,12 +1,12 @@
-# FINAL 14.08.2026 — mapa kodu i skryptów
+# FINAL 14.08.2026 — code and script map
 
-Konwencja: `src/taskA/<etap>/` oraz `scripts/taskA/00_…11_`.
+Convention: `src/taskA/<stage>/` and `scripts/taskA/00_…11_`.
 
 ## Diagram
 
 ```mermaid
 flowchart TB
-  subgraph train_core [Trening]
+  subgraph train_core [Training]
     TT[src/taskA/training/train.py]
     LD[taskA.data.load_graph]
     ATT[taskA.features.attach]
@@ -17,7 +17,7 @@ flowchart TB
     TT --> HGT --> DEC
   end
 
-  subgraph stage_1108 [Kampania 11.08]
+  subgraph stage_1108 [11.08 campaign]
     SA[scripts/taskA/01_run_stage_a_backbone.py]
     SC[scripts/taskA/05_run_stage_c_stats.py]
     SA --> TT
@@ -32,7 +32,7 @@ flowchart TB
     WD --> FR
   end
 
-  subgraph diag [Diagnostyka]
+  subgraph diag [Diagnostics]
     CUR[scripts/taskA/10_plot_learning_curves.py]
     PATH[scripts/taskA/11_eval_edge_pathway.py]
     CUR --> LOGS[train logs]
@@ -40,34 +40,34 @@ flowchart TB
   end
 ```
 
-Kolejność odtwarzania: **00 → 01 → 05 → 08 → 10 → 11** (02, 03, 04, 06, 07, 09 opcjonalne).
+Reproduction order: **00 → 01 → 05 → 08 → 10 → 11** (02, 03, 04, 06, 07, 09 optional).
 
 ## FINAL 14.08
 
-| Ścieżka | Rola |
+| Path | Role |
 |---|---|
-| `src/taskA/experiments/final_14_08/` | seedy, freeze, runner 60 jobów |
+| `src/taskA/experiments/final_14_08/` | seeds, freeze, 60-job runner |
 | `scripts/taskA/08_run_final.py` | CLI |
 | `scripts/taskA/09_watch_final.py` | watchdog |
-| `scripts/taskA/10_plot_learning_curves.py` | krzywe |
+| `scripts/taskA/10_plot_learning_curves.py` | curves |
 | `scripts/taskA/11_eval_edge_pathway.py` | pathway report |
 | `src/taskA/models/decoder/pair_encoder.py` | MLP vs KAN |
 
-## Kampania 11.08 (nie nadpisuj outputów)
+## 11.08 campaign (do not overwrite outputs)
 
-| Ścieżka | Rola |
+| Path | Role |
 |---|---|
-| `src/taskA/experiments/stage_a_backbone/` | wyścig encoderów |
+| `src/taskA/experiments/stage_a_backbone/` | encoder race |
 | `src/taskA/experiments/stage_c_stats/` | S0–S10 |
-| `src/taskA/models/decoder/fusion88.py` | kontrakt 64+24=88 |
-| `scripts/taskA/00_build_context_registry.py` | rejestr Z |
-| `outputs/taskA_final_large_grid_11.08.2026/` | freeze + tabele |
+| `src/taskA/models/decoder/fusion88.py` | 64+24=88 contract |
+| `scripts/taskA/00_build_context_registry.py` | Z registry |
+| `outputs/taskA_final_large_grid_11.08.2026/` | freeze + tables |
 
-## Jeden job FINAL
+## One FINAL job
 
 1. `runner.build_overrides` → HGT freeze + `fusion88_stat` + S10 + mlp/kan
-2. `train.main` ładuje GSN v3
-3. `fit_and_attach_stage_c_stats` na **train patients** → `stat_raw [N,3,40]`
-4. HGT L=2 → embeddingi 32-D
+2. `train.main` loads GSN v3
+3. `fit_and_attach_stage_c_stats` on **train patients** → `stat_raw [N,3,40]`
+4. HGT L=2 → 32-D embeddings
 5. Decoder: `g_graph∈R64` + `g_stat∈R24` → fusion 88 → logit
-6. Early stop na valid AUPRC; test sealed
+6. Early stop on valid AUPRC; test sealed

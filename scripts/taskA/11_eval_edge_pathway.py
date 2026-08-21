@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""11 — raport krawędź × pathway / rare (po 08, z checkpointów)."""
+"""11 — edge × pathway / rare report (after 08, from checkpoints)."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""09 — watchdog FINAL (opcjonalny). Restartuje `08_run_final.py` aż 60/60 ok."""
+"""09 — FINAL watchdog (optional). Restarts `08_run_final.py` until 60/60 ok."""
 
 from __future__ import annotations
 

@@ -1,16 +1,16 @@
-"""FINAL 14.08 — zamrożony stack, 6 scenariuszy × 5 seedów × MLP/KAN.
+"""FINAL 14.08 — frozen stack, 6 scenarios × 5 seeds × MLP/KAN.
 
-Co robi
--------
-Stałe freeze z Stage A/C. Runner odpala 60 świeżych jobów do
-`outputs/taskA_FINAL_14.08.2026/` (nie nadpisuje kampanii 11.08).
+What it does
+------------
+Freeze constants from Stage A/C. The runner launches 60 fresh jobs into
+`outputs/taskA_FINAL_14.08.2026/` (does not overwrite the 11.08 campaign).
 
-Co wolno zmieniać
------------------
-Nic, jeśli odtwarzasz tabelę 14.08. Nowy eksperyment = nowy pakiet
-(np. `experiments/final_XX_YY/`), nie edycja `FROZEN` poniżej.
+What you may change
+-------------------
+Nothing if you reproduce the 14.08 table. A new experiment = a new package
+(e.g. `experiments/final_XX_YY/`), not an edit of `FROZEN` below.
 
-Skrypt: `scripts/taskA/08_run_final.py`.
+Script: `scripts/taskA/08_run_final.py`.
 """
 
 BLOCK_DATE = "14.08.2026"

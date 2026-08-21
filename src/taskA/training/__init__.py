@@ -1,15 +1,15 @@
-"""taskA.training — jedna pętla treningowa dla wszystkich etapów.
+"""taskA.training — one training loop for every stage.
 
 train.py:
-  1. ładuje graf (taskA.data)
-  2. jeśli Stage C / FINAL: attach S10 (taskA.features.attach)
-  3. buduje LinkPredictor
-  4. early stop na valid AUPRC; test liczony raz na końcu
+  1. loads the graph (taskA.data)
+  2. if Stage C / FINAL: attach S10 (taskA.features.attach)
+  3. builds LinkPredictor
+  4. early-stops on valid AUPRC; test is computed once at the end
 
-Co wolno zmieniać:
+What you may change:
   training.epochs, patience, lr, seed, device, wandb.enabled
-  (FINAL zamraża te wartości w experiments.final_14_08)
+  (FINAL freezes these in experiments.final_14_08)
 
-Czego nie ruszać dla FINAL:
-  selection_metric=auprc, test sealed, pos_weight z train
+What not to touch for FINAL:
+  selection_metric=auprc, sealed test, pos_weight from train
 """

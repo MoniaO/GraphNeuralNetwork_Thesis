@@ -1,76 +1,76 @@
 # Graph Neural Network Thesis — Task A FINAL
 
-Repozytorium pracy dyplomowej: rekonstrukcja skierowanych krawędzi grafu
-przyczynowego farmakoterapii (heterogeneous link prediction na GSN v3).
+Thesis repository: directed-edge reconstruction on a pharmacotherapy causal graph
+(heterogeneous link prediction on GSN v3).
 
-Jedyna utrzymywana ścieżka to **FINAL 14.08.2026**:
+The maintained path is **FINAL 14.08.2026**:
 
 - encoder **HGT** `h32 · L2 · dropout 0.25 · lr 1e-3 · heads=4`;
-- dekoder **Fusion88-stat** + cechy **S10_HCR_FULL40** (40D × 3 role AZ/AG/ZG);
-- porównanie twinów **MLP-stat** vs **KAN-stat**;
-- sześć scenariuszy pacjentów × 5 seedów.
+- decoder **Fusion88-stat** + **S10_HCR_FULL40** features (40D × 3 roles AZ/AG/ZG);
+- twin comparison **MLP-stat** vs **KAN-stat**;
+- six patient scenarios × 5 seeds.
 
-Werdykt (60/60 jobów): **MLP-stat** jest modelem finalnym
+Verdict (60/60 jobs): **MLP-stat** is the final model
 (macro valid AUPRC **0.919** vs KAN **0.908**).
 
 ```text
-pacjenci train ──► empiryczne cechy węzłów ─┐
-                                             ├─► HGT L2 ─► embeddingi ─┐
-dodatnie krawędzie train ─► G_train ─────────┘                         │
-                                                                       ├─► Fusion88 → logit
-cechy S10 par AZ, AG, ZG ─► MLP albo KAN ──────────────────────────────┘
+train patients ──► empirical node features ─┐
+                                            ├─► HGT L2 ─► embeddings ─┐
+positive train edges ─► G_train ────────────┘                         │
+                                                                      ├─► Fusion88 → logit
+S10 pair features AZ, AG, ZG ─► MLP or KAN ───────────────────────────┘
 ```
 
-Wiersze pacjentów nie są przykładami treningowymi GNN. Służą do cech węzłów
-i dopasowania S10 wyłącznie na partycji `train`.
+Patient rows are not GNN training examples. They supply node features and the
+S10 fit, both restricted to the `train` partition.
 
-## Architektura
+## Architecture
 
-Oba twiny mają identyczny encoder, graf kandydatów, splity, seedy, loss
-i protokół ewaluacji. Różni je wyłącznie encoder pary S10:
+Both twins share the encoder, candidate graph, splits, seeds, loss, and
+evaluation protocol. They differ only in the S10 pair encoder:
 
 - MLP-stat: `40 → 16 → 8`;
-- KAN-stat: `StatKANPairEncoder` (płytki spline, ten sam wymiar).
+- KAN-stat: `StatKANPairEncoder` (shallow spline, same latent width).
 
-Źródła:
+Sources:
 
-- `configs/model/hgt_fusion88.yaml` — zamrożony HGT + Fusion88-stat
-- `configs/hcr/none.yaml` — klasyczny HCR wyłączony; S10 wchodzi przez Stage C
-- `src/taskA/models/` — encoder HGT i dekoder Fusion88 / MLP vs KAN
+- `configs/model/hgt_fusion88.yaml` — frozen HGT + Fusion88-stat
+- `configs/hcr/none.yaml` — classical HCR off; S10 enters through Stage C
+- `src/taskA/models/` — HGT encoder and Fusion88 / MLP vs KAN decoder
 - `src/taskA/experiments/` — Stage A → Stage C → FINAL 14.08
 
-Kampania 11.08 wybrała ten freeze (Stage A: backbone HGT; Stage C: S10).
-Wyniki: `outputs/taskA_final_large_grid_11.08.2026/` oraz
+The 11.08 campaign selected this freeze (Stage A: HGT backbone; Stage C: S10).
+Results: `outputs/taskA_final_large_grid_11.08.2026/` and
 `outputs/taskA_FINAL_14.08.2026/`.
 
-## Struktura
+## Layout
 
 ```text
 .
 ├── configs/                      Hydra: dataset_v3, hgt_fusion88, hcr=none
 ├── src/
-│   ├── train_taskA.py            CLI (implementacja: taskA.training.train)
+│   ├── train_taskA.py            CLI (implementation: taskA.training.train)
 │   └── taskA/
-│       ├── data/                 graf GSN v3, pacjenci, kandydaci
-│       ├── features/             S0–S10, attach train-only, bazy 40D
+│       ├── data/                 GSN v3 graph, patients, candidates
+│       ├── features/             S0–S10, train-only attach, 40D bases
 │       ├── models/encoder/       HGT (FINAL) + SAGE/GAT/RGCN
 │       ├── models/decoder/       Fusion88 + MLP/KAN pair encoder
-│       ├── training/             pętla, early stop, test sealed
-│       ├── evaluation/           AUPRC i diagnostyka
+│       ├── training/             loop, early stop, sealed test
+│       ├── evaluation/           AUPRC and diagnostics
 │       └── experiments/          Stage A → Stage C → FINAL 14.08
-├── scripts/taskA/                00–11 w kolejności odtwarzania
+├── scripts/taskA/                00–11 in reproduction order
 ├── tests/taskA/                  Fusion88, S10, KAN, Hydra freeze
 └── outputs/
     ├── taskA_FINAL_14.08.2026/
     └── taskA_final_large_grid_11.08.2026/
 ```
 
-Szczegóły: `src/README.md`, `configs/README.md`, `scripts/README.md`,
+Details: `src/README.md`, `configs/README.md`, `scripts/taskA/README.md`,
 `outputs/taskA_FINAL_14.08.2026/00_README.md`.
 
-## Dane
+## Data
 
-Dane GSN v3 są poza repozytorium:
+GSN v3 data lives outside this repository:
 
 ```bash
 export GSN_PROJECT_ROOT="$HOME/Desktop/GSN Graphs dysertation 2026"
@@ -87,22 +87,22 @@ $GSN_PROJECT_ROOT/
         └── patient_splits_v3.csv
 ```
 
-Scenariusze: `clean`, `hidden_confounder`, `selection_bias`, `no_overlap`,
+Scenarios: `clean`, `hidden_confounder`, `selection_bias`, `no_overlap`,
 `noisy_documentation`, `multihospital`.
 
-Attach S10 wymaga rejestru kontekstu krawędzi:
+S10 attach needs the edge-context registry:
 
 ```text
 outputs/taskA/context_registry/edge_context_registry.csv
 ```
 
-Jeśli pliku nie ma:
+If the file is missing:
 
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/taskA/00_build_context_registry.py
 ```
 
-## Instalacja
+## Install
 
 ```bash
 python3 -m venv .venv
@@ -112,16 +112,15 @@ python -m pip install -r requirements.txt
 export PYTHONPATH="$PWD/src:$PWD"
 ```
 
-W&B jest opcjonalne dla testów. Pełne eksperymenty używają projektu
-`politechnika-gnn-thesis`.
+W&B is optional for tests. Full experiments use project `politechnika-gnn-thesis`.
 
-## Szybka weryfikacja
+## Quick check
 
 ```bash
 .venv/bin/python -m pytest
 ```
 
-Kompozycja konfiguracji bez treningu:
+Compose the config without training:
 
 ```bash
 PYTHONPATH=src .venv/bin/python src/train_taskA.py \
@@ -131,7 +130,7 @@ PYTHONPATH=src .venv/bin/python src/train_taskA.py \
   wandb.enabled=false
 ```
 
-Jednoepokowy smoke (bez W&B):
+One-epoch smoke (no W&B):
 
 ```bash
 PYTHONPATH=src .venv/bin/python src/train_taskA.py \
@@ -147,7 +146,7 @@ PYTHONPATH=src .venv/bin/python src/train_taskA.py \
   ++model.decoder.stat_pair_encoder=mlp
 ```
 
-## Finalny grid 14.08
+## FINAL 14.08 grid
 
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/taskA/08_run_final.py --mode count
@@ -156,13 +155,13 @@ PYTHONPATH=src .venv/bin/python scripts/taskA/10_plot_learning_curves.py --sourc
 PYTHONPATH=src .venv/bin/python scripts/taskA/11_eval_edge_pathway.py
 ```
 
-Ciężkie checkpointy i logi Hydra są w `.gitignore`. Wersjonowane są lekkie
-raporty w `outputs/taskA_FINAL_14.08.2026/` oraz tabele decyzji 11.08.
+Heavy checkpoints and Hydra logs are gitignored. Versioned artefacts are the
+light reports under `outputs/taskA_FINAL_14.08.2026/` and the 11.08 decision tables.
 
-## Metryki
+## Metrics
 
-Selekcja modelu: validation AUPRC. Raport zawiera też AUROC, Brier,
-precision/recall/F1/F2 oraz metryki ścieżek klinicznych.
+Model selection: validation AUPRC. Reports also include AUROC, Brier,
+precision/recall/F1/F2, and clinical pathway metrics.
 
-Loss: ważona `BCEWithLogitsLoss` (`pos_weight` z train). Próg klasyfikacji
-wybierany na validation i zamrażany dla testu.
+Loss: weighted `BCEWithLogitsLoss` (`pos_weight` from train). The classification
+threshold is chosen on validation and frozen for test.

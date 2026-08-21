@@ -1,19 +1,19 @@
-"""Link predictor: encoder grafu + dekoder Fusion88 (MLP/KAN).
+"""Link predictor: graph encoder + Fusion88 decoder (MLP/KAN).
 
-Co robi
--------
-Skleja `build_taskA_encoder` z Fusion88 / Fusion88Stat.
-Forward: embeddingi z G_train → logit dla każdej pary kandydata.
+What it does
+------------
+Wires `build_taskA_encoder` to Fusion88 / Fusion88Stat.
+Forward: embeddings from G_train → logit for each candidate pair.
 
-Co wolno zmieniać
------------------
-Wybór dekodera: `model.decoder.name` = fusion88 | fusion88_stat.
-Wybór pair encodera: `model.decoder.stat_pair_encoder` = mlp | kan_shallow.
+What you may change
+-------------------
+Decoder: `model.decoder.name` = fusion88 | fusion88_stat.
+Pair encoder: `model.decoder.stat_pair_encoder` = mlp | kan_shallow.
 
-Czego nie ruszać dla FINAL
---------------------------
-fusion88_stat + S10; encoder_name=hgt. Nie mieszaj tu SAGE z Fusion88-stat
-jeśli chcesz porównywać się do tabeli 14.08.
+What not to touch for FINAL
+---------------------------
+fusion88_stat + S10; encoder_name=hgt. Do not mix SAGE with Fusion88-stat
+if you want to compare against the 14.08 table.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Wspólny interfejs encoderów: forward → dict[node_type, Tensor]."""
+"""Shared encoder interface: forward → dict[node_type, Tensor]."""
 
 from __future__ import annotations
 

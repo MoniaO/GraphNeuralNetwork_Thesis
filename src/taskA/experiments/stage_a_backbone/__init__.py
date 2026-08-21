@@ -1,16 +1,16 @@
-"""Stage A — wyścig encoderów (11.08.2026).
+"""Stage A — encoder race (11.08.2026).
 
-Co robi
--------
-Porównuje SAGE / GATv2 / HGT / RGCN przy g_stat=zeros(24).
-Zwycięzca: HGT h32 L2 d0.25 lr1e-3 heads=4 (heads=8 przegrał refine).
+What it does
+------------
+Compares SAGE / GATv2 / HGT / RGCN with g_stat=zeros(24).
+Winner: HGT h32 L2 d0.25 lr1e-3 heads=4 (heads=8 lost the refine).
 
-Co wolno zmieniać
------------------
-Siatkę w `grid.py` (hidden, layers, dropout, lr) — tylko gdy powtarzasz
-wyścig. FINAL nie rusza tych stałych.
+What you may change
+-------------------
+The grid in `grid.py` (hidden, layers, dropout, lr) — only if you rerun
+the race. FINAL does not touch these constants.
 
-Skrypt: `scripts/taskA/01_run_stage_a_backbone.py`.
+Script: `scripts/taskA/01_run_stage_a_backbone.py`.
 """
 
 BLOCK_DATE = "11.08.2026"

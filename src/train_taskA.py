@@ -1,4 +1,4 @@
-"""CLI: python src/train_taskA.py  (implementacja: taskA.training.train)."""
+"""CLI: python src/train_taskA.py  (implementation: taskA.training.train)."""
 
 from taskA.training.train import main
 

@@ -1,7 +1,7 @@
-"""HeteroData v3: typed edge stores, bez to_hetero().
+"""HeteroData v3: typed edge stores, no to_hetero().
 
-Tylko zaobserwowane węzły i dodatnie krawędzie train wchodzą do message passingu.
-Cechy węzłów z wierszy pacjentów train. Nie podmieniaj tu G_true.
+Only observed nodes and positive train edges enter message passing.
+Node features come from train patient rows. Do not inject G_true here.
 """
 
 from __future__ import annotations

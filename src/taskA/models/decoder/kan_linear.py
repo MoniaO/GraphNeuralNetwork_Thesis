@@ -1,7 +1,7 @@
-"""KANLinear: ścieżka SiLU + B-spline (twin KAN w dekoderze pary).
+"""KANLinear: SiLU + B-spline path (KAN twin in the pair decoder).
 
-Używane tylko przez StatKANPairEncoder. FINAL: grid_update=False, float32.
-Nie zmieniaj szerokości D→8 jeśli porównujesz z MLP-stat 14.08.
+Used only by StatKANPairEncoder. FINAL: grid_update=False, float32.
+Do not change the D→8 width if you compare against MLP-stat 14.08.
 """
 
 from __future__ import annotations

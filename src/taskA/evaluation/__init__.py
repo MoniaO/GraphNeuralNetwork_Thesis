@@ -1,12 +1,12 @@
-"""taskA.evaluation — metryki po logitach krawędzi.
+"""taskA.evaluation — metrics on edge logits.
 
-metrics.py         AUPRC, AUROC, Brier, F1, próg z validation
-oversmoothing.py   diagnostyka wygładzania HGT
-group_metrics.py   grupy krawędzi
-endpoint_paths.py  ścieżki do endpointów (raport pathway)
-per_edge_type.py   agregacje po typie krawędzi
+metrics.py         AUPRC, AUROC, Brier, F1, validation threshold
+oversmoothing.py   HGT oversmoothing diagnostics
+group_metrics.py   edge groups
+endpoint_paths.py  paths to endpoints (pathway report)
+per_edge_type.py   aggregations by edge type
 
-Selekcja modelu FINAL: wyłącznie valid AUPRC.
+FINAL model selection: valid AUPRC only.
 """
 
 from taskA.evaluation.metrics import SynEvaluator

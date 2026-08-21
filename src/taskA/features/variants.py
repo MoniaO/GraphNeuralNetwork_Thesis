@@ -1,14 +1,14 @@
-"""Rejestr wariantów statystycznych S0–S10 (Stage C, 11.08).
+"""S0–S10 statistical variant registry (Stage C, 11.08).
 
-Co robi
--------
-Jedyna lista nazw i wymiarów raw_dim. FINAL używa S10_HCR_FULL40 (40D).
-`get_variant("S10")` / `get_variant("S10_HCR_FULL40")` zwraca ten sam wpis.
+What it does
+------------
+Single list of names and raw_dim values. FINAL uses S10_HCR_FULL40 (40D).
+`get_variant("S10")` / `get_variant("S10_HCR_FULL40")` return the same entry.
 
-Co wolno zmieniać
------------------
-Dodawanie nowego S11+ — tylko przy nowym eksperymencie, nowy id.
-Nie zmieniaj raw_dim istniejących S0–S10: tabele 11.08/14.08 przestają się zgadzać.
+What you may change
+-------------------
+Adding a new S11+ — only in a new experiment, new id.
+Do not change raw_dim of existing S0–S10: the 11.08/14.08 tables would break.
 """
 
 from __future__ import annotations

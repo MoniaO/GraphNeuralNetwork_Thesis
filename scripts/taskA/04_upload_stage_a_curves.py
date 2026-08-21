@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""04 — (opcjonalnie) krzywe Stage A → W&B. Nie trenuje od nowa."""
+"""04 — (optional) Stage A curves → W&B. Does not retrain."""
 
 from __future__ import annotations
 

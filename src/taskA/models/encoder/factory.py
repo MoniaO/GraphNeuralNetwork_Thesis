@@ -1,14 +1,14 @@
-"""Fabryka encoderów Task A (HGT / SAGE / GATv2 / RGCN).
+"""Task A encoder factory (HGT / SAGE / GATv2 / RGCN).
 
-Co robi
--------
-Czyta `cfg.model.encoder_name` (albo conv_type) i składa matched encoder.
-FINAL zawsze wybiera `hgt`. SAGE/GAT/RGCN są tylko z wyścigu Stage A.
+What it does
+------------
+Reads `cfg.model.encoder_name` (or conv_type) and builds the matched encoder.
+FINAL always selects `hgt`. SAGE/GAT/RGCN exist only from the Stage A race.
 
-Co wolno zmieniać
------------------
-Nazwa backbone i hypers w yaml / w runnerze Stage A.
-Nie dodawaj tu logiki dekodera — dekoder jest w `models.decoder`.
+What you may change
+-------------------
+Backbone name and hypers in yaml / in the Stage A runner.
+Do not add decoder logic here — the decoder lives in `models.decoder`.
 """
 
 from __future__ import annotations

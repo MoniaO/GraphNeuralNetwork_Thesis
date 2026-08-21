@@ -1,6 +1,6 @@
-"""R-GCN matched — tylko Stage A (przegrany z HGT). Nie używany w FINAL.
+"""Matched R-GCN — Stage A only (lost to HGT). Not used in FINAL.
 
-Projekcja per typ węzła przed wspólnym stosem RGCN; relacje nie są zlewane.
+Per-type projection before a shared RGCN stack; relations are not collapsed.
 """
 
 from __future__ import annotations

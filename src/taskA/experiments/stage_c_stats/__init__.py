@@ -1,14 +1,14 @@
-"""Stage C — warianty S0–S10 na zamrożonym HGT (11.08).
+"""Stage C — S0–S10 variants on frozen HGT (11.08).
 
-Co robi
--------
-Ten sam HGT co Stage A; zmienia się tylko wektor statystyczny doklejany
-do dekodera. S10 (40D) wygrał i wszedł do FINAL.
+What it does
+------------
+Same HGT as Stage A; only the statistical vector attached to the decoder
+changes. S10 (40D) won and entered FINAL.
 
-Co wolno zmieniać
------------------
-Listę wariantów w `features.variants` — tylko przy nowym screenie.
-Nie retunuj heads (4 wygrało z 8).
+What you may change
+-------------------
+The variant list in `features.variants` — only for a new screen.
+Do not retune heads (4 beat 8).
 
-Skrypt: `scripts/taskA/05_run_stage_c_stats.py`.
+Script: `scripts/taskA/05_run_stage_c_stats.py`.
 """

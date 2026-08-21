@@ -1,6 +1,6 @@
-"""Wspólny porządek węzłów: loader indeksuje kandydatów, encoder spłaszcza embeddingi.
+"""Shared node order: the loader indexes candidates; the encoder flattens embeddings.
 
-Nie zmieniaj tej kolejności niezależnie w loaderze i w modelu — rozjadą się indeksy par.
+Do not change this order independently in the loader and the model — pair indices will drift.
 """
 
 from __future__ import annotations

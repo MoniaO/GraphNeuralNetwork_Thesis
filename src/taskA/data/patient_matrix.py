@@ -1,6 +1,6 @@
-"""Macierz pacjentów + split. Fit cech (węzeł i S10) tylko na wierszach train.
+"""Patient matrix + split. Fit node features and S10 on train rows only.
 
-Co wolno zmieniać: ścieżki w `cfg.data.dataset`. Nie mieszaj valid/test do fitu.
+What you may change: paths in `cfg.data.dataset`. Do not mix valid/test into the fit.
 """
 
 from __future__ import annotations

@@ -1,13 +1,13 @@
-"""taskA.models.encoder — message passing na G_train.
+"""taskA.models.encoder — message passing on G_train.
 
-FINAL używa wyłącznie hgt.py (HGTConv, residual, LayerNorm).
-sage.py / gatv2.py / rgcn.py zostały z Stage A (wyścig backbone).
+FINAL uses only hgt.py (HGTConv, residual, LayerNorm).
+sage.py / gatv2.py / rgcn.py remain from Stage A (backbone race).
 
-Co wolno zmieniać w NOWYM eksperymencie:
-  hidden_dim, num_layers, heads, dropout — przez Hydra model.hgt.*
-  wybór backbone (encoder_name) — tylko Stage A
+What you may change in a NEW experiment:
+  hidden_dim, num_layers, heads, dropout — via Hydra model.hgt.*
+  backbone choice (encoder_name) — Stage A only
 
-Czego nie ruszać dla odtworzenia FINAL 14.08:
+What not to touch to reproduce FINAL 14.08:
   h32, L2, heads=4, dropout=0.25, activation=leaky_relu
 """
 

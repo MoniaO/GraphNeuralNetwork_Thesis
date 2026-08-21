@@ -1,21 +1,21 @@
-"""taskA.data — budowa grafu GSN v3 i zbiorów kandydatów.
+"""taskA.data — GSN v3 graph and candidate sets.
 
-Co tu jest:
-  load_graph.py       główny loader HeteroData (train/valid/test)
-  hetero_graph.py     native PyG HeteroData z CSV
-  patient_matrix.py   pacjenci + split; fit cech tylko na train
-  candidate_pairs.py  pary (u,v) z HeteroData
-  layout.py           globalny porządek węzłów (encoder ↔ decoder)
-  feature_ablation.py profil cech węzła (empirical / topology_only)
-  interventions.py    kontrolowane usuwanie relacji
-  raw/                generatory syntetycznego GSN v3 (nie część treningu)
+Contents:
+  load_graph.py       main HeteroData loader (train/valid/test)
+  hetero_graph.py     native PyG HeteroData from CSV
+  patient_matrix.py   patients + split; feature fit on train only
+  candidate_pairs.py  (u, v) pairs from HeteroData
+  layout.py           global node order (encoder ↔ decoder)
+  feature_ablation.py node-feature profile (empirical / topology_only)
+  interventions.py    controlled relation removal
+  raw/                GSN v3 generators (not part of training)
 
-Co wolno zmieniać przy nowych eksperymentach:
-  - scenario i candidate_seed w configs/data/dataset_v3.yaml
-  - feature_ablation_profile (domyślnie empirical)
+What you may change in a new experiment:
+  - scenario and candidate_seed in configs/data/dataset_v3.yaml
+  - feature_ablation_profile (default empirical)
 
-Czego nie ruszać dla odtworzenia FINAL 14.08:
+What not to touch to reproduce FINAL 14.08:
   - candidate_seed=20260722
-  - G_train tylko z dodatnich krawędzi train
-  - brak G_true w message passingu
+  - G_train from positive train edges only
+  - no G_true in message passing
 """

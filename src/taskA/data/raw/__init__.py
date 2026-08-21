@@ -1,5 +1,5 @@
-"""Generatory surowego GSN v3 (spec interakcji, pacjenci, splity).
+"""Raw GSN v3 generators (interaction spec, patients, splits).
 
-To nie jest część treningu FINAL. Odpala się raz przy budowie datasetu
-poza `outputs/`. Trening czyta gotowe CSV z `$GSN_PROJECT_ROOT`.
+Not part of FINAL training. Run once when building the dataset outside
+`outputs/`. Training reads finished CSVs from `$GSN_PROJECT_ROOT`.
 """

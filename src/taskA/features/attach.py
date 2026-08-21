@@ -1,21 +1,21 @@
-"""Dokleja cechy S0–S10 do krawędzi kandydatów (train-only fit).
+"""Attach S0–S10 features to candidate edges (train-only fit).
 
-Co robi
--------
-1. Liczy bazy / NMI / Jaccard / FULL40 wyłącznie na pacjentach train.
-2. Dla każdej pary kandydata buduje tensor stat_raw [N, 3, D] (role AZ, AG, ZG)
-   i maski ról (brak Z → maska 0, nie imputacja).
-3. Zapisuje to na train/valid/test HeteroData — ten sam fit, zero leakage.
+What it does
+------------
+1. Computes bases / NMI / Jaccard / FULL40 on train patients only.
+2. For each candidate pair builds stat_raw [N, 3, D] (roles AZ, AG, ZG)
+   and role masks (missing Z → mask 0, no imputation).
+3. Writes this onto train/valid/test HeteroData — same fit, zero leakage.
 
-Co wolno zmieniać
------------------
-- wariant przez `experiment.stat_variant` (S0–S10). FINAL = S10_HCR_FULL40.
-- nic więcej, jeśli odtwarzasz 14.08.
+What you may change
+-------------------
+- variant via `experiment.stat_variant` (S0–S10). FINAL = S10_HCR_FULL40.
+- nothing else if you reproduce 14.08.
 
-Czego nie ruszać dla FINAL
---------------------------
-Fit tylko na train. Z z rejestru kontekstu (`outputs/taskA/context_registry/`),
-nigdy z G_true ani z etykiet krawędzi.
+What not to touch for FINAL
+---------------------------
+Fit on train only. Z comes from the context registry
+(`outputs/taskA/context_registry/`), never from G_true or edge labels.
 """
 
 from __future__ import annotations

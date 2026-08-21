@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""00 — rejestr koparentów Z (wymagany przez S10).
+"""00 — coparent-Z registry (required by S10).
 
-Zapisuje `outputs/taskA/context_registry/edge_context_registry.csv`.
-Odpalać raz, przed Stage C / FINAL. Nie używa G_true.
+Writes `outputs/taskA/context_registry/edge_context_registry.csv`.
+Run once, before Stage C / FINAL. Does not use G_true.
 """
 
 from __future__ import annotations

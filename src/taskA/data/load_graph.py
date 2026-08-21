@@ -1,29 +1,29 @@
-"""Loader grafu GSN v3 → trzy HeteroData (train / valid / test).
+"""GSN v3 graph loader → three HeteroData objects (train / valid / test).
 
-Co robi
--------
-Buduje G_train wyłącznie z dodatnich krawędzi train (message passing).
-Valid/test różnią się tylko listą par kandydatów, nie grafem.
-Indeksy kandydatów są globalne (płaski porządek = encoder).
+What it does
+------------
+Builds G_train from positive train edges only (message passing).
+Valid/test differ only in the candidate-pair list, not the graph.
+Candidate indices are global (flat order = encoder).
 
-Co wolno zmieniać
------------------
+What you may change
+-------------------
 `data.dataset.scenario`, `data.candidate_seed`, `data.feature_ablation_profile`.
 
-Czego nie ruszać dla FINAL 14.08
---------------------------------
-candidate_seed=20260722, G_train bez krawędzi valid/test, brak G_true
-w message passingu.
+What not to touch for FINAL 14.08
+---------------------------------
+candidate_seed=20260722, G_train without valid/test edges, no G_true
+in message passing.
 
-Pola na HeteroData (ten sam graf we wszystkich splitach)::
+HeteroData fields (same graph in every split)::
 
     train_data / valid_data / test_data
     data.link_source_idx : LongTensor [num_candidates]
     data.link_target_idx : LongTensor [num_candidates]
     data.edge_label      : FloatTensor [num_candidates]
 
-Konfiguracja: cfg.data.dataset.* (root_dir, scenario, nodes/edges/samples,
-patient_split_file). Seed treningu NIE buduje G_train — tylko wagi / dropout.
+Config: cfg.data.dataset.* (root_dir, scenario, nodes/edges/samples,
+patient_split_file). The training seed does NOT build G_train — only weights / dropout.
 
     export GSN_PROJECT_ROOT="$HOME/Desktop/GSN Graphs dysertation 2026"
 """

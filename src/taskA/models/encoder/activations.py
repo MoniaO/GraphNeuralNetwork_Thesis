@@ -1,4 +1,4 @@
-"""Aktywacje encodera. FINAL HGT: leaky_relu (slope 0.1). Nie zmieniaj dla 14.08."""
+"""Encoder activations. FINAL HGT: leaky_relu (slope 0.1). Do not change for 14.08."""
 
 from __future__ import annotations
 

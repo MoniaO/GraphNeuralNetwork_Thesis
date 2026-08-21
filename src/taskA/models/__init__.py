@@ -1,8 +1,8 @@
-"""taskA.models — encoder grafu + dekoder krawędzi Fusion88.
+"""taskA.models — graph encoder + Fusion88 edge decoder.
 
-  encoder/         HGT (FINAL) i rodzina matched SAGE/GAT/RGCN (Stage A)
-  decoder/         Fusion88 (64+24=88) oraz MLP/KAN pair encoder
-  link_predictor.py  skleja encoder z dekoderem
+  encoder/           HGT (FINAL) and matched SAGE/GAT/RGCN (Stage A)
+  decoder/           Fusion88 (64+24=88) and MLP/KAN pair encoder
+  link_predictor.py  wires encoder to decoder
 
 FINAL 14.08: encoder=hgt, decoder=fusion88_stat, pair encoder=mlp|kan_shallow.
 """
