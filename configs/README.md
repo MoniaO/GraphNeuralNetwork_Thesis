@@ -1,32 +1,24 @@
 # Konfiguracje Task A
 
-Projekt używa Hydra. Główny plik `config.yaml` składa konfigurację danych,
-modelu i wariantu HCR.
+Hydra składa dane, model i flagę HCR. Publiczny model: **`hgt_fusion88`**.
 
-## Najważniejsze grupy
+## Grupy
 
-- `data/dataset_v3.yaml` — główny zbiór GSN v3 i scenariusz pacjentów.
-- `model/TaskA_hgt_final.yaml` — publiczny alias finalnego HGT
-  (domyślnie `decoder.arch=unshared_mlp`).
-- `taskA/mlp_full_retrain.yaml` — finalna kontrola MLP.
-- `taskA/kan_full_retrain.yaml` — bezpośredni odpowiednik KAN.
-- `taskA/kan_architectures/` — warianty audytu K0–K9; pełny screening dotyczy
-  K1–K5.
-- `hcr/final_ghcr.yaml` — publiczny alias finalnych cech GHCR 3 × 40D.
-- `hcr/`, `wnerw/` i `link_prediction/` — konfiguracje wcześniejszych fal
-  zachowane dla reprodukowalności.
+| Plik | Rola | Co wolno zmieniać |
+|---|---|---|
+| `config.yaml` | trening, W&B, experiment | epochs, patience, lr, seed, `wandb.enabled` |
+| `data/dataset_v3.yaml` | GSN v3 + scenariusz | `scenario`, `candidate_seed` (FINAL = 20260722) |
+| `model/hgt_fusion88.yaml` | freeze HGT + Fusion88-stat | hypers encodera/dekodera — **nie ruszać dla 14.08** |
+| `hcr/none.yaml` | klasyczny HCR wyłączony | zostaw `enabled: false`; S10 wchodzi przez Stage C |
+| `taskA/experiments/stage_a_backbone.yaml` | protokół Stage A | tylko gdy powtarzasz wyścig backbone |
+| `taskA/features/context_registry.yaml` | budowa rejestru Z | ścieżki i seedy rejestru |
 
-Aliasy wskazują odpowiednio na historyczne źródła
-`model/TaskA_hgt_wave7c.yaml` i `hcr/w7c_b2_audit.yaml`.
-
-## Sprawdzenie kompozycji
+Stage A / Stage C / FINAL nadpisują pola modelu w runnerze.
 
 ```bash
 PYTHONPATH=src .venv/bin/python src/train_taskA.py \
   --cfg job \
-  model=TaskA_hgt_final \
-  hcr=final_ghcr \
+  model=hgt_fusion88 \
+  hcr=none \
   wandb.enabled=false
 ```
-
-Polecenie wyświetla złożoną konfigurację bez uruchamiania treningu.

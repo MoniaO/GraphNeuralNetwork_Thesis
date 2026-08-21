@@ -1,101 +1,80 @@
-# Graph Neural Network Thesis — Task A
+# Graph Neural Network Thesis — Task A FINAL
 
-Repozytorium pracy dyplomowej poświęconej rekonstrukcji skierowanych krawędzi
-grafu przyczynowego farmakoterapii. Główne zadanie to heterogeniczne link
-prediction na syntetycznym zbiorze GSN v3, ze szczególnym uwzględnieniem:
+Repozytorium pracy dyplomowej: rekonstrukcja skierowanych krawędzi grafu
+przyczynowego farmakoterapii (heterogeneous link prediction na GSN v3).
 
-- HGT i heterogenicznego message passingu;
-- cech zależności HCR/GHCR;
-- porównania decoderów MLP i KAN;
-- odporności na sześć scenariuszy generowania pacjentów;
-- jakości krawędzi należących do ścieżek prowadzących do rzadkich endpointów.
+Jedyna utrzymywana ścieżka to **FINAL 14.08.2026**:
 
-## Problem
+- encoder **HGT** `h32 · L2 · dropout 0.25 · lr 1e-3 · heads=4`;
+- dekoder **Fusion88-stat** + cechy **S10_HCR_FULL40** (40D × 3 role AZ/AG/ZG);
+- porównanie twinów **MLP-stat** vs **KAN-stat**;
+- sześć scenariuszy pacjentów × 5 seedów.
 
-Model otrzymuje dodatnie krawędzie splitu treningowego jako graf message
-passingu. Następnie ocenia kandydackie pary węzłów ze splitów
-train/validation/test. Dodatnie krawędzie validation i test pozostają ukryte
-przed encoderem.
+Werdykt (60/60 jobów): **MLP-stat** jest modelem finalnym
+(macro valid AUPRC **0.919** vs KAN **0.908**).
 
 ```text
 pacjenci train ──► empiryczne cechy węzłów ─┐
-                                             ├─► HGT ─► embeddingi węzłów ─┐
-dodatnie krawędzie train ─► G_train ─────────┘                              │
-                                                                            ├─► logit krawędzi
-cechy GHCR par AZ, AG, ZG ─► MLP albo KAN ──────────────────────────────────┘
+                                             ├─► HGT L2 ─► embeddingi ─┐
+dodatnie krawędzie train ─► G_train ─────────┘                         │
+                                                                       ├─► Fusion88 → logit
+cechy S10 par AZ, AG, ZG ─► MLP albo KAN ──────────────────────────────┘
 ```
 
-Wiersze pacjentów nie są przykładami treningowymi GNN. Służą do obliczenia
-cech węzłów i dopasowania HCR/GHCR wyłącznie na partycji pacjentów `train`.
+Wiersze pacjentów nie są przykładami treningowymi GNN. Służą do cech węzłów
+i dopasowania S10 wyłącznie na partycji `train`.
 
-## Finalne modele
+## Architektura
 
-Oba modele mają identyczny:
+Oba twiny mają identyczny encoder, graf kandydatów, splity, seedy, loss
+i protokół ewaluacji. Różni je wyłącznie encoder pary S10:
 
-- encoder HGT: 3 warstwy, hidden dimension 32, 8 głów attention, residual,
-  LayerNorm i dropout 0.2;
-- graf kandydatów, splity, seedy, loss i protokół ewaluacji;
-- 40-wymiarowe wejścia GHCR dla trzech ról `AZ`, `AG`, `ZG`;
-- graph branch i końcowy decoder.
+- MLP-stat: `40 → 16 → 8`;
+- KAN-stat: `StatKANPairEncoder` (płytki spline, ten sam wymiar).
 
-Różni je wyłącznie encoder każdej pary GHCR:
+Źródła:
 
-- `TA_MLP`: `40 → 16 → 8`, GELU, LayerNorm, dropout 0.1;
-- `TA_KAN`: bezpośredni odpowiednik KAN z bazą spline;
-- audyt K1–K5: alternatywne architektury KAN, z najlepszym wariantem K1
-  shallow.
+- `configs/model/hgt_fusion88.yaml` — zamrożony HGT + Fusion88-stat
+- `configs/hcr/none.yaml` — klasyczny HCR wyłączony; S10 wchodzi przez Stage C
+- `src/taskA/models/` — encoder HGT i dekoder Fusion88 / MLP vs KAN
+- `src/taskA/experiments/` — Stage A → Stage C → FINAL 14.08
 
-Źródła konfiguracji:
+Kampania 11.08 wybrała ten freeze (Stage A: backbone HGT; Stage C: S10).
+Wyniki: `outputs/taskA_final_large_grid_11.08.2026/` oraz
+`outputs/taskA_FINAL_14.08.2026/`.
 
-- `configs/taskA/mlp_full_retrain.yaml`
-- `configs/taskA/kan_full_retrain.yaml`
-- `configs/taskA/kan_architectures/`
-- `configs/model/TaskA_hgt_final.yaml`
-- `configs/hcr/final_ghcr.yaml`
-
-Nazwy `TaskA_hgt_wave7c` i `w7c_b2_audit` pozostają historycznymi źródłami
-aliasów i służą do odtwarzania eksperymentów Wave 7C–10.
-
-## Struktura repozytorium
+## Struktura
 
 ```text
 .
-├── configs/                  konfiguracje Hydra
-│   ├── data/                 GSN v3 i scenariusze
-│   ├── model/                architektury GNN
-│   ├── hcr/                  warianty HCR/GHCR
-│   └── taskA/                finalny MLP, KAN i audit K1–K9
+├── configs/                      Hydra: dataset_v3, hgt_fusion88, hcr=none
 ├── src/
-│   ├── train_taskA.py        główny entrypoint treningu
-│   ├── data/                 preprocessing i kandydaci krawędzi
-│   ├── models/TaskA/         HGT, decodery i pair encoders
-│   ├── hcr/                  implementacja HCR/GHCR
-│   ├── evaluation/           metryki globalne i endpoint-path
-│   ├── experiments/          wspólne funkcje audytów
-│   └── wnerw/                historyczne eksperymenty ścieżkowe
-├── scripts/                  runnery, ewaluacja i agregacja wyników
-├── tests/                    testy jednostkowe i leakage guards
-├── notebooks/               eksploracja danych i raporty wcześniejszych fal
+│   ├── train_taskA.py            CLI (implementacja: taskA.training.train)
+│   └── taskA/
+│       ├── data/                 graf GSN v3, pacjenci, kandydaci
+│       ├── features/             S0–S10, attach train-only, bazy 40D
+│       ├── models/encoder/       HGT (FINAL) + SAGE/GAT/RGCN
+│       ├── models/decoder/       Fusion88 + MLP/KAN pair encoder
+│       ├── training/             pętla, early stop, test sealed
+│       ├── evaluation/           AUPRC i diagnostyka
+│       └── experiments/          Stage A → Stage C → FINAL 14.08
+├── scripts/taskA/                00–11 w kolejności odtwarzania
+├── tests/taskA/                  Fusion88, S10, KAN, Hydra freeze
 └── outputs/
-    └── Wave 0-11 podsumowanie/  wersjonowany raport promotorski
+    ├── taskA_FINAL_14.08.2026/
+    └── taskA_final_large_grid_11.08.2026/
 ```
 
-Szczegółowe mapy:
-
-- `src/README.md` — przepływ kodu i kolejność czytania;
-- `configs/README.md` — składanie konfiguracji;
-- `scripts/README.md` — finalne i historyczne skrypty eksperymentalne;
-- `outputs/Wave 0-11 podsumowanie/00_README.md` — historia i wyniki fal 0–11.
+Szczegóły: `src/README.md`, `configs/README.md`, `scripts/README.md`,
+`outputs/taskA_FINAL_14.08.2026/00_README.md`.
 
 ## Dane
 
-Dane GSN v3 są przechowywane poza repozytorium. Ustaw:
+Dane GSN v3 są poza repozytorium:
 
 ```bash
 export GSN_PROJECT_ROOT="$HOME/Desktop/GSN Graphs dysertation 2026"
 ```
-
-Oczekiwana lokalizacja danych:
 
 ```text
 $GSN_PROJECT_ROOT/
@@ -109,7 +88,19 @@ $GSN_PROJECT_ROOT/
 ```
 
 Scenariusze: `clean`, `hidden_confounder`, `selection_bias`, `no_overlap`,
-`noisy_documentation` i `multihospital`.
+`noisy_documentation`, `multihospital`.
+
+Attach S10 wymaga rejestru kontekstu krawędzi:
+
+```text
+outputs/wave5c/registry/edge_context_registry.csv
+```
+
+Jeśli pliku nie ma:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/taskA/00_build_context_registry.py
+```
 
 ## Instalacja
 
@@ -121,76 +112,57 @@ python -m pip install -r requirements.txt
 export PYTHONPATH="$PWD/src:$PWD"
 ```
 
-W&B jest opcjonalne dla testów i lokalnych smoke runów. Pełne eksperymenty
-korzystają z projektu `politechnika-gnn-thesis`.
+W&B jest opcjonalne dla testów. Pełne eksperymenty używają projektu
+`politechnika-gnn-thesis`.
 
 ## Szybka weryfikacja
-
-Testy:
 
 ```bash
 .venv/bin/python -m pytest
 ```
 
-Sprawdzenie kompozycji finalnej konfiguracji bez treningu:
+Kompozycja konfiguracji bez treningu:
 
 ```bash
 PYTHONPATH=src .venv/bin/python src/train_taskA.py \
   --cfg job \
-  model=TaskA_hgt_final \
-  hcr=final_ghcr \
+  model=hgt_fusion88 \
+  hcr=none \
   wandb.enabled=false
 ```
 
-Smoke test encoderów:
-
-```bash
-PYTHONPATH=src .venv/bin/python scripts/smoke_taskA_architecture.py
-```
-
-Jednoepokowy run kontrolny bez zapisu do W&B:
+Jednoepokowy smoke (bez W&B):
 
 ```bash
 PYTHONPATH=src .venv/bin/python src/train_taskA.py \
-  model=TaskA_hgt_final \
-  hcr=final_ghcr \
+  model=hgt_fusion88 \
+  hcr=none \
   data.dataset.scenario=clean \
   data.candidate_seed=20260722 \
   training.seed=20260722 \
   training.epochs=1 \
   training.device=cpu \
-  wandb.enabled=false
+  wandb.enabled=false \
+  ++experiment.stat_variant=S10_HCR_FULL40 \
+  ++model.decoder.stat_pair_encoder=mlp
 ```
 
-## Finalny eksperyment Wave 11
-
-Najpierw zbuduj rejestr kontekstu krawędzi Wave 5C (wymaga evidence Wave 5 w
-`outputs/wave5/evidence/`). Bez tego `hcr=final_ghcr` nie ma pełnych motywów
-40D×3 i trening się wyłoży na brakującym pliku:
+## Finalny grid 14.08
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/build_wave5c_context_registry.py
+PYTHONPATH=src .venv/bin/python scripts/taskA/08_run_final.py --mode count
+PYTHONPATH=src .venv/bin/python scripts/taskA/09_watch_final.py
+PYTHONPATH=src .venv/bin/python scripts/taskA/10_plot_learning_curves.py --source final
+PYTHONPATH=src .venv/bin/python scripts/taskA/11_eval_edge_pathway.py
 ```
 
-Następnie:
-
-```bash
-PYTHONPATH=src .venv/bin/python scripts/run_taska_mlp_vs_kan_scenarios.py
-PYTHONPATH=src .venv/bin/python scripts/run_taska_kan_architecture_audit.py
-PYTHONPATH=src .venv/bin/python scripts/run_taska_winner_rare_endpoint_audit.py
-PYTHONPATH=src .venv/bin/python scripts/upload_taska_results_to_wandb.py
-```
-
-Ciężkie checkpointy, logi Hydra i lokalne runy W&B są ignorowane przez Git.
-Wersjonowany jest jedynie lekki raport podsumowujący w
-`outputs/Wave 0-11 podsumowanie/`.
+Ciężkie checkpointy i logi Hydra są w `.gitignore`. Wersjonowane są lekkie
+raporty w `outputs/taskA_FINAL_14.08.2026/` oraz tabele decyzji 11.08.
 
 ## Metryki
 
-Główna metryka selekcji modelu to validation AUPRC. Raport zawiera także
-AUROC, Brier score, precision, recall, F1, F2, AUPRC lift, normalized AUPRC,
-metryki oversmoothing oraz wyniki grupowane według ścieżek do endpointów.
+Selekcja modelu: validation AUPRC. Raport zawiera też AUROC, Brier,
+precision/recall/F1/F2 oraz metryki ścieżek klinicznych.
 
-Loss to ważona `BCEWithLogitsLoss`, gdzie `pos_weight` jest obliczany z bilansu
-klas wyłącznie na zbiorze treningowym. Próg klasyfikacyjny jest wybierany na
-validation i zamrażany dla testu.
+Loss: ważona `BCEWithLogitsLoss` (`pos_weight` z train). Próg klasyfikacji
+wybierany na validation i zamrażany dla testu.

@@ -14,7 +14,7 @@ Use this notebook folder for analysis notebooks. Prefer filenames:
 5. Heads refine 4 vs 8 on frozen HGT — **DONE** (hd4=0.729 wins; hd8=0.705 lost)
 6. Final backbone comparison 6 × 5 seeds (valid macro AUPRC only) — if still needed
 7. **Do not** open sealed test metrics for selection
-8. Stage C stats — **STARTED** on heads=4 (`scripts/run_taskA_stage_c_stats_11.08.2026.py`)
+8. Stage C stats — **STARTED** on heads=4 (`scripts/05_run_stage_c_stats.py`)
 
 ## Decision artifacts (auto)
 

@@ -32,13 +32,13 @@ export PYTHONPATH=src
 .venv/bin/python -m pytest tests/test_fusion88_decoder_11_08_2026.py -q
 
 # smoke (2 epoki, 1 konfiguracja HGT)
-.venv/bin/python scripts/run_taskA_stage_a_backbone_11.08.2026.py --mode smoke
+.venv/bin/python scripts/01_run_stage_a_backbone.py --mode smoke
 
 # pełny shared screen na clean × 3 seeds (~216 jobów)
-.venv/bin/python scripts/run_taskA_stage_a_backbone_11.08.2026.py --mode shared_screen
+.venv/bin/python scripts/01_run_stage_a_backbone.py --mode shared_screen
 
 # policz joby
-.venv/bin/python scripts/run_taskA_stage_a_backbone_11.08.2026.py --mode count
+.venv/bin/python scripts/01_run_stage_a_backbone.py --mode count
 ```
 
 ## Struktura bloku
@@ -51,11 +51,12 @@ outputs/taskA_final_large_grid_11.08.2026/
   stage_a/   stage_b/   stage_c/
   audit/     notebooks/ logs/
 
-src/taskA_final_large_grid_11_08_2026/
-configs/taskA_final_large_grid_11.08.2026/
-scripts/run_taskA_stage_a_backbone_11.08.2026.py
-notebooks/taskA_final_large_grid_11.08.2026/
-tests/test_fusion88_decoder_11_08_2026.py
+src/taskA/experiments/stage_a_backbone/
+src/taskA/experiments/stage_c_stats/
+configs/taskA/experiments/stage_a_backbone.yaml
+scripts/taskA/01_run_stage_a_backbone.py
+scripts/taskA/05_run_stage_c_stats.py
+tests/taskA/
 ```
 
 ## Status

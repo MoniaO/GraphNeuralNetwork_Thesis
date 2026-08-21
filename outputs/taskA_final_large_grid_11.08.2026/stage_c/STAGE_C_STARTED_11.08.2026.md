@@ -14,6 +14,6 @@ S0 uses exact zeros path (`Fusion88Decoder` / `force_zero_stat`).
 
 ```bash
 PYTHONPATH=src GSN_PROJECT_ROOT="$HOME/Desktop/GSN Graphs dysertation 2026" \
-  .venv/bin/python scripts/run_taskA_stage_c_stats_11.08.2026.py \
+  .venv/bin/python scripts/05_run_stage_c_stats.py \
   --mode screen --scenario clean --heads 4
 ```

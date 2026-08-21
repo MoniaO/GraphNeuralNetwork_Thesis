@@ -1,111 +1,82 @@
-# Kolejność przeglądu kodu — FINAL 14.08.2026 (dziś)
+# Kolejność przeglądu kodu — FINAL 14.08.2026
 
-Cel: przejść **od decyzji → architektura → trening → diagnostyka**, bez gubienia kontekstu.
-Czas orientacyjny: ~2–3 h uważnego czytania.
-
-**Werdykt wyników (60/60):** MLP-stat wygrywa (macro valid **0.919** vs KAN **0.908**).  
+Cel: iść **dane → encoder → dekoder → trening → eksperymenty**, bez starych ścieżek.
+Werdykt: MLP-stat (macro valid AUPRC **0.919**) vs KAN **0.908**.
 Szczegóły: [`SUMMARY_MACRO_14.08.2026.md`](SUMMARY_MACRO_14.08.2026.md)
 
----
-
-## 0. Najpierw kontekst (15 min)
-
-1. [`00_README.md`](00_README.md) — co to jest FINAL  
-2. [`PROTOCOL_14.08.2026.md`](PROTOCOL_14.08.2026.md) — freeze / zakazy  
-3. [`MANIFEST_14.08.2026.json`](MANIFEST_14.08.2026.json) — fingerprint  
-4. [`TESTS_SINCE_11.08.2026.md`](TESTS_SINCE_11.08.2026.md) — co już przetestowaliśmy od 11.08  
-5. [`CODE_AND_SCRIPT_MAP_14.08.2026.md`](CODE_AND_SCRIPT_MAP_14.08.2026.md) — zależności skryptów (diagram)
+Konwencja nazw: `src/taskA/<etap>/` (data, features, models/encoder, models/decoder, …).
+Skrypty: `scripts/taskA/00_…` … `11_…` w kolejności odtwarzania.
 
 ---
 
-## 1. Architektura modelu (rdzeń) — czytaj w tej kolejności
+## 0. Kontekst (15 min)
+
+1. [`00_README.md`](00_README.md) — co to jest FINAL
+2. [`PROTOCOL_14.08.2026.md`](PROTOCOL_14.08.2026.md) — freeze / zakazy
+3. [`src/taskA/README.md`](../../src/taskA/README.md) — mapa pakietu
+4. [`scripts/README.md`](../../scripts/README.md) — numeracja 00–11
+
+---
+
+## 1. Architektura — czytaj w tej kolejności
 
 | # | Plik | Po co |
 |---:|---|---|
-| 1 | `src/taskA_final_large_grid_11_08_2026/fusion88_decoder.py` | kontrakt graph 64 + stat 24 → fusion 88 → logit |
-| 2 | `src/taskA_final_large_grid_11_08_2026/stage_c/stat_encoder.py` | **MLP vs KAN** pair encoders, `g_stat`, reg loss |
-| 3 | `src/taskA_final_large_grid_11_08_2026/stage_c/variants.py` | S0–S10, w tym S10 FULL40 = 40-D |
-| 4 | `src/taskA_final_large_grid_11_08_2026/stage_c/features.py` | jak liczone są 40 cech (HCR/energy/marg/joint/META) |
-| 5 | `src/taskA_final_large_grid_11_08_2026/stage_c/attach.py` | train-only fit, attach `stat_raw` + maski, leakage guards |
-| 6 | `src/models/TaskA/hetero_gnn.py` | HGT + wiring `fusion88_stat` (szukaj `Fusion88Stat` / decoder) |
-| 7 | `src/models/TaskA/pair_encoders/kan_linear.py` | implementacja KANLinear (używana przez StatKAN) |
-| 8 | `src/train_taskA.py` | pętla train, early stop valid AUPRC, `pair_encoder_regularization_loss` |
+| 1 | `src/taskA/data/load_graph.py` | G_train + kandydaci |
+| 2 | `src/taskA/features/variants.py` | S0–S10; FINAL = S10 40D |
+| 3 | `src/taskA/features/attach.py` | train-only fit, `stat_raw` + maski |
+| 4 | `src/taskA/models/encoder/hgt.py` | HGT L2 h32 |
+| 5 | `src/taskA/models/decoder/fusion88.py` | graph 64 + stat 24 → 88 → logit |
+| 6 | `src/taskA/models/decoder/pair_encoder.py` | **MLP vs KAN** |
+| 7 | `src/taskA/models/link_predictor.py` | skleja encoder z dekoderem |
+| 8 | `src/taskA/training/train.py` | early stop na valid AUPRC |
 
 ---
 
-## 2. FINAL runner (jak odpala się 60 jobów)
+## 2. FINAL runner (60 jobów)
 
 | # | Plik | Po co |
 |---:|---|---|
-| 1 | `src/taskA_FINAL_14_08_2026/__init__.py` | nazwa, seedy, freeze constants |
-| 2 | `src/taskA_FINAL_14_08_2026/runner.py` | overrides Hydra, skip-ok, extract results |
-| 3 | `scripts/run_taskA_FINAL_14.08.2026.py` | CLI (`count` / `smoke` / `full`) |
-| 4 | `scripts/watch_FINAL_14.08.2026.py` | watchdog PID-file |
+| 1 | `src/taskA/experiments/final_14_08/__init__.py` | seedy, `FROZEN` |
+| 2 | `src/taskA/experiments/final_14_08/runner.py` | Hydra overrides, skip-ok |
+| 3 | `scripts/taskA/08_run_final.py` | CLI (`count` / `smoke` / `full`) |
+| 4 | `scripts/taskA/09_watch_final.py` | watchdog |
 
 ---
 
-## 3. Kampania 11.08 (skąd wziął się freeze) — skrót
+## 3. Kampania 11.08 (skąd freeze)
 
 | # | Plik | Po co |
 |---:|---|---|
-| 1 | `src/taskA_final_large_grid_11_08_2026/__init__.py` | seedy / scenariusze |
-| 2 | `src/taskA_final_large_grid_11_08_2026/stage_a_runner.py` | Stage A backbone race |
-| 3 | `src/taskA_final_large_grid_11_08_2026/stage_c_runner.py` | Stage C S0–S10 + multi-scenario |
-| 4 | `scripts/run_taskA_stage_a_backbone_11.08.2026.py` | CLI Stage A |
-| 5 | `scripts/run_taskA_stage_c_stats_11.08.2026.py` | CLI Stage C |
-| 6 | `outputs/.../stage_a/STAGE_A_FREEZE_HGT_TOP1_11.08.2026.md` | decyzja HGT |
-| 7 | `outputs/.../stage_c/STAGE_C_CLEAN_S0_S10_TABLE_11.08.2026.md` | ranking S10/S9 |
-| 8 | `outputs/.../stage_c/STAGE_C_S9_S10_6SCEN_TABLE_11.08.2026.md` | S9/S10 × 6 |
+| 1 | `scripts/taskA/01_run_stage_a_backbone.py` | wyścig encoderów |
+| 2 | `src/taskA/experiments/stage_a_backbone/` | siatka + runner Stage A |
+| 3 | `scripts/taskA/05_run_stage_c_stats.py` | S0–S10 |
+| 4 | `outputs/.../stage_a/STAGE_A_FREEZE_HGT_TOP1_11.08.2026.md` | decyzja HGT |
+| 5 | `outputs/.../stage_c/STAGE_C_CLEAN_S0_S10_TABLE_11.08.2026.md` | ranking S10 |
 
 ---
 
-## 4. Diagnostyka (przejrzyj wyniki, potem kod)
+## 4. Diagnostyka
 
-English operator guide (all scripts + knobs):  
-[`SCRIPTS_CONTROL_GUIDE_EN.md`](SCRIPTS_CONTROL_GUIDE_EN.md)
-
-| # | Plik / folder | Po co |
+| # | Plik | Po co |
 |---:|---|---|
-| 1 | `SUMMARY_MACRO_14.08.2026.md` | **tabela MLP vs KAN** |
-| 2 | `FINAL_SUMMARY_14.08.2026.json` | raw per-seed |
-| 3 | `learning_curves/LEARNING_DIAGNOSTICS_14.08.2026.md` | best-epoch / gap |
-| 4 | `learning_curves/` PNG | train/valid curves |
-| 5 | `scripts/plot_taska_learning_curves_14.08.2026.py` | jak parsowane logi |
-| 6 | `scripts/eval_taska_stage_c_edge_pathway_report.py` | edge × prob × pathway |
-| 7 | `edge_pathway_report/` | (uwaga: early report miał niski coverage join — do poprawy przy pushu jeśli potrzeba) |
+| 1 | `SUMMARY_MACRO_14.08.2026.md` | tabela MLP vs KAN |
+| 2 | `scripts/taskA/10_plot_learning_curves.py` | krzywe z logów |
+| 3 | `scripts/taskA/11_eval_edge_pathway.py` | krawędź × pathway |
 
 ---
 
-## 5. Testy — uruchom / przeczytaj
+## 5. Testy
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m pytest \
-  tests/test_fusion88_decoder_11_08_2026.py \
-  tests/test_stage_c_stats_11_08_2026.py \
-  tests/test_FINAL_14_08_2026_kan.py -q
+PYTHONPATH=src .venv/bin/python -m pytest tests/taskA -q
 ```
 
 | Plik | Co kryje |
 |---|---|
-| `tests/test_fusion88_decoder_11_08_2026.py` | fusion 88 shapes |
-| `tests/test_stage_c_stats_11_08_2026.py` | S0–S10, features, masks |
-| `tests/test_FINAL_14_08_2026_kan.py` | KAN twin shapes + reg |
+| `tests/taskA/test_decoder_fusion88.py` | fusion 88 shapes |
+| `tests/taskA/test_features_s10.py` | S0–S10, maski |
+| `tests/taskA/test_decoder_kan.py` | KAN twin |
+| `tests/taskA/test_config_hgt_fusion88.py` | Hydra freeze |
 
----
-
-## 6. Co **nie** mieszać przy review (osobny stack)
-
-- `outputs/taskA_final_stack/` — Wave11 Wave7C / stary „final”
-- `scripts/run_taska_mlp_vs_kan_scenarios.py` i Wave11 KAN — **inny** dekoder (nie fusion88 S10)
-
----
-
-## Checklist „dziś done”
-
-- [ ] Przeczytane §0–§2 (protokół + architektura + runner)
-- [ ] Potwierdzony werdykt MLP > KAN w `SUMMARY_MACRO`
-- [ ] Pytest zielony (3 pliki wyżej)
-- [ ] Krzywe w `learning_curves/` wyglądają sensownie (brak eksplozji loss)
-- [ ] Lista plików do **gita** uzgodniona (kod + md + summary JSON; bez ciężkich `.pt` / pełnych logów jeśli nie chcesz)
-
-Jak skończysz review — napisz „push” / „commit”, wtedy dopiero zrobię commit+push.
+Stare fale Wave 0–11 i MOOC zostały usunięte. Jedyna ścieżka: 11.08 (HGT+S10) i 14.08 (MLP vs KAN).

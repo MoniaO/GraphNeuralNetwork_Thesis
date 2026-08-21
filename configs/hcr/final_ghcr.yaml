@@ -1,4 +1,0 @@
-# Public Hydra alias for the final 3 × 40D GHCR features.
-# Keep w7c_b2_audit.yaml as the historical source for reproducibility.
-defaults:
-  - w7c_b2_audit

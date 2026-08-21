@@ -43,7 +43,7 @@ outputs/taskA_FINAL_14.08.2026/
 ## Commands
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/run_taskA_FINAL_14.08.2026.py --mode count
+PYTHONPATH=src .venv/bin/python scripts/08_run_final.py --mode count
 PYTHONPATH=src .venv/bin/python scripts/plot_taska_learning_curves_14.08.2026.py --source both
 PYTHONPATH=src .venv/bin/python -m pytest tests/test_FINAL_14_08_2026_kan.py tests/test_stage_c_stats_11_08_2026.py -q
 ```

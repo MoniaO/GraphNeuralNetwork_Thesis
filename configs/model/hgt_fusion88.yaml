@@ -1,0 +1,31 @@
+# Frozen FINAL 14.08.2026 HGT + Fusion88-stat (S10).
+# Stage A/C runners override encoder/decoder fields on top of this file.
+name: hgt
+conv_type: hgt
+encoder_name: hgt
+
+hidden_channels: 32
+hidden_dim: 32
+num_layers: 2
+heads: 4
+dropout: 0.25
+residual: true
+activation: leaky_relu
+
+hgt:
+  hidden_dim: 32
+  num_layers: 2
+  heads: 4
+  activation: leaky_relu
+  dropout: 0.25
+  residual: true
+  norm: layernorm
+
+decoder:
+  name: fusion88_stat
+  dropout: 0.2
+  pair_dropout: 0.1
+  stat_raw_dim: 40
+  force_zero_stat: false
+  stat_pair_encoder: mlp
+  spline_l1: 1.0e-5

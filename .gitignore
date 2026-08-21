@@ -222,10 +222,8 @@ __marimo__/
 # ML PROJECT: Hydra + Weights & Biases + PyG
 # =============================================
 
-# Hydra outputs. Keep the lightweight, promoter-facing report under version control.
+# Hydra outputs. Keep the lightweight FINAL reports under version control.
 outputs/*
-!outputs/Wave 0-11 podsumowanie/
-!outputs/Wave 0-11 podsumowanie/**
 # FINAL 14.08.2026 — docs + summaries (not checkpoints / run trees)
 !outputs/taskA_FINAL_14.08.2026/
 !outputs/taskA_FINAL_14.08.2026/**
