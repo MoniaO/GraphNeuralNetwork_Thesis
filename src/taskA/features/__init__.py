@@ -6,8 +6,9 @@ Publiczne API (czytaj to):
   attach.py     fit train-only → tensor stat_raw [N,3,D] + maski ról
 
 Wnętrze (nie tunuj, jeśli odtwarzasz S10):
-  pair_basis/   bazy 40D pary (Legendre / discrete / packing)
-  context/      rejestr koparentów Z z G_train (nigdy G_true)
+  pair_basis/hcr40/   bazy 40D pary (Legendre / discrete / packing)
+  context/coparent/   rejestr koparentów Z z G_train (nigdy G_true)
+  context/topology/   graf ze scored edges do budowy rejestru
 
 Co wolno zmieniać:
   - wariant S0–S10 w experiment.stat_variant (NOWY eksperyment, nie FINAL)

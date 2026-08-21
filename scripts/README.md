@@ -7,7 +7,7 @@ Watchdogi i podsumowania są opcjonalne.
 
 | # | Plik | Kiedy | Co robi |
 |---|---|---|---|
-| 00 | `00_build_context_registry.py` | raz, przed S10 | rejestr koparentów Z → `outputs/wave5c/registry/` |
+| 00 | `00_build_context_registry.py` | raz, przed S10 | rejestr koparentów Z → `outputs/taskA/context_registry/` |
 | 01 | `01_run_stage_a_backbone.py` | kampania 11.08 | wyścig encoderów (HGT wygrał) |
 | 02 | `02_watch_stage_a.py` | opcjonalnie | watchdog Stage A |
 | 03 | `03_summarize_stage_a.py` | po 01 | tabele decyzji Stage A |

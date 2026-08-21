@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """00 — rejestr koparentów Z (wymagany przez S10).
 
-Zapisuje `outputs/wave5c/registry/edge_context_registry.csv`.
+Zapisuje `outputs/taskA/context_registry/edge_context_registry.csv`.
 Odpalać raz, przed Stage C / FINAL. Nie używa G_true.
 """
 
@@ -16,7 +16,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from taskA.features.context.wave5c.runtime import load_cfg, load_seed_bundle
+from taskA.features.context.coparent.runtime import load_cfg, load_seed_bundle
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
     parser.add_argument("--config", type=Path, default=ROOT / "configs/taskA/features/context_registry.yaml")
     args = parser.parse_args()
     cfg = load_cfg(args.config)
-    out = ROOT / cfg["paths"]["output_dir"] / "registry"
+    out = ROOT / cfg["paths"]["output_dir"]
     out.mkdir(parents=True, exist_ok=True)
 
     frames = []

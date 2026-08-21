@@ -1,4 +1,4 @@
-"""Graph selection for Wave 5B topology / energy panels."""
+"""Graph selection used when building the coparent-Z registry."""
 
 from __future__ import annotations
 

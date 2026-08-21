@@ -769,7 +769,7 @@ def load_recon_heterodata(cfg: Any):
         ]
     )
 
-    # Wave 3B motif completion: hold parent_a→gate edges out of G_train MP.
+    # Motif-completion holdout: keep parent_a→gate edges out of G_train message passing.
     held_out_motif_edge_ids: list[str] = []
     from taskA.data.motif_completion import (
         held_out_edge_ids,

@@ -2,7 +2,7 @@
 
 Co robi
 -------
-Z macierzy pacjentów train buduje NMI / Jaccard / cosine / FULL40 (Panel B).
+Z macierzy pacjentów train buduje NMI / Jaccard / cosine / FULL40 (HCR 40D).
 `slice_full40` wycina prefiksy S5–S10 z tego samego wektora 40D.
 
 Co wolno zmieniać
@@ -25,9 +25,9 @@ import pandas as pd
 
 from taskA.features.pair_basis.variable_spec import VariableType
 from taskA.features.pair_basis.variable_specs_v3 import VARIABLE_SPECS
-from taskA.features.pair_basis.wave7.panel_b.encoder import PanelBConfig, PanelBPairEncoder
-from taskA.features.pair_basis.wave7.panel_b.packing import PAIR_DIM
-from taskA.features.pair_basis.wave7.panel_b.summaries import active_mask, continuous_marginal
+from taskA.features.pair_basis.hcr40.encoder import Hcr40Config, Hcr40PairEncoder
+from taskA.features.pair_basis.hcr40.packing import PAIR_DIM
+from taskA.features.pair_basis.hcr40.summaries import active_mask, continuous_marginal
 
 from .variants import StageCVariant, get_variant
 
@@ -228,7 +228,7 @@ def signed_phi_binary(u: np.ndarray, v: np.ndarray) -> tuple[float, bool]:
 
 
 # ---------------------------------------------------------------------------
-# HCR FULL40 slices via Panel B
+# HCR FULL40 slices via the 40D pair encoder
 # ---------------------------------------------------------------------------
 
 
@@ -292,11 +292,11 @@ def fit_stage_c_features(
     unique_pairs = sorted({(str(u), str(v)) for u, v in pairs})
     unique_nodes = sorted({n for uv in unique_pairs for n in uv})
 
-    # Panel B encoder for HCR slices (reuse Legendre / jitter internals).
-    panel: PanelBPairEncoder | None = None
+    # HCR 40D encoder for S5–S10 slices (reuse Legendre / jitter internals).
+    panel: Hcr40PairEncoder | None = None
     if variant.kind == "hcr_slice":
-        cfg = PanelBConfig(variant=B2_VARIANT)
-        panel = PanelBPairEncoder(cfg)
+        cfg = Hcr40Config(variant=B2_VARIANT)
+        panel = Hcr40PairEncoder(cfg)
         panel.scenario = scenario
         panel.fit(train_df, unique_nodes)
         store.patient_train_fingerprint = panel.patient_train_fingerprint
@@ -310,7 +310,7 @@ def fit_stage_c_features(
                 continue
             disc[name] = _fit_discretizer(vals, _kind(name))
 
-    from taskA.features.pair_basis.wave7.panel_b.encoder import patient_train_fingerprint
+    from taskA.features.pair_basis.hcr40.encoder import patient_train_fingerprint
 
     if not store.patient_train_fingerprint:
         store.patient_train_fingerprint = patient_train_fingerprint(train_df)
@@ -379,7 +379,7 @@ def fit_stage_c_features(
             assert sliced.shape[0] == variant.raw_dim
             store.pair_raw[key] = sliced.astype(np.float32)
             store.pair_applicable[key] = True
-            store.pair_meta[key] = {**meta, **pmeta, "path": f"panel_b_slice_{variant.name}"}
+            store.pair_meta[key] = {**meta, **pmeta, "path": f"hcr40_slice_{variant.name}"}
             continue
 
         raise ValueError(f"Unhandled variant {variant.config_id}")

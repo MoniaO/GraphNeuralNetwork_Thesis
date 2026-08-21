@@ -14,7 +14,7 @@ Co wolno zmieniać
 
 Czego nie ruszać dla FINAL
 --------------------------
-Fit tylko na train. Z z rejestru kontekstu (`outputs/wave5c/registry/`),
+Fit tylko na train. Z z rejestru kontekstu (`outputs/taskA/context_registry/`),
 nigdy z G_true ani z etykiet krawędzi.
 """
 
@@ -27,13 +27,13 @@ import torch
 
 from taskA.data.candidate_pairs import candidate_pairs_from_data
 from taskA.data.patient_matrix import load_patient_matrix_with_split, train_patient_df
-from taskA.features.pair_basis.wave7.motif import (
+from taskA.features.pair_basis.hcr40.motif import (
     PAIR_ROLES,
     build_candidate_coparent_triples,
     triples_fingerprint,
 )
-from taskA.features.context.wave5c.edge_context_registry import build_context_map
-from taskA.features.context.wave5c.runtime import ROOT as REPO_ROOT
+from taskA.features.context.coparent.edge_context_registry import build_context_map
+from taskA.features.context.coparent.runtime import ROOT as REPO_ROOT
 
 from .compute import StageCFeatureStore, fit_stage_c_features
 from .variants import StageCVariant, get_variant
@@ -58,11 +58,15 @@ def stage_c_enabled(cfg: Any) -> bool:
 
 
 def _load_registry(seed: int):
-    path = REPO_ROOT / "outputs/wave5c/registry/edge_context_registry.csv"
+    candidates = [
+        REPO_ROOT / "outputs/taskA/context_registry/edge_context_registry.csv",
+        REPO_ROOT / "outputs/wave5c/registry/edge_context_registry.csv",
+    ]
+    path = next((p for p in candidates if p.exists()), candidates[0])
     if not path.exists():
         raise FileNotFoundError(
-            f"Missing Wave 5C edge-context registry: {path}. "
-            "Build with scripts/build_wave5c_context_registry.py"
+            f"Missing coparent edge-context registry: {path}. "
+            "Build with scripts/taskA/00_build_context_registry.py"
         )
     import pandas as pd
 

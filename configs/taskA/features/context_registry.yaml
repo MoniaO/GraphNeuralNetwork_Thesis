@@ -1,13 +1,14 @@
-# WAVE 5C — Patient-Conditioned Mechanistic Path Activation
-# Topology from HCR G*; energies from patient context (β=0 primary).
+# Coparent-Z registry for S10 attach.
+# Topology from scored G*; energies from patient context (β=0 primary).
+# Does not use G_true.
 
 experiment:
-  name: WAVE5C_PATIENT_CONDITIONED_PATHS
-  wave: WAVE5C
+  name: CONTEXT_REGISTRY
+  wave: CONTEXT_REGISTRY
 
 wandb:
-  group: TaskA_WAVE5C_PATIENT_WNERW
-  job_type: patient_conditioned_paths
+  group: TaskA_CONTEXT_REGISTRY
+  job_type: coparent_registry
 
 seeds:
   - 20260721
@@ -17,8 +18,9 @@ seeds:
   - 20260725
 
 paths:
+  # Local scored-edge dump used only to rebuild the coparent registry.
   edge_pattern: outputs/wave5/evidence/seed{seed}_edges.csv
-  output_dir: outputs/wave5c
+  output_dir: outputs/taskA/context_registry
 
 columns:
   hgt_probability: p_hgt_calibrated

@@ -1,4 +1,4 @@
-"""Pack Panel B ordered-pair features into fixed 40-d vectors."""
+"""Pack ordered-pair features into fixed 40-d HCR vectors."""
 
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ def pack_pair_vector_40(
     fill_enrichment: bool = True,
     fill_matrix: bool = True,
 ) -> np.ndarray:
-    """Build the 40-d Panel B pair vector.
+    """Build the 40-d HCR pair vector.
 
     mode:
       B0 — legacy8 in 0..7, rest zero (caller may pass only binary)

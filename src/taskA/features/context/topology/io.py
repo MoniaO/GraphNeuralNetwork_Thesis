@@ -1,4 +1,4 @@
-"""I/O helpers for Wave 5B evidence + frozen queries."""
+"""I/O helpers for scored-edge dumps used by the coparent registry."""
 
 from __future__ import annotations
 

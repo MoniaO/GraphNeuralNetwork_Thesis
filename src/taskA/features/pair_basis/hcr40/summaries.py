@@ -1,4 +1,4 @@
-"""Marginal and joint-activity summaries for Panel B 40-d pair vectors."""
+"""Marginal and joint-activity summaries for HCR 40-d pair vectors."""
 
 from __future__ import annotations
 

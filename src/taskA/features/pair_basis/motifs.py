@@ -1,4 +1,4 @@
-"""Truth-graph motif catalog for Wave 3B higher-order HCR experiments.
+"""Truth-graph motif catalog for dual/triple gates used by S10 coparents.
 
 Sources of truth (frozen):
   - audited edges/nodes CSVs under dataset_v3
@@ -275,7 +275,7 @@ def export_motif_catalog(
     cfg_or_root: Any = None,
     samples: pd.DataFrame | None = None,
 ) -> dict[str, Path]:
-    """Write motif CSVs used by Wave 3B protocols."""
+    """Write motif CSVs (dual/triple gates, completion tasks)."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     nodes, edges = load_truth_graph(cfg_or_root)
@@ -294,12 +294,12 @@ def export_motif_catalog(
     latent = latent_gate_triples(duals)
 
     paths = {
-        "dual_gates": out_dir / "wave3b_dual_gates.csv",
-        "triple_gates": out_dir / "wave3b_triple_gates.csv",
-        "load_nodes": out_dir / "wave3b_load_nodes.csv",
-        "confounded_non_edges": out_dir / "wave3b_confounded_non_edges.csv",
-        "motif_completion_tasks": out_dir / "wave3b_motif_completion_tasks.csv",
-        "latent_gate_triples": out_dir / "wave3b_latent_gate_triples.csv",
+        "dual_gates": out_dir / "dual_gates.csv",
+        "triple_gates": out_dir / "triple_gates.csv",
+        "load_nodes": out_dir / "load_nodes.csv",
+        "confounded_non_edges": out_dir / "confounded_non_edges.csv",
+        "motif_completion_tasks": out_dir / "motif_completion_tasks.csv",
+        "latent_gate_triples": out_dir / "latent_gate_triples.csv",
     }
     pd.DataFrame([asdict(x) for x in duals]).to_csv(paths["dual_gates"], index=False)
     pd.DataFrame([asdict(x) for x in triples]).to_csv(paths["triple_gates"], index=False)
@@ -316,11 +316,11 @@ def export_motif_catalog(
         columns=["parent_a", "parent_b", "outcome", "masked_gate"],
     ).to_csv(paths["latent_gate_triples"], index=False)
 
-    summary = out_dir / "wave3b_motif_catalog_summary.txt"
+    summary = out_dir / "motif_catalog_summary.txt"
     summary.write_text(
         "\n".join(
             [
-                "Wave 3B motif catalog",
+                "Motif catalog",
                 f"dual_gates: {len(duals)} (binary_parents={sum(g.binary_parents for g in duals)})",
                 f"triple_gates: {len(triples)} (binary_parents={sum(g.binary_parents for g in triples)})",
                 f"load_nodes: {len(loads)}",

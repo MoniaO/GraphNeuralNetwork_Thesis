@@ -39,7 +39,7 @@ def build_edge_context_registry(
     """Contexts C_AG from G_train co-parents; selector_source never true_graph.
 
     Includes parent→gate edges present in the working G* (train or predicted),
-    so gate bonuses apply to the mechanistic A→G edges used in Wave 5C queries.
+    so gate bonuses apply to the mechanistic A→G edges used in coparent queries.
     """
     records: list[dict[str, object]] = []
     node_type = {n: str(m.get("node_type", "")) for n, m in node_metadata.items()}
@@ -82,7 +82,7 @@ def build_edge_context_registry(
             continue
 
         downstream = GATE_OUTCOMES.get(target)
-        # Known dual/triple co-parents are the canonical AND contexts (Wave 5C).
+        # Known dual/triple co-parents are the canonical AND contexts.
         # They may include load/risk parents beyond drug_exposure/patient_context;
         # those values are used ONLY for gate activation, not as free node bonuses.
         if target in DUAL_GATES:

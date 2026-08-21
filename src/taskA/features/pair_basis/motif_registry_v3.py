@@ -1,6 +1,7 @@
-"""Oracle diagnostic registry for Wave 3B dual/triple gates.
+"""Oracle diagnostic registry for dual/triple gates.
 
-This is NOT a deployable context selector — Z comes from G_true co-parents.
+This is NOT a deployable context selector — Z comes from G_true co-parents
+only in this catalog. S10 attach uses G_train via the coparent registry instead.
 Keep in sync with generator GATE_DEFINITIONS / old_gates + audited edges.
 """
 
@@ -48,21 +49,21 @@ TRIPLE_GATES: dict[str, list[str]] = {
 
 # Protocol aliases (thesis naming ↔ Hydra hcr=)
 VARIANT_ALIASES = {
-    # Wave 4B observed-gate (HCR3 with gate column)
+    # Observed-gate (HCR3 with gate column)
     "G0": "none",
     "G1": "binary_compact",
     "G2": "hcr3_full",
     "G3": "hcr3_without_a111",
     "G4": "hcr3_shuffled",
     "G5": "hcr3_random_context",
-    # Wave 4C latent-gate (HCR without gate column; Y = outcome)
+    # Latent-gate (HCR without gate column; Y = outcome)
     "L0": "none",
     "L1": "latent_pairwise_aby",
     "L2": "hcr3_full",
     "L3": "hcr3_without_a111",
     "L4": "hcr3_shuffled",
     "L5": "hcr3_random_context",
-    # Wave 4D context-role audit
+    # Context-role audit
     "D0": "none",
     "D1": "structural_latent_pairwise",
     "D2": "all_context_top1",

@@ -93,7 +93,7 @@ Scenariusze: `clean`, `hidden_confounder`, `selection_bias`, `no_overlap`,
 Attach S10 wymaga rejestru kontekstu krawędzi:
 
 ```text
-outputs/wave5c/registry/edge_context_registry.csv
+outputs/taskA/context_registry/edge_context_registry.csv
 ```
 
 Jeśli pliku nie ma:

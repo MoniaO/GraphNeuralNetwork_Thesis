@@ -1,4 +1,4 @@
-"""Wave 7 Panel B pair encoder (train-only bases; 40-d ordered pairs)."""
+"""HCR 40D pair encoder (train-only bases; ordered pairs)."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ import pandas as pd
 
 from taskA.features.pair_basis.variable_spec import VariableType
 from taskA.features.pair_basis.variable_specs_v3 import VARIABLE_SPECS
-from taskA.features.pair_basis.wave7.continuous_basis import TrainEmpiricalCDF, shifted_legendre_basis
-from taskA.features.pair_basis.wave7.discrete_basis import fit_discrete_orthonormal_basis, transform_discrete_values
+from taskA.features.pair_basis.hcr40.continuous_basis import TrainEmpiricalCDF, shifted_legendre_basis
+from taskA.features.pair_basis.hcr40.discrete_basis import fit_discrete_orthonormal_basis, transform_discrete_values
 
 from .jitter import count_to_jittered_u
 from .packing import (
@@ -37,7 +37,7 @@ def patient_train_fingerprint(train_patients: pd.DataFrame) -> str:
 
 
 @dataclass
-class PanelBConfig:
+class Hcr40Config:
     variant: str = "W7B_B3_HYBRID_LEGACY_BINARY_JITTER40"
     pair_dim: int = PAIR_DIM
     motif_dim: int = 120
@@ -50,7 +50,7 @@ class PanelBConfig:
     legendre_degree: int = DEGREE
 
     @classmethod
-    def from_hydra(cls, hcr_cfg: Any, experiment_cfg: Any | None = None) -> "PanelBConfig":
+    def from_hydra(cls, hcr_cfg: Any, experiment_cfg: Any | None = None) -> "Hcr40Config":
         variant = str(
             getattr(experiment_cfg, "variant", None)
             or getattr(hcr_cfg, "variant", "W7B_B3_HYBRID_LEGACY_BINARY_JITTER40")
@@ -79,7 +79,7 @@ class PanelBConfig:
 
 
 @dataclass
-class FittedPanelVar:
+class FittedVar:
     name: str
     kind: str
     categories: list[float] = field(default_factory=list)
@@ -91,10 +91,10 @@ class FittedPanelVar:
     dim: int = 0
 
 
-class PanelBPairEncoder:
-    def __init__(self, config: PanelBConfig) -> None:
+class Hcr40PairEncoder:
+    def __init__(self, config: Hcr40Config) -> None:
         self.config = config
-        self.fitted: dict[str, FittedPanelVar] = {}
+        self.fitted: dict[str, FittedVar] = {}
         self._train_df: pd.DataFrame | None = None
         self.n_train_patients: int = 0
         self.patient_train_fingerprint: str = ""
@@ -119,7 +119,7 @@ class PanelBPairEncoder:
         spec = VARIABLE_SPECS.get(name)
         return spec.column_name if spec is not None else name
 
-    def fit(self, train_patients: pd.DataFrame, variable_names: Iterable[str]) -> "PanelBPairEncoder":
+    def fit(self, train_patients: pd.DataFrame, variable_names: Iterable[str]) -> "Hcr40PairEncoder":
         self._train_df = train_patients.reset_index(drop=True)
         self.n_train_patients = int(len(self._train_df))
         self.patient_train_fingerprint = patient_train_fingerprint(self._train_df)
@@ -143,7 +143,7 @@ class PanelBPairEncoder:
                     smoothing=self.config.v1_smoothing,
                     max_categories=2,
                 )
-                self.fitted[name] = FittedPanelVar(
+                self.fitted[name] = FittedVar(
                     name=name,
                     kind=kind,
                     categories=cats,
@@ -160,7 +160,7 @@ class PanelBPairEncoder:
                 counts = np.array([(capped == c).sum() for c in cats], dtype=float)
                 probs = counts / counts.sum()
                 left = np.concatenate([[0.0], np.cumsum(probs)[:-1]])
-                self.fitted[name] = FittedPanelVar(
+                self.fitted[name] = FittedVar(
                     name=name,
                     kind=kind,
                     categories=cats,
@@ -171,7 +171,7 @@ class PanelBPairEncoder:
                 )
             else:
                 ecdf = TrainEmpiricalCDF().fit(values)
-                self.fitted[name] = FittedPanelVar(
+                self.fitted[name] = FittedVar(
                     name=name,
                     kind=kind,
                     ecdf=ecdf,
@@ -381,7 +381,7 @@ class PanelBPairEncoder:
             "a11": a11,
             "n_complete": n_complete,
             "mode": mode,
-            "path": f"panel_b_{mode.lower()}",
+            "path": f"hcr40_{mode.lower()}",
             "fit_scope": self.fit_scope,
             "patient_train_fingerprint": self.patient_train_fingerprint,
         }

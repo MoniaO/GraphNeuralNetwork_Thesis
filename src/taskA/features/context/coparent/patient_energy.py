@@ -1,4 +1,4 @@
-"""Patient-conditioned edge energies for Wave 5C."""
+"""Patient-conditioned edge energies for the coparent-Z registry."""
 
 from __future__ import annotations
 

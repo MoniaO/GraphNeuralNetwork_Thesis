@@ -250,8 +250,12 @@ wandb-debug.log
 data/raw/
 data/processed/
 data/JODIE/
+data/external/
 *.h5
 *.hdf5
+
+# Lokalny cache matplotlib
+.mplconfig/
 
 # Wagi modeli
 *.pt

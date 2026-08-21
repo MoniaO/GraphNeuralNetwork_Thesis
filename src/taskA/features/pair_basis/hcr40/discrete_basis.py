@@ -40,7 +40,7 @@ def fit_discrete_orthonormal_basis(
     if max_categories is not None and k > int(max_categories):
         raise ValueError(
             f"Discrete variable has {k} train categories {categories}; "
-            f"Wave 7 one-hot limit is {max_categories}. "
+            f"HCR40 one-hot limit is {max_categories}. "
             f"Do not silently convert to ranks — raise max_categories or pool the tail."
         )
 

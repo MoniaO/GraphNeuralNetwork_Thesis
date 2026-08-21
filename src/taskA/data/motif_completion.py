@@ -1,4 +1,4 @@
-"""Wave 3B protocol A1 — dual-gate motif completion helpers."""
+"""Dual-gate motif completion helpers (hold parent→gate edges out of G_train)."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def hide_tasks(
     samples: pd.DataFrame | None = None,
     force_hide: str | None = None,
 ) -> list[MotifCompletionTask]:
-    """Held-out parent→gate tasks for Wave 3B/4C/4D.
+    """Held-out parent→gate tasks for motif-completion experiments.
 
     ``experiment.motif_completion.hide``:
       parent_a — hide A→G (keep B→G)

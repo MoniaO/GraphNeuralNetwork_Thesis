@@ -1,4 +1,4 @@
-"""Frozen candidate↔co-parent triangle shared by Wave 7 V0/V1/V2.
+"""Frozen candidate↔co-parent triangle used by S10 attach.
 
 Honest motif name (matches frozen L2 structural attach):
 
@@ -10,8 +10,7 @@ where:
   Z = selected co-parent / context (NOT a downstream child Y)
 
 This is deliberately *not* AB⊕AY⊕BY with Y = GATE_OUTCOMES[G].
-Wave 5D L2 used the same triangle; Wave 7 must keep it fixed so only
-the pair encoding changes across variants.
+Keep the triangle fixed so only the pair encoding changes across S5–S10.
 """
 
 from __future__ import annotations

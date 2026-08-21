@@ -1,4 +1,4 @@
-"""Shared Wave 5C runtime helpers (graph + patients + variants)."""
+"""Runtime helpers for the coparent-Z context registry (G_train only)."""
 
 from __future__ import annotations
 
@@ -12,19 +12,19 @@ from hydra import compose, initialize_config_dir
 
 from taskA.features.pair_basis.motifs import load_truth_graph
 from taskA.features.pair_basis.structural_context import load_node_metadata, matched_random_context
-from taskA.features.context.wave5b.graph_builders import (
+from taskA.features.context.topology.graph_builders import (
     build_model_graph,
     hub_nodes_from_degree,
 )
-from taskA.features.context.wave5b.io import load_edges, resolve_path
-from taskA.features.context.wave5c.edge_context_registry import (
+from taskA.features.context.topology.io import load_edges, resolve_path
+from taskA.features.context.coparent.edge_context_registry import (
     admissible_patient_feature_table,
     build_context_map,
     build_edge_context_registry,
     g_train_from_evidence_and_hetero,
 )
-from taskA.features.context.wave5c.patient_activity import build_patient_activity
-from taskA.features.context.wave5c.patient_energy import PatientEnergyConfig
+from taskA.features.context.coparent.patient_activity import build_patient_activity
+from taskA.features.context.coparent.patient_energy import PatientEnergyConfig
 
 
 ROOT = Path(__file__).resolve().parents[5]
@@ -47,7 +47,7 @@ def compose_task_cfg(seed: int):
         "data.feature_ablation_profile=empirical",
         "data.candidate_seed=20260722",
         "wandb.enabled=false",
-        "experiment.wave=WAVE5C",
+        "experiment.wave=CONTEXT_REGISTRY",
         "experiment.motif_completion.enabled=false",
     ]
     with initialize_config_dir(version_base=None, config_dir=str(ROOT / "configs")):

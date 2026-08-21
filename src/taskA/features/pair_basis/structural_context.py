@@ -1,4 +1,4 @@
-"""Structural context selection for Wave 4D (G_train only — never G_true)."""
+"""Structural context selection (G_train only — never G_true)."""
 
 from __future__ import annotations
 
