@@ -1,15 +1,83 @@
 \newpage % Rozdziały zaczynamy od nowej strony.
 \section{Related work}
 
-Przegląd literatury związanej z rozwiązywanym problemem. 
+In this section, we review the key concepts and methods related to knowledge graphs 
+and their combination with graph neural networks. 
+Since the core of our approach lies in knowledge graphs with embedded causality, 
+we begin with this topic before describing deep learning on graphs in more detail. 
+As our individual approach assumes the addition of a wide layer based on HCR 
+(Hierarchical Correlation Reconstruction), this method is also addressed in this section.
 
-W pracy~\cite{he2016deep} opisano ....
-W~\cite{liu2022convnet} zaproponowano nowatorską architekturę....
-Przykładowy rysunek~\ref{fig:convnext}.
+\subsection{Knowledge graphs}
 
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.5\textwidth]{rysunki/convnext_block.png}
-    \caption{Porównanie bloków rezydualnych wykorzystywanych w sieci Swin Transformer, ResNet i ConvNeXt.}
-    \label{fig:convnext}
-\end{figure}
+Knowledge graphs are a type of graph data structure that represents
+knowledge in a structured way. They are composed of nodes and edges,
+where nodes represent entities and edges represent the relationships
+between them. Formally, a knowledge graph $G$ is a set of triples
+
+\begin{definition}[Knowledge Graph]
+\label{def:kg}
+$$G \subseteq \mathcal{V} \times \mathcal{R} \times \mathcal{E},$$
+where $\mathcal{V}$ denotes the set of entities (nodes) and $\mathcal{R}$
+the set of relation types (edge labels). Each triple $(h, r, t) \in G$
+corresponds to a directed, labeled edge $h \xrightarrow{r} t$, where $h$
+and $t$ are referred to as the head and tail entity, respectively
+\textcite{hogan2021knowledge}.
+\end{definition}
+
+The key benefit of knowledge graphs is that they are interlinked representation
+of knowledge in a
+human- and machine-understandable format (\textcite{barrasa2023building}). As
+medicine is fundamentally about relationships — between genes, proteins,
+drugs, and diseases — knowledge graphs have found an important place in
+this domain (\textcite{maclean2021knowledge}). Biomedical knowledge graphs as
+heterogeneous graphs
+are not represented by updated Definition~\ref{def:kg}:
+
+\begin{definition}[Heterogeneous Graph]
+\label{def:heterokg}
+A heterogeneous graph extends Definition~\ref{def:kg} with explicit type
+information and is defined as a quadruple
+$$G = (V, E, \tau, \phi),$$
+where $V$ is the set of nodes, $E \subseteq V \times V$ is the set of
+edges, and $\tau: V \rightarrow \mathcal{T}_V$, $\phi: E \rightarrow
+\mathcal{T}_E$ are type-mapping functions assigning each node and edge a
+type from finite type sets $\mathcal{T}_V$ and $\mathcal{T}_E$
+\cite{hu2020heterogeneous}. For an edge $e = (u, v) \in E$, the triple
+$\bigl(\tau(u), \phi(e), \tau(v)\bigr)$ defines its schema-level relation,
+which corresponds directly to the \texttt{edge\_type} representation used
+in the \texttt{HeteroData} object in this thesis.
+\end{definition}
+
+There are multiple medical knowledge graphs that represent knowledge for different
+purposes -- most of them focused on drug discovery, but fewer of them
+adopt a causal perspective or place the patient at the center of the
+representation. This has been noted by multiple authors: MacLean (2021)
+observes that popular graph-based methods "highlight biological
+associations, failing to model causal relationships in complex dynamic
+biological systems" \cite{maclean2021knowledge}, Toonsi, Schofield and
+Hoehndorf (2025) argue that knowledge graphs and causal models have
+developed along separate tracks and propose Causal Knowledge Graphs to
+bridge this gap (\cite{toonsi2025causal}).
+
+% \begin{definition}[Patient Causal DAG]
+% \label{def:dag}
+% A patient causal graph is a special case of Definition~\ref{def:heterokg}
+% in which the edge set $E$ is additionally constrained to form a
+% \textit{directed acyclic graph} (DAG): there exists no sequence of nodes
+% $(v_1, \dots, v_k) \in V^k$ such that
+% $$v_1 \rightarrow v_2 \rightarrow \dots \rightarrow v_k \rightarrow v_1.$$
+% This acyclicity constraint is what allows the edges of $G$ to be
+% interpreted as causal relations rather than arbitrary associations: a
+% directed path $v_i \rightarrow v_j$ implies that $v_i$ temporally or
+% structurally precedes $v_j$, distinguishing $G$ from the general
+% knowledge graph of Definition~\ref{def:kg}, whose edges need not encode
+% any causal ordering.
+% \end{definition}
+
+This observation motivated us not to build knowledge graph with embedded causality 
+and use it as a dynamic 
+structure that can be updated, extended, and leveraged in practice
+through graph neural networks.
+
+

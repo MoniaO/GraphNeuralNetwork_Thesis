@@ -19,3 +19,4 @@ hcr_embed_dim: 8          # domyślne
 hcr_dropout: 0.0           # domyślne
 hcr_parent_scope: "all"
 hide_direct_parents: false
+hcr_use_triples: true

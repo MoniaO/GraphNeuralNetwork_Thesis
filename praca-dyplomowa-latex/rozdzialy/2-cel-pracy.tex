@@ -1,18 +1,34 @@
 \newpage % Rozdziały zaczynamy od nowej strony.
 \section{Main objective}
 
-The aim of this thesis is to develop a graph neural network models that could be applied in two tasks:
-a) to predict the presence of hidden links in a causal graph, 
-b) to predict the values of endpoints for entities based on tabular data represented as a causal graph.
+The main objective of this thesis is to demonstrate how knowledge graphs can be
+used in the medical domain in combination with experimental data, i.e.,
+real-world patient data. The thesis addresses two tasks:
+\begin{itemize}[label=\textendash]
+    \item \textbf{Task A: Link prediction}, which reconstructs and updates the
+    knowledge graph on the basis of real-world patient data;
+    \item \textbf{Task B: Patient risk prediction} (a node-classification task),
+    which predicts clinical outcomes using the knowledge graph
+    and real-world patient data.
+\end{itemize}
 
-The two tasks are complementary ... [we will add here how the two tasks relate to each other in medicine + picture that shows it]
-The models will be trained and evaluated on synthetic datasets, as well as on real-world datasets. The performance of the models will be compared with baseline methods, and the results will be analyzed to understand the strengths and limitations of the proposed approach.
+The two tasks are complementary and could
+form a closed-loop approach to patient-centred care in a real-world medical setting. 
+Link prediction focused more on sharing medical knowledge between different stakeholders 
+(hospitals, clinicians, patients), while risk prediction focuses on the 
+individual patient outcomes.
+ As shown in Figure \ref{fig:loop}, these two tasks could operate as 
+ an iterative process for improving patient care.
 
-
-% \begin{figure}[h]
-%     \centering
-%     \includegraphics[width=\textwidth, height=0.45\textheight]{rysunki/TASK A i B - loop.png}
-%     \caption{The description of the two tasks addressed in the thesis.}
-%     \label{fig:loop}
-% \end{figure}
-
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth, height=0.45\textheight]{rysunki/TASK A i B - loop.png}
+    \caption{Overview of the two tasks addressed in this thesis.}
+    \label{fig:loop}
+\end{figure}
+In addition to this domain-oriented objective, the thesis investigates
+heterogeneous GNNs enhanced with an additional layer for calculating
+dependencies between nodes, namely Hierarchical Correlation Reconstruction
+(HCR). This approach examines whether GNNs can be improved by incorporating
+statistical dependencies without requiring computationally costly extensions
+to the model architecture.

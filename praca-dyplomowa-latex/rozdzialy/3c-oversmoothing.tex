@@ -1,39 +1,51 @@
-\newpage % Rozdziały zaczynamy od nowej strony.
-\subsubsection{Metrics}
-\label{subsubsec:oversmoothing}
+ % Rozdziały zaczynamy od nowej strony.
+\subsection{Evaluation Metrics}
+\label{subsubsec:metrics}
 
+The proposed models were evaluated using the area under the receiver operating
+characteristic curve (AUC), the area under the precision--recall curve (AUPRC),
+and the Lift measure. As the synthetic dataset generated for this project contains
+rare events and class imbalance, AUPRC was included as an additional performance
+metric because it focuses on the positive class and reflects the trade-off
+between precision and recall. Below there included the equations for calculating metrics.
 
-Residual connections switch the effective per-layer propagation operator from the
-(nilpotent, on a DAG without self-loops) 
-adjacency operator , which is the standard formalization of the over-smoothing regime and is the mechanism 
-through which multi-layer signal survives on a directed acyclic structure.
+\emph{AUC} is the area under the receiver operating characteristic curve (ROC-AUC) 
+and is defined as:
+\begin{equation}
+  \mathrm{ROC\mbox{-}AUC}
+  =
+  \int_0^1 \mathrm{TPR}(\mathrm{FPR})\,d\mathrm{FPR}.
+  \end{equation}
+  where $\mathrm{TPR}$ is the true positive rate and $\mathrm{FPR}$ is the false positive rate.
 
-PairNorm (Zhao et Akoglu, 2020) re-centers and re-scales node representations after each layer to keep the pairwise distance between representations from collapsing, without preventing the underlying mixing.
-
-DropEdge (Rong et al., 2020) randomly removes a fraction of edges independently in every layer during training, slowing the rate of information mixing and acting as a structural regularizer.
-
-Jumping Knowledge (Xu et al., 2018) aggregates the outputs of all layers (via concatenation, cat, or elementwise max) rather than only the last one, letting a node fall back on a shallower, less-smoothed representation when the deepest layer has become uninformative.
-
-Weisfeiler-Lehman --- two nodes with identical initial features and structurally equivalent neighborhoods 
-cannot be assigned distinct representations by any number of convolutional layers.
-
-leave-one-out
+\emph{AUPRC} is the area under the precision--recall curve and is defined as:
+\begin{equation}
+  \mathrm{AP} =
+  \sum_{n}
+  \left(R_n - R_{n-1}\right) P_n,
+  \end{equation}
+  where $P_n$ and $R_n$ denote precision and recall at the $n$-th threshold,
+  respectively.
 
 \emph{Lift} is the AUPRC divided by the prevalence baseline, that is, the
-factor by which the model improves over a random ranking; at a mean
+factor by which the model improves over a random ranking, e.g. at a mean
 prevalence of $5.5\%$ a lift of $2.3$ corresponds to an AUPRC of $0.125$.
-\emph{\%~ceiling} is defined as
-%
+
+In addition to the traditional metrics described above, an oracle AUC was
+calculated for the node-classification task.
+As the dataset for this task is synthetic,
+the exact function used to generate each endpoint is known, which allows to calculate AUC oracle.
+In the final assesement of the models we compared the AUC and AUC oracle 
+(\%ceiling) with the following formula:
+
 \begin{equation}
-  \frac{\mathrm{AUC} - 0.5}{\mathrm{AUC}_{\mathrm{Bayes}} - 0.5} \cdot 100\%,
+  \frac{\mathrm{AUC} - 0.5}{\mathrm{AUC}_{\mathrm{Oracle}} - 0.5} \cdot 100\%,
   \label{eq:pct-ceiling}
 \end{equation}
 %
-where $\mathrm{AUC}_{\mathrm{Bayes}} = 0.651$ is the Bayes ceiling averaged
-over the same eight endpoints. It expresses the
-share of attainable signal recovered by the model. Both terms are subtracted
-by $0.5$ so that a random classifier scores $0\%$.
-Unless stated otherwise, the epoch is selected on the validation set and
-test metrics are reported from that epoch.
+where $\mathrm{AUC}_{\mathrm{Oracle}} = 0.651$ is the AUC oracle averaged
+over the same eight endpoints. This metric expresses the
+share of attainable signal recovered by the model. The model increased performance
+is calculated from random baseline model performance which is 0.5.
 
 

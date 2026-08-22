@@ -160,7 +160,7 @@ only, using a closed-form re-weighting of the population statistic.
 
 \subsubsection{Training setup}
 
-Training iterates over patient graphs batched via PyTorch Geometric's DataLoader. The experiments were run with
+Training iterates over patient graphs batched via PyG DataLoader. The experiments were run with
 targeted binary cross-entropy and focal loss with class-balance-aware weighting. 
 Weight and focal alpha were computed from the training split's endpoint prevalence, since clinical outcomes
 are rare and highly imbalanced. Model selection uses ReduceLROnPlateau on validation performance, and 
@@ -168,4 +168,49 @@ evaluation is reported separately per endpoint and in aggregate, using AUROC, AU
 lift.
 %alongside the representation-level over-smoothing diagnostics (MAD, cosine similarity, Dirichlet energy) 
 %used to relate architectural choices. 
-Due to rare events the main metric for model choice was AUPRC. 
+ As the synthetic dataset generated for this project contains
+ rare events and class imbalance, AUPRC was chosen as a key performance
+ metric. It focuses on the positive class and reflects the trade-off
+ between precision and recall. Below there are included the equations for calculating metrics.
+ 
+ \emph{AUC} is the area under the receiver operating characteristic curve (ROC-AUC) 
+ and is defined as:
+ \begin{equation}
+   \mathrm{ROC\mbox{-}AUC}
+   =
+   \int_0^1 \mathrm{TPR}(\mathrm{FPR})\,d\mathrm{FPR}.
+   \end{equation}
+   where $\mathrm{TPR}$ is the true positive rate and $\mathrm{FPR}$ is the false positive rate.
+ 
+ \emph{AUPRC} is the area under the precision--recall curve and is defined as:
+ \begin{equation}
+   \mathrm{AP} =
+   \sum_{n}
+   \left(R_n - R_{n-1}\right) P_n,
+   \end{equation}
+   where $P_n$ and $R_n$ denote precision and recall at the $n$-th threshold,
+   respectively.
+ 
+ \emph{Lift} is the AUPRC divided by the prevalence baseline, that is, the
+ factor by which the model improves over a random ranking, e.g. at a mean
+ prevalence of $5.5\%$ a lift of $2.3$ corresponds to an AUPRC of $0.125$.
+ 
+ In addition to the traditional metrics described above, an oracle AUC was
+ calculated for the node-classification task.
+ As the dataset for this task is synthetic,
+ the exact function used to generate each endpoint is known, which allows to calculate AUC oracle.
+ In the final assesement of the models we compared the AUC and AUC oracle 
+ (\%ceiling) with the following formula:
+ 
+ \begin{equation}
+   \frac{\mathrm{AUC} - 0.5}{\mathrm{AUC}_{\mathrm{Oracle}} - 0.5} \cdot 100\%,
+   \label{eq:pct-ceiling}
+ \end{equation}
+ %
+ where $\mathrm{AUC}_{\mathrm{Oracle}} = 0.651$ is the AUC oracle averaged
+ over the same eight endpoints. This metric expresses the
+ share of attainable signal recovered by the model. The model increased performance
+ is calculated from random baseline model performance which is 0.5.
+ 
+ 
+ 

@@ -255,12 +255,12 @@
     \newcommand{\@lang}{english}
     \usepackage[english]{babel}
 
-	\newtheorem{theorem}{Twierdzenie}
+	\newtheorem{theorem}{Theorem}
 	\newtheorem{lemma}{Lemat}
 	\newtheorem{corollary}{Wniosek}
-	\newtheorem{definition}{Definicja}
+	\newtheorem{definition}{Definition}
 	\newtheorem{axiom}{Aksjomat}
-	\newtheorem{assumption}{Założenie}
+	\newtheorem{assumption}{Assumption}
 
 	\AtBeginDocument{
 		\renewcommand{\listfigurename}{List of Figures}
