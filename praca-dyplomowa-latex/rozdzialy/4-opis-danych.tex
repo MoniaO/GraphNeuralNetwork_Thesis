@@ -162,11 +162,20 @@ data-generating process described in Section~\ref{subsec:generation}:
 
 As edges bring different information based on edge type, they were assigned declared attributes, such as:
 
+As edges bring different information based on edge type, they were assigned
+declared attributes in the audited graph specification:
+
 \begin{itemize}
     \item \texttt{effect\_size} encodes the strength of the causal effect of
     the source node on the target node.
     \item \texttt{effect\_sign} encodes the direction of that effect
     (risk-increasing or risk-decreasing).
+    \item \texttt{activation\_frequency} encodes how often the source
+    variable is active or clinically relevant in the population.
+    \item \texttt{mechanistic\_confidence} encodes the confidence assigned
+    during graph audit that the mechanistic link is plausible.
+    \item \texttt{evidence\_weight} encodes the weight of supporting
+    evidence for the edge in the audited knowledge graph.
 \end{itemize}
 
 In \cref{fig:dag_overview} it is visualized an overview of DAG graph. 
@@ -211,7 +220,7 @@ purposes.
 % 1{,}545 fork triplets in the graph (48\%) -- that's why it is recommended for exclusion
 % on the 
 %  Second, the three
-% endpoints with the lowest Bayes ceiling (Section~\ref{sec:generation}) --
+% endpoints with the lowest oracle AUC (Section~\ref{sec:generation}) --
 % serotonin syndrome, rhabdomyolysis, and lactic acidosis -- are exactly the
 % three endpoints with a single direct parent and the longest minimum
 % root-to-endpoint distance (3--4 edges, versus 1 edge for all other
@@ -511,19 +520,22 @@ provided in Appendix~\ref{appendix-list}.
 The 13 clinical endpoints are binary stochastic variables generated after
 their direct parents have been realised. Their values are the ground-truth
 labels used for endpoint prediction. Table~\ref{tab:app_endpoints} lists the
-endpoint names and their direct parents in the final DAG.
+endpoint names, their direct parents in the final DAG, and the
+generator-based oracle AUC on the complete synthetic cohort (each patient
+scored with the known generative logistic model; relative performance is
+reported later via \cref{eq:pct-ceiling}).
 
 \begin{table}[H]
     \centering
     \small
-    \caption{Endpoint prevalence and AUROC ceiling in the complete synthetic.}
+    \caption{Endpoint prevalence and generator-based oracle AUC in the complete synthetic cohort.}
     \label{tab:app_endpoints}
     \begin{tabular}{lrrrr}
         \toprule
         \textbf{Endpoint} &
         \textbf{Positive cases} &
         \textbf{Prevalence (\%)} &
-        \textbf{AUROC ceiling (\%)} &
+        \textbf{Oracle AUC (\%)} &
         \textbf{Parents} \\
         \midrule
         AKI                 & 2{,}620 & 13.10 & 81.20 & 6 \\

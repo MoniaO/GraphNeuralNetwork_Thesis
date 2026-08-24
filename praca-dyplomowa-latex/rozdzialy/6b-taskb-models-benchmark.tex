@@ -4,32 +4,16 @@
 
 \subsubsection{Data Representation}
 
-The benchmark dataset for endpoint prediction is Hetionet knowledge graph described in \cref{subsec:hetionet}.
-The structure of dataset is similar to synthethic dataset - heterogenous with multi-label enpoints, that's 
-why it was the choice for running benchmark on it. Even though the structure is similar, it was necessary
-to adjust it to node classification task similarly as synthethic dataset. The following adjustement was made
-to run benchmark experiment. 
+Task~B is evaluated on a second benchmark dataset derived from Hetionet
+(\cref{subsec:hetionet}). The
+benchmark is a \textbf{structural proxy}---the
+pipeline, layer slots, and HCR branch are reused, but the graph is
+reconstructed to resemble the synthetic schema in topology.
 
-% \begin{enumerate}[label=(\roman*)]
-%   \item compound has a role of patient in the graph
-%   \item endpoint predicted is disease %to show the % for every endpoint
-%   \item mapping done for node categories
-%   | Layer | Category | Hetionet value | 
-% |---|---|---|---|
-% | 1 | `patient_context` | Pharmacologic Class | 
-% | 2 | `drug_exposure` | Gene (`CbG`) | 
-% | 3 | `mechanism` | Pathway + Biological Process | 
-% | 4 | `adr_or_intermediate_state` | Gene (`DaG`) | 
-% | 5 | `clinical_endpoint` | Disease | 
-%   \item synthethic pipeline is based on direct graphs, so direction was introduced to the graph
-%   \item reconstructed the graph structure to represent longer paths (Pharmacological class is joined with gene)
-%   \item edge_attr - descrive that it is 
-% \end{enumerate}
-
-The benchmark for endpoint prediction is the Hetionet knowledge graph described
-in \cref{subsec:hetionet}. Its structure resembles the synthetic dataset ---
-heterogeneous, with multi-label targets --- which is why it was selected.
-Adapting it to node classification nevertheless required reconstruction listed below. 
+Hetionet was selected because it is heterogeneous and supports a
+multi-label prediction setup analogous to the synthetic
+task. Adapting it nevertheless required a couple of reconstructions
+listed below.
 
 \begin{enumerate}[label=(\roman*)]
   \item \textbf{Instance.} A compound takes the role of the patient: the
@@ -47,11 +31,10 @@ Adapting it to node classification nevertheless required reconstruction listed b
   \item \textbf{Layer mapping.} Node types were mapped onto the slots of the
     synthetic schema as presented in \cref{tab:hetionet-mapping}.
 
-  \item \textbf{Direction.} Hetionet is largely undirected and
-    carries no causal orientation. So every
-    edge was oriented from the lower to the higher layer and intra-layer edges
-    were discarded, which guarantees acyclicity. The direction is a
-    construction decision to check the model. 
+  \item \textbf{Direction.} Hetionet edges are undirected associations.
+    For pipeline compatibility, every retained edge was oriented from the
+    lower to the higher synthetic layer and intra-layer edges were
+    discarded, guaranteeing acyclicity. 
 
   \item \textbf{Path length.} Two changes lengthen the paths to a disease. First, a pathway and
   biological-process layer was inserted as the third layer, while the direct
@@ -69,7 +52,7 @@ Adapting it to node classification nevertheless required reconstruction listed b
 \begin{table}[htbp]
   \centering
   \small
-  \caption{Mapping of Hetionet entities onto the synthethic layer schema.}
+  \caption{Mapping of Hetionet entities onto the synthetic layer schema.}
   \label{tab:hetionet-mapping}
   \begin{tabular}{clll}
     \toprule
@@ -90,7 +73,7 @@ In \cref{fig:updated_hetionet} there is presented the updated view of graph.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth, height=0.45\textheight]{rysunki/hetionet_layer_mapping.png}
-  \caption{HCR gate matrix - influence of nodes type per endpoint}
+  \caption{Hetionet layer mapping after reconstruction onto the synthetic schema.}
   \label{fig:updated_hetionet}
 \end{figure}
 
@@ -103,30 +86,36 @@ In \cref{fig:updated_hetionet} there is presented the updated view of graph.
 % It generates similar results as models with residual connections, but what it is interesting on the benchamrk dataset
 % HCR combined with residual connections reaches the higher results than separated approach. 
 
-The proxy dataset reproduces the central pattern of the synthetic experiments.
-The gain from HCR is conditional on the state of the propagation path: at $L=6$ without
+The benchmark reproduces several trends
+observed on the synthetic dataset---depth sensitivity without stabilisers,
+partial recovery with HCR---under a different graph semantics and without
+oracle metrics. The gain from HCR is conditional on the state of the
+propagation path: at $L=6$ without
 residual connections the baseline collapses to $0.585$ AUC on test, while every
 HCR variant recovers a substantial part of it, up to $0.757$ for
 \emph{typed+triple}. At $L=1$, where the receptive field of an endpoint
 coincides with the input of the HCR branch, no variant improves on the
 baseline, and the concatenated variants are slightly worse.
 
-Comparing to results from synthethic datasets, we can see that on the proxy dataset combination of residual connections and 
-HCR add up at $L=6$. The baseline
+In the benchmark dataset, residual connections and HCR combine additively at
+$L=6$. The baseline
 reaches $0.585$ without either mechanism, $0.680$--$0.757$ with HCR alone,
 $0.728$ with residual alone, and $0.760$ with both. The combination is
 therefore better than either component in isolation.
 
-The reason is the stucture of data. In the synthetic graph the direct
+The reason is the structure of the two graphs. In the synthetic graph the direct
 parents of an endpoint are observed, so the HCR branch and the one-hop
 receptive field read the same variables and the two mechanisms address the same
-bottleneck. In the Hetionet-derived graph the the depth is more crucial as some of layers are latent. Information must
+bottleneck. In the Hetionet-derived graph depth is more crucial because some
+layers are latent. Information must
 therefore traverse several hops, and the residual path and the HCR bypass
-contribute at different points of that route. 
+contribute at different points of that route.
 
-Overall, combining a graph neural network with an HCR branch improves
-prediction on this dataset, and the improvement grows with depth. Whether an
-additional residual path helps or hinders depends on where the statistical
+Overall, the proxy experiment suggests that combining message passing
+with the statistical evidence branch remains useful with 
+multi-hop reasoning. Whether an
+additional residual path helps or hinders depends on where 
+the statistical
 evidence enters the model.
 
 
@@ -139,7 +128,7 @@ evidence enters the model.
   \centering
   \small
   \setlength{\tabcolsep}{4pt}
-  \caption{Results under full observability on the benchmark dataset.
+  \caption{Benchmark results for endpoint prediction.
     \emph{nonlin.\ bin.} uses a 9-channel evidence vector restricted to
     binary parents; \emph{nonlin.\ all} uses 42 channels with the full parent
     scope; \emph{typed+triple} concatenates one encoder per parent type with
@@ -150,7 +139,7 @@ evidence enters the model.
     \toprule
     & & & \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
     \cmidrule(lr){4-6}\cmidrule(lr){7-9}
-    $L$ & Res. & HCR & {AUC} & {AUPRC} & {Lift} & {AUC} & {AUPRC} & {Lift} \\
+    $L$ & Res. & HCR & {AUC} & {AP} & {Lift} & {AUC} & {AP} & {Lift} \\
     \midrule
     1 & no  & ---              & 0.757 & 0.188 & 7.92  & 0.664 & 0.120 & 6.49 \\
     1 & no  & nonlin.\ bin.    & 0.763 & 0.207 & 8.75  & 0.657 & 0.120 & 6.47 \\

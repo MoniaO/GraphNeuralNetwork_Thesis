@@ -4,7 +4,7 @@
 \subsubsection{Architecture}
 
 The first set of experiments established how much the choice of
-message-passing operator matters for this task. Three convolutions were
+convolution architecture matters for this task. Three convolutions were
 compared: R-GCN, GraphSAGE and TransformerConv. All three are defined for
 homogeneous graphs, so each was wrapped in \texttt{HeteroConv}, which
 instantiates a separate convolution for every relation type and aggregates
@@ -56,7 +56,7 @@ convolutions in \cref{tab:hparams-arch}.
       & Seed                                 & 42 \\
     \midrule
     \multirow{3}{*}{Model selection}
-      & Selection metric                     & validation AUPRC \\
+      & Selection metric                     & validation AP \\
       & Early-stopping patience              & 20 epochs \\
       & Minimum improvement                  & 0.001 \\
     \bottomrule
@@ -83,7 +83,7 @@ All three convolutions are wrapped in \texttt{HeteroConv}, which instantiates a 
         Units per head               & --- & --- & 16 \\
         Output width per relation    & 64 & 64 & $4\times16=64$ \\
         Basis decomposition          & 8 bases & --- & --- \\
-        Uses edge attributes         & indirectly, via relation id & no & yes, via \texttt{edge\_dim} \\
+        Uses edge attributes         & relation id only & none (stored, unused) & full \texttt{edge\_attr} \\
         Weight matrices per relation & shared through bases & 2 & 3 (query, key, value) \\
         \bottomrule
       \end{tabularx}
@@ -124,7 +124,7 @@ L=6, collapse to constant predictions (AUC=0.50).
         \toprule
         & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
         \cmidrule(lr){3-6}\cmidrule(lr){7-10}
-        Architecture & $L$ & {AUC} & {AUPRC} & {Lift} & {\% ceil.} & {AUC} & {AUPRC} & {Lift} & {\% ceil.} \\
+        Architecture & $L$ & {AUC} & {AP} & {Lift} & {\% ceil.} & {AUC} & {AP} & {Lift} & {\% ceil.} \\
         \midrule
         R-GCN            & 1 & 0.623 & 0.124 & 2.28 & 81.6 & 0.624 & 0.120 & 2.21 & 82.0 \\
         GraphSAGE        & 1 & 0.622 & 0.124 & 2.28 & 80.9 & 0.619 & 0.120 & 2.21 & 78.9 \\
@@ -154,7 +154,7 @@ L=6, collapse to constant predictions (AUC=0.50).
         \toprule
         & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
         \cmidrule(lr){3-6}\cmidrule(lr){7-10}
-        Architecture & $L$ & {AUC} & {AUPRC} & {Lift} & {\% ceil.} & {AUC} & {AUPRC} & {Lift} & {\% ceil.} \\
+        Architecture & $L$ & {AUC} & {AP} & {Lift} & {\% ceil.} & {AUC} & {AP} & {Lift} & {\% ceil.} \\
         \midrule
         R-GCN            & 1 & 0.625 & 0.125 & 2.30 & 82.7 & 0.625 & 0.121 & 2.22 & 83.2 \\
         GraphSAGE        & 1 & 0.621 & 0.124 & 2.27 & 80.6 & 0.619 & 0.120 & 2.21 & 78.7 \\
@@ -172,15 +172,24 @@ L=6, collapse to constant predictions (AUC=0.50).
     \end{table}
 
     With residual connections all three architectures converge to comparable
-    performance (\cref{tab:arch-res}): 77--86\% of the Bayes ceiling on the test
-    set, with differences of about 0.01 AUC. The more informative factors for model assessment are AUPRC and 
+    performance (\cref{tab:arch-res}): 77--86\% of the oracle AUC
+    (\cref{eq:pct-ceiling}) on the test
+    set, with differences of about 0.01 AUC. The more informative factors for model assessment are AP and 
     Lift, which show that the model performs nearly 2.3 times better than a random baseline. 
-    Since the architectures achieve comparable performance, the choice for the remaining experiments 
-    was therefore made on structural grounds. TransformerConv is the only one of the three 
-    that conditions message passing on edge attributes, which the audited DAG provides 
-    (mechanistic confidence, evidence weight, effect size, and sign). 
-    Since the role of edge-level evidence is important for causal classification, TransformerConv was 
-    selected for all subsequent experiments with HCR.
+    Since the architectures achieve comparable performance, the choice for 
+    the remaining experiments 
+    was therefore made on structural grounds. TransformerConv is the only one of the three
+    backbones benchmarked here that consumes the full \texttt{edge\_attr} vector in message
+    passing (see \cref{tab:edge_attr_by_conv}).
+    %signed effect
+    %(\texttt{effect\_size}$\times$\texttt{effect\_sign}), audit scalars
+    %(\texttt{activation\_frequency}, \texttt{mechanistic\_confidence},
+    %\texttt{evidence\_weight}), and the one-hot \texttt{edge\_type} block.
+   %GraphSAGE ignores edge features; R-GCN conditions on relation identity
+  %hrough separate relation modules rather than on \texttt{edge\_attr}.
+    Since edge-level audit evidence is important for graph representation, 
+    TransformerConv was
+    selected for all subsequent experiments with the statistical evidence branch.
 
 \subsubsection{HCR configuration}
 
@@ -238,8 +247,8 @@ to a configuration type.
     typed+triple
       & concatenation
       & 42 pairwise channels split across four non-shared encoders, one per
-        parent type, each with a learned per-endpoint gate, plus an ungated
-        third-order block \\
+        parent type, each with a learned per-endpoint gate, plus a
+        third-order block with its own per-endpoint gate column \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -247,7 +256,8 @@ to a configuration type.
 Without HCR the model degrades sharply with depth and predicts a constant at
 $L=6$. Every HCR variant recovers a substantial part of the lost performance,
 and the gain grows with depth: $+1.8$, $+42.5$ and $+74.5$ percentage points
-of the Bayes ceiling at $L=1$, $3$ and $6$ respectively. The concatenated
+of the oracle AUC (\cref{eq:pct-ceiling}) at $L=1$, $3$ and $6$ respectively.
+The concatenated
 variant is the only one that remains flat across all six depths.
 
 The reason for improved results with HCR is that HCR branch reads the
@@ -307,7 +317,7 @@ $L=1$ and at $L=6$.
     \toprule
     & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
     \cmidrule(lr){3-6}\cmidrule(lr){7-10}
-    $L$ & HCR & AUC & AUPRC & Lift & \% ceil. & AUC & AUPRC & Lift & \% ceil. \\
+    $L$ & HCR & AUC & AP & Lift & \% ceil. & AUC & AP & Lift & \% ceil. \\
     \midrule
     1 & ---              & 0.622 & 0.1251 & 2.30 & 81.19 & 0.620 & 0.1197 & 2.20 & 79.61 \\
     1 & linear 42D       & 0.622 & 0.1247 & 2.29 & 81.10 & 0.617 & 0.1191 & 2.19 & 77.83 \\
@@ -355,7 +365,7 @@ $L=1$ and at $L=6$.
         \toprule
         & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
         \cmidrule(lr){3-6}\cmidrule(lr){7-10}
-        $L$ & HCR & AUC & AUPRC & Lift & \% ceil. & AUC & AUPRC & Lift & \% ceil. \\
+        $L$ & HCR & AUC & AP & Lift & \% ceil. & AUC & AP & Lift & \% ceil. \\
         \midrule
         1 & ---            & 0.623 & 0.1255 & 2.31 & 81.30 & 0.619 & 0.1202 & 2.21 & 79.02 \\
         1 & nonlin. bin.   & 0.622 & 0.1238 & 2.27 & 81.12 & 0.617 & 0.1176 & 2.16 & 77.82 \\
@@ -390,12 +400,10 @@ which the model scales the evidence block of one parent type before it enters
 the classification head; the gates were initialised at $1.0$, so values below
 unity indicate reduced reliance on that channel.
 
-Averaged over endpoints the gates order as
-\texttt{adr\_or\_intermediate\_state} ($0.72$), \texttt{patient\_context}
-($0.38$), \texttt{mechanism} ($0.18$) and \texttt{drug\_exposure} ($0.00$),
-which is the same order as the number of endpoints that possess a parent of
-each type ($11$, $8$, $3$ and $2$ out of $11$). The model therefore recovers
-the layout of the causal graph from the gradient alone.
+The gate ordering aligns with the number of endpoints that 
+have at least one direct parent of each type in the graph, 
+suggesting that the model allocates more weight to parent types 
+that are structurally more informative.
 
 \begin{figure}[h]
   \centering
@@ -404,30 +412,35 @@ the layout of the causal graph from the gradient alone.
   \label{fig:influence}
 \end{figure}
 
-To sum up, it is worth to emphasize that all of models with HCR reached a satisfactory results 
-comparable to models with residual connections applied. Taking into consideration gate matrix, it 
-could be observed that HCR brings value to specific number of endpoints which corresponds with higher
-prediction accuracy. 
+Taken together, the gate matrix indicates that the evidence branch is used
+unevenly across endpoints and parent types, in line with differences in
+parent availability and predictive utility on the synthetic task.
+
+Taken together, it is worth to emphasize that all of models with HCR reached a satisfactory results 
+comparable to models with residual connections applied. 
+The gate matrix indicates that the evidence branch is used
+unevenly across endpoints and parent types, in line with differences in
+parent availability and predictive utility on the synthetic task. 
 In general the value of the HCR branch therefore does not lie in raising the peak, but
 in bringing stability to learning acros all depths and additional information valid for the clinical
 event prediction.
 Across the six depths evaluated, \emph{typed+triple} is the only variant that
-never collapses, retaining between $82\%$ and $89\%$ of the ceiling, while
+never collapses, retaining between $82\%$ and $89\%$ of the oracle AUC, while
 both the baseline and \emph{nonlin.\ all 42D} fall below $80.00\%$ at $L=6$. 
 The configuration \emph{typed+triple} is mostly stable on depth
 and additionally bring the most informative value.
 The highest validation score in \cref{tab:hcr-nores} is obtained by
-\emph{typed+triple} at $L=1$ and $L=4$ ($89.05\%$ and $86.65\%$ of the Bayes ceiling). 
+\emph{typed+triple} at $L=1$ and $L=4$ ($89.05\%$ and $86.65\%$ of the oracle AUC). 
 Bringing all together \emph{typed+triple} HCR variant is chosen as the best.
 
 
 \subsubsection{Results per endpoint}
 
 Endpoints are ordered by prevalence. \%~ceil.\ is
-    $(\mathrm{AUC}-0.5)/(\mathrm{ceiling}-0.5)$ against the per-endpoint
-    Bayes ceiling; values above $100\%$ indicate that the estimate on a
-    finite sample exceeds the ceiling computed on the generator, and should
-    be read as saturation rather than as exceeding the theoretical limit.
+    \eqref{eq:pct-ceiling} computed against the per-endpoint generator-based
+    oracle AUC; values above $100\%$ should be read as saturation 
+    not 
+    Bayes-optimal limit.
 
     \begin{table}[htbp]
       \centering
@@ -438,9 +451,9 @@ Endpoints are ordered by prevalence. \%~ceil.\ is
       \label{tab:per-endpoint}
       \begin{tabular}{lccc ccc ccc}
         \toprule
-        & & \multicolumn{2}{c}{Ceiling} & \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
+        & & \multicolumn{2}{c}{Oracle} & \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
         \cmidrule(lr){3-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
-        Endpoint & Prev. & AUC & AUPRC & AUC & AUPRC & \%~ceil. & AUC & AUPRC & \%~ceil. \\
+        Endpoint & Prev. & AUC & AP & AUC & AP & \%~ceil. & AUC & AP & \%~ceil. \\
         \midrule
         AKI                & 0.131 & 0.811 & 0.454 & 0.794 & 0.406 & 94.3  & 0.785 & 0.421 & 91.6 \\
         Depression         & 0.085 & 0.652 & 0.166 & 0.655 & 0.165 & 101.6 & 0.639 & 0.170 & 91.0 \\

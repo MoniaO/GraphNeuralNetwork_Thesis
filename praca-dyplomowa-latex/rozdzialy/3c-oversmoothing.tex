@@ -31,21 +31,22 @@ and is defined as:
 factor by which the model improves over a random ranking, e.g. at a mean
 prevalence of $5.5\%$ a lift of $2.3$ corresponds to an AUPRC of $0.125$.
 
-In addition to the traditional metrics described above, an oracle AUC was
-calculated for the node-classification task.
-As the dataset for this task is synthetic,
-the exact function used to generate each endpoint is known, which allows to calculate AUC oracle.
-In the final assesement of the models we compared the AUC and AUC oracle 
-(\%ceiling) with the following formula:
+In addition to the traditional metrics described above, a
+\emph{generator-based oracle AUC} was computed for the node-classification
+task. Because the dataset is synthetic, the logistic generative model for
+each endpoint is known: each patient is scored with the true parent effects
+from the audited DAG and ROC-AUC is evaluated on the resulting
+probabilities. Model performance is reported relative to this reference via
+\emph{\% of oracle AUC}:
 
 \begin{equation}
   \frac{\mathrm{AUC} - 0.5}{\mathrm{AUC}_{\mathrm{Oracle}} - 0.5} \cdot 100\%,
   \label{eq:pct-ceiling}
 \end{equation}
 %
-where $\mathrm{AUC}_{\mathrm{Oracle}} = 0.651$ is the AUC oracle averaged
-over the same eight endpoints. This metric expresses the
-share of attainable signal recovered by the model. The model increased performance
-is calculated from random baseline model performance which is 0.5.
+where $\mathrm{AUC}_{\mathrm{Oracle}} = 0.651$ is the macro-averaged oracle
+AUC over the same eight endpoints used in aggregate reporting. This metric
+expresses the share of ranking signal recoverable under the known generator,
+relative to random performance at $0.5$.
 
 
