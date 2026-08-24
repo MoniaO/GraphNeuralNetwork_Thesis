@@ -94,7 +94,7 @@ All of metrics reported are described in \cref{subsubsec:oversmoothing}.
 The epoch is selected on the validation set and
 test metrics are reported from that epoch.
 %R-GCN with residual connections was only run with mean aggregation and is therefore absent from the lower block.
-The experiments assumed to used multiple number of layers as 
+The experiments were conducted with multiple number of layers as 
 patient path is up to 6 degrees and it is assumed that every point
 can have an influence in casual path. For each experiment all number of layers were calculated, 
 but for reporting reasons in \cref{tab:arch-nores-update} there are included layers 
@@ -141,7 +141,7 @@ L=6, collapse to constant predictions (AUC=0.50).
       \end{tabular}}
     \end{table}
 
-    That's why the next step was application of residual connections described in \cref{subsubsec:oversmoothing} 
+    That's why the next step was application of residual connections
     to see the capabilities of models with higher number of layers. The results are presented 
     in \cref{tab:arch-res}.
     
@@ -176,7 +176,8 @@ L=6, collapse to constant predictions (AUC=0.50).
     (\cref{eq:pct-ceiling}) on the test
     set, with differences of about 0.01 AUC. The more informative factors for model assessment are AP and 
     Lift, which show that the model performs nearly 2.3 times better than a random baseline. 
-    Since the architectures achieve comparable performance, the choice for 
+    Since the architectures achieve comparable performance, the choice of architecture
+    for 
     the remaining experiments 
     was therefore made on structural grounds. TransformerConv is the only one of the three
     backbones benchmarked here that consumes the full \texttt{edge\_attr} vector in message
@@ -412,11 +413,8 @@ that are structurally more informative.
   \label{fig:influence}
 \end{figure}
 
-Taken together, the gate matrix indicates that the evidence branch is used
-unevenly across endpoints and parent types, in line with differences in
-parent availability and predictive utility on the synthetic task.
 
-Taken together, it is worth to emphasize that all of models with HCR reached a satisfactory results 
+To sump up, it is worth to emphasize that all of models with HCR reached a satisfactory results 
 comparable to models with residual connections applied. 
 The gate matrix indicates that the evidence branch is used
 unevenly across endpoints and parent types, in line with differences in

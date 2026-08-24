@@ -31,7 +31,8 @@ classification task was built based on:
     \item \textbf{per-scenario patient sample table} 
 \end{enumerate}
 
-Based on those items \texttt{HeteroData} object was created which was represented by objects type presented in the table
+Based on those items \texttt{HeteroData} object was created which was represented by objects type 
+presented in \cref{tab:heterodata_components}.
 
 \begin{table}[t]
     \centering
@@ -118,11 +119,12 @@ split-level AUC and AP unstable.
 
 \subsubsection{Model architecture}
 
-The core architecture is a stack of heterogeneous graph convolutional layers wrapped in \texttt{HeteroConv},
-shared across relation types but parameterized identically for every patient graph. The following
-convolution backbones 
-are supported through a common registry and were benchmarked against each other: 
-GraphSAGE, R-GCN, and TransformerConv. 
+The core architecture is a stack of \texttt{HeteroConv} layers applied to the
+per-patient DAG. Each layer instantiates a separate graph convolution per
+relation type; the same backbone weights are shared across all patient graphs
+in the cohort. Three operators 
+were benchmarked against each other: GraphSAGE, R-GCN, and
+\texttt{TransformerConv}.
 All three are applied to the heterogeneous patient DAG via \texttt{HeteroConv}.
 Each directed edge in the graph carries a fixed \texttt{edge\_attr} vector 
 assembled at
@@ -195,9 +197,9 @@ isomorphism test. In the dataset, several
 endpoint nodes of the same type (e.g. Serotonin syndrome, Rhabdomyolysis, Lactic acidosis) share 
 identical static audited attributes and comparable topological 
 positions, and were therefore indistinguishable to the model except through such positional cues.
-To break this symmetry, a learnable embedding table is maintained per node type, indexed by each node's fixed 
-local index, and added to the projected input features before the first convolutional layer, following the same 
-principle underlying position aware node embeddings in .
+To break this symmetry, a learnable embedding table is maintained per node type, 
+indexed by each node's fixed local index in the shared DAG,and added 
+to the projected input features before the first convolutional layer.
 %oversmoothing (i will see if i should present it or rephrase it somehow)
 
 This connects directly to the model's handling of oversmoothing. Using multiple message-passing 
@@ -280,7 +282,7 @@ statistics computed directly from the training cohort, and that combining such s
 representation captures the strong signal from direct parents and smoothed signal 
 from further layers.
 All modes of the statistical branch are summarized in
-Table~\ref{tab:fusion_modes} and below they is included detailed explanation
+Table~\ref{tab:fusion_modes} and below there is included detailed explanation
 of every mode characteristics.
 
 \paragraph{Scope of variables and parents.}
@@ -299,7 +301,7 @@ parents (compact 10-channel evidence) and all parent value types (binary,
 count, and continuous; 42-channel evidence).
 
 \paragraph{HCR core coefficients.}
-For a binary parent \(R\) and binary endpoint node \(Y\), the primary association
+For a binary parent \(P\) and binary endpoint node \(Y\), the primary association
 coefficient is the \(\varphi\)-coefficient 
 %(equivalently denoted \(a_{11}\) in the implementation) 
 derived from the training-cohort contingency table. For
@@ -391,17 +393,21 @@ patient activations, and an explicit patient evidence product
 Triple evidence uses the same slot-based encoder
 interface as pairwise evidence.
 
-% Four fusion modes connect the statistical branch to the GNN. They differ in
-% what evidence tensor is built and how it is combined with the deep
-% representation (Table~\ref{tab:fusion_modes}).
+Four fusion modes connect the statistical branch to the GNN; they differ in
+what evidence tensor is built and how it is combined with the deep
+representation (\cref{tab:fusion_modes}).
 
-
-\begin{table}[t]
+\begin{table}[H]
   \centering
-  \small
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.15}
   \caption{Fusion modes for the statistical evidence branch in Task~B.}
   \label{tab:fusion_modes}
-  \begin{tabularx}{\textwidth}{@{}l l X X@{}}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.14\textwidth}
+                       >{\raggedright\arraybackslash}p{0.26\textwidth}
+                       >{\raggedright\arraybackslash}p{0.28\textwidth}
+                       >{\raggedright\arraybackslash}p{0.28\textwidth}@{}}
     \toprule
     \textbf{Mode} & \textbf{Evidence tensor} & \textbf{Encoder} & \textbf{Fusion with GNN} \\
     \midrule
@@ -412,7 +418,6 @@ interface as pairwise evidence.
       & Added to endpoint logit;
         one learned scalar per endpoint
         (\texttt{hcr\_wide\_weight}) \\
-    \addlinespace[3pt]
     \texttt{nonlinear}
       & Pairwise 10D or 42D vectors per
         (patient, parent, endpoint) slot
@@ -421,7 +426,6 @@ interface as pairwise evidence.
       & Encoder output added to logit;
         optional per-endpoint scale
         (\texttt{hcr\_endpoint\_weight}) \\
-    \addlinespace[3pt]
     \texttt{typed\_concat}
       & 42D pairwise vectors, split into four
         type-specific tensors (\texttt{drug\_exposure},
@@ -435,7 +439,6 @@ interface as pairwise evidence.
       & Gated type embeddings concatenated with
         GNN target embedding \emph{before}
         the classification head \\
-    \addlinespace[3pt]
     \texttt{triple}
       & 13-channel vectors per
         (patient, triple, endpoint) slot
@@ -445,7 +448,6 @@ interface as pairwise evidence.
         evidence in this mode)
       & Encoder output added to logit
         (no per-endpoint scalar) \\
-    \addlinespace[3pt]
     \emph{typed+triple}
       & Typed 42D pairwise blocks \emph{and}
         13-channel triple block
@@ -458,8 +460,9 @@ interface as pairwise evidence.
         embedding before the head
         (same join as \texttt{typed\_concat}) \\
     \bottomrule
-  \end{tabularx}
+  \end{tabular}
 \end{table}
+\FloatBarrier
 
 \subsubsection{Training setup}
 
@@ -515,8 +518,7 @@ lift.
  AUC over the same eight endpoints used in aggregate reporting
  (\cref{tab:app_endpoints}). This metric expresses the share of ranking
  signal recoverable under the known generator, relative to random performance
- at $0.5$. It is \emph{not} a Bayes-optimal error bound; it is a
- simulation-based performance ceiling derived from the generative model.
+ at $0.5$. 
  
  
  

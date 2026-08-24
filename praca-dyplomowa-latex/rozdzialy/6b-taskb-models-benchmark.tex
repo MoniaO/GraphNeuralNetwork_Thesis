@@ -1,19 +1,39 @@
 \newpage % Rozdziały zaczynamy od nowej strony.
-\subsection{Endpoint prediction}
+\subsection{Hetionet knowledge graph}
 \label{subsec:benchmark-endpoint}
+
+Task~B is evaluated on a benchmark dataset derived from Hetionet. 
+Hetionet is a heterogeneous network
+(\emph{hetnet}) that integrates biomedical knowledge from 29 publicly
+available resources. It represents biological and pharmacological entities
+as nodes and documented relationships between them as typed edges.
+
+Hetionet v1.0 contains 47{,}031 nodes belonging to 11 node types and
+2{,}250{,}197 relationships of 24 types. The graph includes compounds,
+diseases, genes, anatomies, pathways, biological processes, molecular
+functions, cellular components, pharmacologic classes, side effects, and
+symptoms. This heterogeneous structure makes Hetionet suitable for node classification task described further. 
+The details of benchmark check are included in Section ~\ref{subsec:benchmark-endpoint}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth, height=0.45\textheight, keepaspectratio]{rysunki/elife-26726-fig1-v2.jpg}
+    \caption{Hetionet knowledge graph}
+    \label{fig:hetionet-original}
+\end{figure}
+Figure~\ref{fig:hetionet-original} shows the Hetionet v1.0 network structure.\footnote{Source: \url{https://www.researchgate.net/figure/Hetionet-v10-A-The-metagraph-a-schema-of-the-network-types-B-The-hetnet-visualized_fig1_345109349}}
+Hetionet was selected because it is heterogeneous and supports a
+multi-label prediction setup analogous to the synthetic
+task. 
+
 
 \subsubsection{Data Representation}
 
-Task~B is evaluated on a second benchmark dataset derived from Hetionet
-(\cref{subsec:hetionet}). The
-benchmark is a \textbf{structural proxy}---the
-pipeline, layer slots, and HCR branch are reused, but the graph is
-reconstructed to resemble the synthetic schema in topology.
-
-Hetionet was selected because it is heterogeneous and supports a
-multi-label prediction setup analogous to the synthetic
-task. Adapting it nevertheless required a couple of reconstructions
-listed below.
+The
+benchmark on this datasetis a structural proxy---the
+pipeline, layer slots, and statistical evidence branch are reused, but the graph is
+reconstructed to resemble the synthetic schema in topology. 
+Below  are listed reconstruction steps taken. 
 
 \begin{enumerate}[label=(\roman*)]
   \item \textbf{Instance.} A compound takes the role of the patient: the
@@ -72,7 +92,7 @@ In \cref{fig:updated_hetionet} there is presented the updated view of graph.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\textwidth, height=0.45\textheight]{rysunki/hetionet_layer_mapping.png}
+  \includegraphics[width=0.92\textwidth,keepaspectratio]{rysunki/hetionet_layer_mapping.pdf}
   \caption{Hetionet layer mapping after reconstruction onto the synthetic schema.}
   \label{fig:updated_hetionet}
 \end{figure}
@@ -104,7 +124,7 @@ $0.728$ with residual alone, and $0.760$ with both. The combination is
 therefore better than either component in isolation.
 
 The reason is the structure of the two graphs. In the synthetic graph the direct
-parents of an endpoint are observed, so the HCR branch and the one-hop
+parents of an endpoint are observed, so the statistical evidence branch and the one-hop
 receptive field read the same variables and the two mechanisms address the same
 bottleneck. In the Hetionet-derived graph depth is more crucial because some
 layers are latent. Information must
@@ -128,11 +148,7 @@ evidence enters the model.
   \centering
   \small
   \setlength{\tabcolsep}{4pt}
-  \caption{Benchmark results for endpoint prediction.
-    \emph{nonlin.\ bin.} uses a 9-channel evidence vector restricted to
-    binary parents; \emph{nonlin.\ all} uses 42 channels with the full parent
-    scope; \emph{typed+triple} concatenates one encoder per parent type with
-    a third-order block. Coverage of depths differs between variants.}
+  \caption{Benchmark results for endpoint prediction.}
   \label{tab:proxy-full}
   \sisetup{table-format=1.3}
   \begin{tabular}{ccl SSS SSS}

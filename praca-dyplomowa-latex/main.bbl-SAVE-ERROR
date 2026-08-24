@@ -364,6 +364,94 @@
       \verb 10.1038/s41551-025-01531-2
       \endverb
     \endentry
+    \entry{wang2019kgat}{inproceedings}{}{}
+      \name{author}{5}{}{%
+        {{hash=8fde8559617f603b3e2b3cf30cb48e9b}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Xiang},
+           giveni={X\bibinitperiod}}}%
+        {{hash=cf3f1b6bfe8e9131a8c719c1af0dce5d}{%
+           family={He},
+           familyi={H\bibinitperiod},
+           given={Xiangnan},
+           giveni={X\bibinitperiod}}}%
+        {{hash=ffbd440be3d518a696e50320511efbfa}{%
+           family={Cao},
+           familyi={C\bibinitperiod},
+           given={Yixin},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=43e7ecabe8e7b628c5a10165aceb7ff5}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Meng},
+           giveni={M\bibinitperiod}}}%
+        {{hash=57e4257ea3484acff91be2a3df96d16b}{%
+           family={Chua},
+           familyi={C\bibinitperiod},
+           given={Tat-Seng},
+           giveni={T\bibinithyphendelim S\bibinitperiod}}}%
+      }
+      \strng{namehash}{35ac326fad78d42d0760cfb75887ea69}
+      \strng{fullhash}{bb9a4bb0ba23478e7843d6f31968d354}
+      \strng{fullhashraw}{bb9a4bb0ba23478e7843d6f31968d354}
+      \strng{bibnamehash}{bb9a4bb0ba23478e7843d6f31968d354}
+      \strng{authorbibnamehash}{bb9a4bb0ba23478e7843d6f31968d354}
+      \strng{authornamehash}{35ac326fad78d42d0760cfb75887ea69}
+      \strng{authorfullhash}{bb9a4bb0ba23478e7843d6f31968d354}
+      \strng{authorfullhashraw}{bb9a4bb0ba23478e7843d6f31968d354}
+      \field{sortinit}{8}
+      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 25th {ACM} {SIGKDD} International Conference on Knowledge Discovery \& Data Mining}
+      \field{title}{{KGAT}: Knowledge Graph Attention Network for Recommendation}
+      \field{year}{2019}
+      \field{pages}{950\bibrangedash 958}
+      \range{pages}{9}
+      \verb{doi}
+      \verb 10.1145/3292500.3330989
+      \endverb
+    \endentry
+    \entry{shehzad2025reproducibility}{inproceedings}{}{}
+      \name{author}{3}{}{%
+        {{hash=6f0b0bba7950e8c3dc245269fb1dd123}{%
+           family={Shehzad},
+           familyi={S\bibinitperiod},
+           given={Faisal},
+           giveni={F\bibinitperiod}}}%
+        {{hash=a642984b51161645aeab0a40ed631624}{%
+           family={Ferrari\bibnamedelima Dacrema},
+           familyi={F\bibinitperiod\bibinitdelim D\bibinitperiod},
+           given={Maurizio},
+           giveni={M\bibinitperiod}}}%
+        {{hash=8044b9528a8ea937291cf64035350877}{%
+           family={Jannach},
+           familyi={J\bibinitperiod},
+           given={Dietmar},
+           giveni={D\bibinitperiod}}}%
+      }
+      \strng{namehash}{1e8427569bb68a7cd2266d8f4c41d83d}
+      \strng{fullhash}{fe061966645dfb04cac67cc69aca231b}
+      \strng{fullhashraw}{fe061966645dfb04cac67cc69aca231b}
+      \strng{bibnamehash}{fe061966645dfb04cac67cc69aca231b}
+      \strng{authorbibnamehash}{fe061966645dfb04cac67cc69aca231b}
+      \strng{authornamehash}{1e8427569bb68a7cd2266d8f4c41d83d}
+      \strng{authorfullhash}{fe061966645dfb04cac67cc69aca231b}
+      \strng{authorfullhashraw}{fe061966645dfb04cac67cc69aca231b}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 48th International {ACM} {SIGIR} Conference on Research and Development in Information Retrieval}
+      \field{title}{A Worrying Reproducibility Study of Intent-Aware Recommendation Models}
+      \field{year}{2025}
+      \field{pages}{3155\bibrangedash 3164}
+      \range{pages}{10}
+      \verb{doi}
+      \verb 10.1145/3726302.3730220
+      \endverb
+    \endentry
     \entry{hamilton2017inductive}{inproceedings}{}{}
       \name{author}{3}{}{%
         {{hash=2b50dc0bf681355a1fe029fdb5c75479}{%
@@ -390,8 +478,8 @@
       \strng{authornamehash}{b58a4eb8ad5edc82e62abc6c0f4ea7a4}
       \strng{authorfullhash}{03b77827ef2998e718907d1711628a00}
       \strng{authorfullhashraw}{03b77827ef2998e718907d1711628a00}
-      \field{sortinit}{8}
-      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Advances in Neural Information Processing Systems}
@@ -599,94 +687,6 @@
       \field{pagetotal}{224}
       \field{title}{Grafowe sieci neuronowe. Teoria i praktyka}
       \field{year}{2026}
-    \endentry
-    \entry{wang2019kgat}{inproceedings}{}{}
-      \name{author}{5}{}{%
-        {{hash=8fde8559617f603b3e2b3cf30cb48e9b}{%
-           family={Wang},
-           familyi={W\bibinitperiod},
-           given={Xiang},
-           giveni={X\bibinitperiod}}}%
-        {{hash=cf3f1b6bfe8e9131a8c719c1af0dce5d}{%
-           family={He},
-           familyi={H\bibinitperiod},
-           given={Xiangnan},
-           giveni={X\bibinitperiod}}}%
-        {{hash=ffbd440be3d518a696e50320511efbfa}{%
-           family={Cao},
-           familyi={C\bibinitperiod},
-           given={Yixin},
-           giveni={Y\bibinitperiod}}}%
-        {{hash=43e7ecabe8e7b628c5a10165aceb7ff5}{%
-           family={Liu},
-           familyi={L\bibinitperiod},
-           given={Meng},
-           giveni={M\bibinitperiod}}}%
-        {{hash=57e4257ea3484acff91be2a3df96d16b}{%
-           family={Chua},
-           familyi={C\bibinitperiod},
-           given={Tat-Seng},
-           giveni={T\bibinithyphendelim S\bibinitperiod}}}%
-      }
-      \strng{namehash}{35ac326fad78d42d0760cfb75887ea69}
-      \strng{fullhash}{bb9a4bb0ba23478e7843d6f31968d354}
-      \strng{fullhashraw}{bb9a4bb0ba23478e7843d6f31968d354}
-      \strng{bibnamehash}{bb9a4bb0ba23478e7843d6f31968d354}
-      \strng{authorbibnamehash}{bb9a4bb0ba23478e7843d6f31968d354}
-      \strng{authornamehash}{35ac326fad78d42d0760cfb75887ea69}
-      \strng{authorfullhash}{bb9a4bb0ba23478e7843d6f31968d354}
-      \strng{authorfullhashraw}{bb9a4bb0ba23478e7843d6f31968d354}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings of the 25th {ACM} {SIGKDD} International Conference on Knowledge Discovery \& Data Mining}
-      \field{title}{{KGAT}: Knowledge Graph Attention Network for Recommendation}
-      \field{year}{2019}
-      \field{pages}{950\bibrangedash 958}
-      \range{pages}{9}
-      \verb{doi}
-      \verb 10.1145/3292500.3330989
-      \endverb
-    \endentry
-    \entry{shehzad2025reproducibility}{inproceedings}{}{}
-      \name{author}{3}{}{%
-        {{hash=6f0b0bba7950e8c3dc245269fb1dd123}{%
-           family={Shehzad},
-           familyi={S\bibinitperiod},
-           given={Faisal},
-           giveni={F\bibinitperiod}}}%
-        {{hash=a642984b51161645aeab0a40ed631624}{%
-           family={Ferrari\bibnamedelima Dacrema},
-           familyi={F\bibinitperiod\bibinitdelim D\bibinitperiod},
-           given={Maurizio},
-           giveni={M\bibinitperiod}}}%
-        {{hash=8044b9528a8ea937291cf64035350877}{%
-           family={Jannach},
-           familyi={J\bibinitperiod},
-           given={Dietmar},
-           giveni={D\bibinitperiod}}}%
-      }
-      \strng{namehash}{1e8427569bb68a7cd2266d8f4c41d83d}
-      \strng{fullhash}{fe061966645dfb04cac67cc69aca231b}
-      \strng{fullhashraw}{fe061966645dfb04cac67cc69aca231b}
-      \strng{bibnamehash}{fe061966645dfb04cac67cc69aca231b}
-      \strng{authorbibnamehash}{fe061966645dfb04cac67cc69aca231b}
-      \strng{authornamehash}{1e8427569bb68a7cd2266d8f4c41d83d}
-      \strng{authorfullhash}{fe061966645dfb04cac67cc69aca231b}
-      \strng{authorfullhashraw}{fe061966645dfb04cac67cc69aca231b}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings of the 48th International {ACM} {SIGIR} Conference on Research and Development in Information Retrieval}
-      \field{title}{A Worrying Reproducibility Study of Intent-Aware Recommendation Models}
-      \field{year}{2025}
-      \field{pages}{3155\bibrangedash 3164}
-      \range{pages}{10}
-      \verb{doi}
-      \verb 10.1145/3726302.3730220
-      \endverb
     \endentry
   \enddatalist
 \endrefsection
