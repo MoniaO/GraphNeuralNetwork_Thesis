@@ -31,24 +31,7 @@ class SynEvaluatorNode:
         target_endpoint_names: Optional[List[str]] = None,
         metric_endpoint_names: Optional[List[str]] = None,
     ):
-        """
-        target_endpoint_names: WSZYSTKIE endpointy, na ktorych model trenuje
-            i ktore sa raportowane per-endpoint (eval_per_endpoint=True) -
-            bez zmian wzgledem dotychczasowego zachowania.
-        metric_endpoint_names: podzbior target_endpoint_names uzywany do
-            liczenia AGREGATU (klucze bez prefiksu: "auc", "auprc", ...),
-            czyli tego, co steruje selekcja checkpointu (best_metric_name) i
-            early stoppingiem. Domyslnie (None) = wszystkie target_endpoint_names,
-            zachowanie identyczne jak dotad.
 
-            Uzycie: wyklucz endpointy o bardzo malej liczbie pozytywow
-            (np. Serotonin_syndrome, Rhabdomyolysis, Lactic_acidosis - patrz
-            analiza wariancji miedzy runami) z AGREGATU, zeby przypadkowy
-            wynik na garstce przykladow nie szarpal wyborem "najlepszej"
-            epoki - bez usuwania ich z treningu ani z raportowania per-endpoint
-            (transparentnosc - w pracy nadal widac ich metryki, tylko nie
-            wchodza do glownej, decyzyjnej liczby).
-        """
         self.cfg = cfg
         self.target_endpoint_names = target_endpoint_names or []
         self.metric_endpoint_names = (
@@ -62,9 +45,7 @@ class SynEvaluatorNode:
                 f"{self.target_endpoint_names} - agregat nie moze zawierac endpointu, "
                 "na ktorym model nie trenuje."
             )
-        # Pozycje kolumn metric_endpoint_names WEWNATRZ target_endpoint_names -
-        # potrzebne do wyciecia podzbioru z y_true/y_prob (ktore sa w kolejnosci
-        # target_endpoint_names, patrz get_targeted_labels).
+
         self._metric_col_idx = [self.target_endpoint_names.index(e) for e in self.metric_endpoint_names]
         self._metric_is_subset = len(self.metric_endpoint_names) < len(self.target_endpoint_names)
 
@@ -74,16 +55,11 @@ class SynEvaluatorNode:
         self.oversmoothing_sample_size = int(getattr(cfg.training, "oversmoothing_sample_size", 2000))
 
         # Metryki oversmoothingu liczone PER WARSTWA (nie tylko na wyjsciu enkodera).
-        # Wymaga modelu z encode(data, return_layer_reprs=True) - maja to
-        # _PatientDAGGNNBase (sage/gcn/gat/transformer) i RGCNPatientDAGNodeClassifier.
-        # Modele bez tego parametru (np. MLP baseline) sa obslugiwane gracefully.
         self.oversmoothing_per_layer = bool(getattr(cfg.training, "oversmoothing_per_layer", False))
-        # Domyslnie logujemy tylko agregaty (*_mean + dirichlet), zeby nie zasypac W&B:
-        # przy 6 typach wezlow x 4 metryki x (L+1) warstw pelny detal to setki kluczy.
         self.oversmoothing_per_layer_detail = bool(
             getattr(cfg.training, "oversmoothing_per_layer_detail", False)
         )
-        # Probkowanie per warstwa moze byc mniejsze - metryki O(N^2) liczone (L+1) razy.
+
         self.oversmoothing_per_layer_sample_size = int(
             getattr(cfg.training, "oversmoothing_per_layer_sample_size", self.oversmoothing_sample_size)
         )
@@ -97,15 +73,12 @@ class SynEvaluatorNode:
         self._threshold_quantiles = np.linspace(0.02, 0.98, 97)
 
     # ------------------------------------------------------------------
-    # Iteracja po batchach (kluczowa roznica wzgledem starego evaluatora)
+    # Iteracja po batchach 
     # ------------------------------------------------------------------
 
     @torch.no_grad()
     def _forward_probs(self, model, loader: DataLoader, criterion, device):
-        """Iteruje po WSZYSTKICH batchach loadera i agreguje y_true/y_prob,
-        zamiast jednego forward() na cala populacje (jak przy jednym duzym
-        grafie bipartite). Zwraca rowniez ostatni batch danych (do
-        oversmoothing diagnostics) oraz sredni loss."""
+
         model.eval()
         all_y_true: List[np.ndarray] = []
         all_y_prob: List[np.ndarray] = []
@@ -156,12 +129,7 @@ class SynEvaluatorNode:
 
     @torch.no_grad()
     def select_threshold(self, model, valid_loader: DataLoader, device) -> float:
-        """Osobny, jednorazowy odczyt progu z pelnym forward-passem po
-        valid_loader. Zostaje jako publiczne API (np. do jednorazowego uzycia
-        poza petla treningowa), ale W PETLI treningowej NIE nalezy jej uzywac
-        obok evaluate() - patrz evaluate(..., select_threshold=True), ktore
-        wyznacza prog z TEGO SAMEGO forward-passu co metryki, bez podwajania
-        kosztu obliczeniowego."""
+
         if not self.auto_threshold:
             return self.classification_threshold
         _, y_true, y_prob, _ = self._forward_probs(
@@ -183,26 +151,9 @@ class SynEvaluatorNode:
         threshold: Optional[float] = None,
         select_threshold: bool = False,
     ) -> dict:
-        """
-        threshold: prog uzywany do metryk progowych (f1/precision/recall).
-            Ignorowany, jesli select_threshold=True.
-        select_threshold: jesli True, prog jest wyznaczany z TYCH SAMYCH
-            y_true/y_prob, ktore wlasnie policzono w tym wywolaniu (jeden
-            forward-pass), zamiast osobnego wywolania select_threshold()
-            (ktore robiloby DRUGI, niezalezny forward-pass po tym samym
-            loaderze). Uzywaj select_threshold=True dla loadera walidacyjnego,
-            gdy chcesz swiezy prog co epoke bez dodatkowego kosztu obliczeniowego.
-            Wyznaczony prog jest dostepny w zwroconym slowniku pod kluczem
-            "classification_threshold" - wyciagnij go stamtad, jesli chcesz
-            uzyc tego samego progu do oceny train/test w tej samej epoce.
-        """
+
         last_batch, y_true, y_prob, loss = self._forward_probs(model, loader, criterion, device)
 
-        # Wytnij podzbior kolumn dla progu i agregatu, jesli metric_endpoint_names
-        # jest wlasciwym podzbiorem target_endpoint_names (patrz __init__) - np.
-        # zeby wykluczyc endpointy z garstka pozytywow (Serotonin_syndrome itp.)
-        # z liczby STERUJACEJ selekcja checkpointu, bez usuwania ich z treningu
-        # ani z pelnego raportowania per-endpoint ponizej.
         if self._metric_is_subset and y_true.ndim == 2 and y_true.shape[1] == len(self.target_endpoint_names):
             y_true_agg = y_true[:, self._metric_col_idx]
             y_prob_agg = y_prob[:, self._metric_col_idx]
@@ -218,16 +169,7 @@ class SynEvaluatorNode:
         metrics["loss"] = float(loss)
         metrics["classification_threshold"] = active_threshold
 
-        # Rozbicie per-endpoint: y_true/y_prob sa JUZ w ksztalcie [N, n_targets]
-        # (patrz _forward_probs: labels.view(-1, n_targets) per batch, potem
-        # concatenate wzdluz osi 0) - reshape ponizej byl wiec bez efektu,
-        # ale warunek go strzegacy byl bledny: len(y_true) dla tablicy 2D
-        # zwraca TYLKO pierwszy wymiar (liczbe pacjentow), wiec
-        # "len(y_true) % n_targets == 0" sprawdzalo w praktyce
-        # "liczba_pacjentow_w_loaderze % n_targets == 0" - czysto przypadkowa
-        # zaleznosc od konkretnej wielkosci splitu, nie od poprawnosci ksztaltu
-        # (ktory jest zawsze poprawny). Stad dzialalo z n_targets=3 (czesciej
-        # przypadkowo podzielne) i nie dzialalo z domyslnymi 10.
+        # Rozbicie per-endpoint
         if self.per_endpoint and self.target_endpoint_names:
             n_targets = len(self.target_endpoint_names)
             if y_true.ndim == 2 and y_true.shape[1] == n_targets and y_true.shape[0] > 0:
@@ -252,20 +194,7 @@ class SynEvaluatorNode:
 
     @torch.no_grad()
     def _oversmoothing_metrics(self, model, batch) -> dict:
-        """Metryki oversmoothingu na wyjsciu enkodera, a opcjonalnie takze
-        po KAZDEJ warstwie (oversmoothing_per_layer=True).
 
-        Warstwowe reprezentacje pochodza z encode(data, return_layer_reprs=True):
-        layer_reprs[0] to wejscie (po input_proj + node_embedding, przed
-        pierwsza konwolucja), layer_reprs[i] to wyjscie po i-tej warstwie.
-        Dlugosc listy = num_layers + 1.
-
-        Roznica wzgledem dotychczasowego pomiaru: metryki "plaskie"
-        (oversmoothing/...) pokazuja, jak reprezentacja KONCOWA zmienia sie w
-        czasie treningu. Metryki warstwowe (oversmoothing/layer{i}/...) pokazuja,
-        jak reprezentacja degraduje sie W GLAB SIECI w pojedynczym forward-passie
-        - i to jest wlasciwe pytanie o oversmoothing.
-        """
         out: dict = {}
 
         if not self.oversmoothing_per_layer:
@@ -286,8 +215,7 @@ class SynEvaluatorNode:
             )
             return out
 
-        # Pomiar koncowy - te same klucze co dotychczas, zeby nie zerwac
-        # istniejacych wykresow/porownan w W&B.
+        # Pomiar koncowy 
         out.update(
             compute_oversmoothing_metrics(z_dict, batch, sample_size=self.oversmoothing_sample_size)
         )
@@ -314,17 +242,7 @@ class SynEvaluatorNode:
     def _classification_metrics(
         self, y_true: np.ndarray, y_prob: np.ndarray, prefix: str, threshold: float
     ) -> dict:
-        # y_true.size (nie len(y_true)!) - dla wywolania per-endpoint (1D)
-        # oba daja to samo, ale dla wywolania agregatowego (prefix="", y_true
-        # 2D [n_pacjentow, n_targets]) len() zwraca TYLKO pierwszy wymiar
-        # (liczbe pacjentow), podczas gdy .sum() sumuje WSZYSTKIE elementy -
-        # bez tej poprawki auprc_baseline byl ~n_targets-krotnie zawyzony,
-        # a auprc_lift proporcjonalnie zanizony. Dzieki temu, ze kazdy
-        # endpoint ma tu zawsze te sama liczbe wierszy (ci sami pacjenci na
-        # wszystkich endpointach), n = y_true.size daje wynik matematycznie
-        # rownowazny macro-usrednieniu baseline po endpointach - spojny z
-        # tym, jak roc_auc_score/average_precision_score juz licza AUC/AUPRC
-        # (macro dla danych 2D).
+
         n = int(y_true.size)
         positives = int(y_true.sum()) if n > 0 else 0
         negatives = n - positives
