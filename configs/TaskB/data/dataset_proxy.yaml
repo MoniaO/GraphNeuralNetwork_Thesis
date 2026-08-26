@@ -1,0 +1,48 @@
+# # @package data
+# name: "ogbl-biokg"
+# task_type: "link_prediction"
+# metric: "mrr"
+# root: "data/"
+# evaluator_type: synthetic_evaluator #for now we use this one, but for future we can encode evaluator with MRR metric which is officially used for this dataset
+name: "proxy3"
+
+dataset:
+  root_dir: /Users/monika/hetionet/data/proxy_v3_weights/
+  nodes_file: hetionet_nodes.csv
+  edges_file: hetionet_edges_audited.csv
+  splits_file: compound_splits.csv
+  observability_regime: full
+  scenario: clean
+
+target: 
+  # - "ep__hypertension"
+  # - "ep__hematologic cancer"
+  # - "ep__breast cancer"
+  # - "ep__asthma"
+  # - "ep__coronary artery disease"
+  # - "ep__multiple sclerosis"
+  # - "ep__migraine"
+  # - "ep__rheumatoid arthritis"
+  # - "ep__schizophrenia"
+  # - "ep__prostate cancer"
+  - "ep__hypertension"
+  - "ep__hematologic cancer"
+  - "ep__breast cancer"
+  - "ep__asthma"
+  - "ep__coronary artery disease"
+  - "ep__multiple sclerosis"
+  - "ep__migraine"
+  - "ep__rheumatoid arthritis"
+  - "ep__schizophrenia"
+  - "ep__prostate cancer"
+  - "ep__Parkinson's disease"
+  - "ep__psoriasis"
+  - "ep__systemic scleroderma"
+  - "ep__epilepsy syndrome"
+  - "ep__osteoarthritis"
+  - "ep__glaucoma"
+  - "ep__type 2 diabetes mellitus"
+  - "ep__systemic lupus erythematosus"
+  - "ep__bipolar disorder"
+  - "ep__allergic rhinitis"
+

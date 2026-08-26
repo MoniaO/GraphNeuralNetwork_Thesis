@@ -1,0 +1,35 @@
+name: "syn"
+negative_ratio: 3
+edge_repeat: 1
+target: 
+    - AKI
+    - DILI
+    - Depression
+    - Delirium
+    - GI_bleeding
+    - Hyponatremia
+    - Hyperkalemia
+    - QT_arrhythmia
+    - Serotonin_syndrome
+    - Rhabdomyolysis
+    - Lactic_acidosis
+
+evaluator_type: synthetic_evaluator
+
+dataset:
+  root_dir: ${oc.env:PHARMA_DATA_ROOT}
+  nodes_file: "synthetic_pharmacotherapy_v3_nodes.csv"
+  edges_file: "synthetic_pharmacotherapy_v3_edges_audited.csv"
+
+  observability_regime: full 
+
+  samples:
+      clean: "synthetic_pharmacotherapy_v3_samples_clean.csv"
+      nooverlap: "synthetic_pharmacotherapy_v3_samples_no_overlap.csv"
+      multihospital: "synthetic_pharmacotherapy_v3_samples_multihospital.csv"
+      hidden:   "synthetic_pharmacotherapy_v3_samples_hidden_confounder.csv"
+      doc: "synthetic_pharmacotherapy_v3_samples_noisy_documentation.csv"
+      bias: "synthetic_pharmacotherapy_v3_samples_selection_bias.csv"
+
+  scenario: clean #choose key from samples to select the scenario for training and evaluation
+
