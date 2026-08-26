@@ -9,12 +9,12 @@ from torch_geometric.data import HeteroData
 
 
 # ---------------------------------------------------------------------
-# Ogolne metryki embeddingow
+# Oversmoothing metrics
 # ---------------------------------------------------------------------
 
 @torch.no_grad()
 def mean_pairwise_cosine_similarity(z: torch.Tensor) -> float:
-    """Srednie podobienstwo kosinusowe po wszystkich parach wezlow."""
+    #cosine similarity 
     if z.ndim != 2:
         raise ValueError(f"Oczekiwano [num_nodes, embedding_dim], otrzymano {tuple(z.shape)}.")
 
@@ -24,10 +24,9 @@ def mean_pairwise_cosine_similarity(z: torch.Tensor) -> float:
 
     z_norm = F.normalize(z.detach().float(), p=2, dim=-1, eps=1e-8)
 
-    # ||sum_i z_i||^2 = sum_i ||z_i||^2 + sum_{i!=j} z_i . z_j
     summed = z_norm.sum(dim=0)
     total_sq = float((summed @ summed).item())
-    diag_sq = float(z_norm.pow(2).sum().item())  # ~n dla znormalizowanych wektorow
+    diag_sq = float(z_norm.pow(2).sum().item())  
     off_diag = total_sq - diag_sq
     n_pairs = n * (n - 1)
     return float(off_diag / n_pairs)
@@ -35,7 +34,7 @@ def mean_pairwise_cosine_similarity(z: torch.Tensor) -> float:
 
 @torch.no_grad()
 def mean_average_distance(z: torch.Tensor) -> float:
-    """Znormalizowana srednia odleglosc euklidesowa miedzy parami wezlow."""
+    #MAD - mean average distance
     if z.ndim != 2:
         raise ValueError(f"Oczekiwano [num_nodes, embedding_dim], otrzymano {tuple(z.shape)}.")
 
@@ -85,8 +84,6 @@ def numerical_rank(z: torch.Tensor, energy_threshold: float = 0.99) -> float:
     threshold_tensor = torch.tensor(energy_threshold, dtype=cumulative.dtype, device=cumulative.device)
     rank = int(torch.searchsorted(cumulative, threshold_tensor).item()) + 1
 
-    # Centrowanie ogranicza maksymalny rank do co najwyzej n-1 (wektory
-    # scentrowane sumuja sie do zera - jedno ograniczenie liniowe).
     max_rank = min(n - 1, dim)
     if max_rank <= 0:
         return float("nan")
@@ -94,10 +91,7 @@ def numerical_rank(z: torch.Tensor, energy_threshold: float = 0.99) -> float:
     rank = min(rank, max_rank)
     return float(rank / max_rank)
 
-
-# ---------------------------------------------------------------------
-# Energia Dirichleta
-# ---------------------------------------------------------------------
+#Dirichlet energy
 
 def _edge_type_name(edge_type: Tuple[str, str, str]) -> str:
     src, rel, dst = edge_type
@@ -108,17 +102,7 @@ def _edge_type_name(edge_type: Tuple[str, str, str]) -> str:
 def compute_dirichlet_energy(
     z_dict: Dict[str, torch.Tensor], data: HeteroData
 ) -> Dict[str, float]:
-    """Energia Dirichleta per relacja + dwa warianty agregacji globalnej.
 
-    Dla krawedzi u -> v: energy(u, v) = ||z_u - z_v||^2 / embedding_dim.
-
-    Zwraca:
-    - "edge_weighted": srednia po WSZYSTKICH pojedynczych krawedziach
-      (relacje z wieksza liczba krawedzi wnosza proporcjonalnie wiecej).
-    - "relation_macro": srednia po srednich per-relacyjnych (kazdy typ
-      relacji rowny, niezaleznie od liczby krawedzi).
-    - "relation/<edge_type>": energia w obrebie jednej relacji heterogenicznej.
-    """
     if not isinstance(data, HeteroData):
         raise TypeError("data musi byc instancja torch_geometric.data.HeteroData.")
 
@@ -150,8 +134,7 @@ def compute_dirichlet_energy(
         relation_name = _edge_type_name(edge_type)
 
         if not torch.isfinite(z_src).all() or not torch.isfinite(z_dst).all():
-            # Zdegenerowana relacja (NaN/Inf) - wykluczona z agregatow,
-            # zeby nie zatruc reszty wyniku przez propagacje NaN.
+            # Zdegenerowana relacja (NaN/Inf) - wykluczona z agregatow
             output[f"relation/{relation_name}"] = float("nan")
             continue
 
@@ -175,13 +158,8 @@ def compute_dirichlet_energy(
     return output
 
 
-# ---------------------------------------------------------------------
-# Probkowanie (deterministyczne, bez ingerencji w globalny RNG)
-# ---------------------------------------------------------------------
-
 def _sample_embeddings(z: torch.Tensor, sample_size: int, generator: torch.Generator) -> torch.Tensor:
-    """Probkuje wezly bez modyfikowania globalnego stanu RNG PyTorch - patrz
-    uzasadnienie w docstringu modulu."""
+
     n = int(z.size(0))
     if n <= sample_size:
         return z
@@ -193,10 +171,7 @@ def _finite_mean(values: list) -> Optional[float]:
     finite = [v for v in values if np.isfinite(v)]
     return float(np.mean(finite)) if finite else None
 
-
-# ---------------------------------------------------------------------
-# Pelna diagnostyka
-# ---------------------------------------------------------------------
+#all oversmoothing metrics - aggregation
 
 @torch.no_grad()
 def compute_oversmoothing_metrics(
@@ -206,15 +181,7 @@ def compute_oversmoothing_metrics(
     sample_seed: int = 42,
     energy_threshold: float = 0.99,
 ) -> Dict[str, float]:
-    """Liczy wszystkie metryki oversmoothingu per typ wezla, ich srednie po
-    typach, oraz energie Dirichleta (relation_macro / edge_weighted / per
-    relacja).
 
-    sample_size ogranicza liczbe wezlow uzywanych do obliczen O(N^2)
-    (cosine similarity, MAD) per typ wezla.
-    sample_seed - seed WYLACZNIE dla probkowania diagnostycznego, niezalezny
-    od globalnego RNG treningu (patrz _sample_embeddings).
-    """
     if sample_size <= 0:
         raise ValueError(f"sample_size musi byc > 0, otrzymano {sample_size}.")
 
@@ -224,7 +191,6 @@ def compute_oversmoothing_metrics(
     generator = torch.Generator(device="cpu")
     generator.manual_seed(int(sample_seed))
 
-    # Sortowanie zapewnia deterministyczna kolejnosc przetwarzania typow.
     for node_type in sorted(z_dict):
         z = z_dict[node_type]
         if z.ndim != 2:

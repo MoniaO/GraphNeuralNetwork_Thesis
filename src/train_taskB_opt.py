@@ -84,7 +84,6 @@ def build_loaders(cfg: DictConfig):
     # w build_loaders(), po wczytaniu topology i samples_df:
     raw_targets = getattr(cfg.data, "target", DEFAULT_TARGET_ENDPOINTS)
 
-    #do zmiany optymalizacja, bo to się powtarza pomiędzy funkcjami w train
     if isinstance(raw_targets, str):
         target_endpoints = [raw_targets]
     else:
@@ -132,7 +131,7 @@ def build_loaders(cfg: DictConfig):
             pass  # nic dodatkowego - hcr_wide_df jest i tak liczone bezwarunkowo wyzej
 
         elif hcr_wide_mode == "nonlinear":
-            # tu dopiero hcr_parent_scope ma znaczenie - jako PODWYBOR wewnatrz "nonlinear"
+            # hcr_parent_scope ma znaczenie - jako PODWYBOR wewnatrz "nonlinear"
             if hcr_parent_scope == "binary":
                 parents_by_endpoint = keep_observed(get_binary_direct_parents(nodes_df, edges_df, target_endpoints, excluded_nodes), samples_df)
                 if hcr_evidence_dim == 10:
@@ -177,42 +176,6 @@ def build_loaders(cfg: DictConfig):
         else:
                 raise ValueError(f"cfg.model.hcr_wide_mode={hcr_wide_mode!r} nieznane (linear/nonlinear/typed_concat).")
 
-    #20260806
-    # if hcr_wide_mode == "typed_concat":
-    #     if hcr_evidence_dim != 41:
-    #         raise ValueError("hcr_wide_mode='typed_concat' wymaga hcr_evidence_dim=41.")
-    #     parents_by_endpoint_by_type = get_direct_parents_by_node_type(
-    #         nodes_df, edges_df, target_endpoints, excluded_nodes
-    #     )
-    #     hcr_pair_evidence_by_type = compute_hcr_pair_evidence_by_node_type(
-    #         samples_df, parents_by_endpoint_by_type, train_patient_ids, edges=edges_df
-    #     )
-    # elif hcr_parent_scope == "binary":
-    #     #parents_by_endpoint = get_binary_direct_parents(nodes_df, edges_df, target_endpoints, excluded_nodes)
-    #     if hcr_evidence_dim == 9:
-    #         pair_evidence = compute_hcr_pair_evidence(samples_df, parents_by_endpoint, train_patient_ids)
-    #     elif hcr_evidence_dim == 41:
-    #         pair_evidence = compute_hcr_pair_evidence_40d(samples_df, parents_by_endpoint, train_patient_ids, edges=edges_df)
-    #     else:
-    #         raise ValueError(f"hcr_evidence_dim={hcr_evidence_dim} nieobslugiwane dla scope='binary' (9 lub 41).")
-    # elif hcr_parent_scope == "all":
-    #     if hcr_evidence_dim != 41:
-    #         raise ValueError("hcr_parent_scope='all' wymaga hcr_evidence_dim=41 (compute_hcr_pair_evidence_mixed).")
-    #     parents_by_endpoint_type = get_direct_parents_by_type(nodes_df, edges_df, target_endpoints, excluded_nodes)
-    #     pair_evidence = compute_hcr_pair_evidence_mixed(samples_df, parents_by_endpoint_type, train_patient_ids, edges=edges_df)
-    # else:
-    #     raise ValueError(f"cfg.model.hcr_parent_scope={hcr_parent_scope!r} nieznane (binary lub all).")
-
-    #linear
-    # hcr_evidence_dim = int(getattr(cfg.model, "hcr_evidence_dim", 9))
-    # if hcr_evidence_dim == 9:
-    #     pair_evidence = compute_hcr_pair_evidence(samples_df, parents_by_endpoint, train_patient_ids)
-    # elif hcr_evidence_dim == 41:
-    #     pair_evidence = compute_hcr_pair_evidence_40d(samples_df, parents_by_endpoint, train_patient_ids)
-    # else:
-    #     raise ValueError(f"cfg.model.hcr_evidence_dim={hcr_evidence_dim} nieobslugiwane (9 lub 41).")
-
-
     norm_stats = compute_norm_stats(
         samples_df,
         topology["node_names_by_type"],
@@ -242,7 +205,7 @@ def build_loaders(cfg: DictConfig):
 
 
 # ---------------------------------------------------------------------------
-# Budowa modelu
+# Model
 # ---------------------------------------------------------------------------
 
 def build_model(cfg: DictConfig, topology: dict, sample_graph):
@@ -308,8 +271,6 @@ def build_run_name(cfg: DictConfig) -> str:
     scenario_str = str(scenario) if scenario is not None else "default"
 
     # observability_regime dolaczony do nazwy runu - inaczej rozne reżimy
-    # ("full" / "mechanisms_latent" / "bedside") nadpisywalyby sie nawzajem
-    # przy takiej samej reszcie konfiguracji w porownaniach W&B.
     regime = str(getattr(cfg.data.dataset, "observability_regime", "full"))
 
     use_residual = bool(getattr(cfg.model, "use_residual", True))
@@ -334,9 +295,7 @@ def build_run_name(cfg: DictConfig) -> str:
 
 
 
-# ---------------------------------------------------------------------------
-# Trening jednej epoki: iteracja po batchach, nie jeden forward na cala populacje
-# ---------------------------------------------------------------------------
+# batch training per epoch
 
 def train_epoch(model, loader: DataLoader, optimizer, criterion, device: torch.device) -> float:
     model.train()
@@ -418,11 +377,7 @@ def main(cfg: DictConfig) -> None:
         print(f"focal_gamma={getattr(cfg.training, 'focal_gamma', 2.0)}")
         print("focal_alpha per endpoint:", dict(zip(cfg.data.target, stats.focal_alpha().tolist())))
 
-    # eval_criterion zostaje CELOWO zwyklym, niewazonym BCE niezaleznie od
-    # loss_type - to jest wspolna, porownywalna skala "loss" w logach W&B
-    # miedzy roznymi ustawieniami (bce/focal/rozne gamma). Gdyby eval_criterion
-    # tez byl focal loss, wartosci "valid/loss" miedzy runami o roznym gamma
-    # nie bylyby ze soba porownywalne (inna skala liczbowa strat).
+    # evaluation criteration - BCEWithLogitsLoss
     eval_criterion = torch.nn.BCEWithLogitsLoss()
 
     noisy_endpoints = {"Serotonin_syndrome", "Rhabdomyolysis", "Lactic_acidosis"}
@@ -479,12 +434,6 @@ def main(cfg: DictConfig) -> None:
         for epoch in range(1, epochs + 1):
             train_loss = train_epoch(model, loaders["train"], optimizer, criterion, device)
 
-            # Prog wyznaczany TUTAJ, jako czesc tego samego forward-passu co
-            # valid_metrics (select_threshold=True) - NIE osobnym wywolaniem
-            # evaluator.select_threshold(), ktore zrobiloby DRUGIE, niezalezne
-            # przejscie po loaders["validation"]. Dzieki temu prog jest swiezy
-            # co epoke przy DOKLADNIE takim samym koszcie obliczeniowym, jaki
-            # bylby bez zadnego mechanizmu przeliczania progu w ogole.
             valid_metrics = evaluator.evaluate(
                 model, loaders["validation"], eval_criterion, device, select_threshold=True
             )
@@ -495,9 +444,7 @@ def main(cfg: DictConfig) -> None:
             do_full_eval = (epoch % 10 == 0) or (epoch == epochs)
             train_metrics, test_metrics = {}, {}
             if do_full_eval:
-                # train/test uzywaja progu WYZNACZONEGO NA WALIDACJI powyzej
-                # (nie wlasnego) - prog zawsze powinien pochodzic z valid,
-                # nigdy z danych, na ktorych jest raportowany wynik.
+                #threshold from valid set
                 train_metrics = evaluator.evaluate(model, loaders["train"], eval_criterion, device, threshold=threshold)
                 test_metrics = evaluator.evaluate(model, loaders["test"], eval_criterion, device, threshold=threshold)
                 print({k: v for k, v in train_metrics.items() if k.startswith("oversmoothing/")})
@@ -613,9 +560,6 @@ def main(cfg: DictConfig) -> None:
         model.load_state_dict(best_state)
 
         # --- Finalna ewaluacja na najlepszym checkpoincie ---
-        # Tak samo jak w petli: prog wyznaczany w TYM SAMYM forward-passie co
-        # final_valid_metrics (select_threshold=True), zamiast osobnym
-        # wywolaniem select_threshold() - jeden przebieg po walidacji, nie dwa.
         final_valid_metrics = evaluator.evaluate(
             model, loaders["validation"], eval_criterion, device, select_threshold=True
         )
@@ -638,8 +582,7 @@ def main(cfg: DictConfig) -> None:
             for key, value in final_test_metrics.items():
                 wandb.summary[f"final/test/{key}"] = value
 
-        # po zakonczeniu treningu, przy najlepszym checkpointu
-# po zakonczeniu treningu, przy najlepszym checkpointu
+        # po zakonczeniu treningu
             if getattr(model, "hcr_type_gate", None) is not None:
                 gate = model.hcr_type_gate.detach().cpu()
 
@@ -649,9 +592,7 @@ def main(cfg: DictConfig) -> None:
                 if gate.size(1) == len(block_names) + 1:
                     block_names.append("triple")
 
-                # Jesli brama nie ruszyla sie z wartosci poczatkowej, lim moze
-                # byc zerem - vmin=vmax daje pusty obraz, a to jest wlasnie
-                # przypadek, ktory chcemy zobaczyc.
+                # HCR gate matrix
                 lim = max(float(gate.abs().max()), 1e-6)
                 fig, ax = plt.subplots(figsize=(6, 8))
                 im = ax.imshow(gate.numpy(), aspect="auto", cmap="RdBu_r",
