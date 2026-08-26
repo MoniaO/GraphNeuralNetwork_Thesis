@@ -262,4 +262,4 @@ data/processed/
 *.out
 *.run.xml
 *.synctex.gz
-*.toc
+*.tocsrc/data/old_approach
