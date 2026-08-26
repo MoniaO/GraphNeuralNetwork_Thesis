@@ -1,6 +1,6 @@
 #folder old approach
-src/data/old_approach
-src/models/old_approach
+src/data/old\ approach
+src/models/old\ approach
 configs/model/model_old_approach
 
 # Byte-compiled / optimized / DLL files
@@ -263,3 +263,4 @@ data/processed/
 *.run.xml
 *.synctex.gz
 *.tocsrc/data/old_approach
+src/models/old_approach
