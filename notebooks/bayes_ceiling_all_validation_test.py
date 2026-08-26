@@ -1,4 +1,12 @@
-"""Compute oracle AUROC and AUPRC ceilings for all, validation, and test cohorts."""
+"""Compute oracle ceilings for all, validation, and test cohorts.
+
+Ranking ceilings:
+  - AUROC and AUPRC from true posterior probabilities p(y=1|x).
+
+Bayes error ceiling (symmetric 0-1 loss):
+  - R* = E[min(p, 1-p)] using oracle posteriors from the known DAG.
+  - Empirical Bayes error applies the MAP rule (predict 1 iff p >= 0.5).
+"""
 
 from __future__ import annotations
 
@@ -15,6 +23,8 @@ NODES_PATH = Path("/Users/monika/data/synthetic_pharmacotherapy_v3_nodes.csv")
 EDGES_PATH = Path("/Users/monika/data/synthetic_pharmacotherapy_v3_edges_audited.csv")
 SPLITS_PATH = Path("/Users/monika/data/splits/patient_splits_v3.csv")
 OUTPUT_PATH = Path("/Users/monika/data/bayes_ceiling_clean_all_validation_test.csv")
+SUMMARY_OUTPUT_PATH = Path("/Users/monika/data/bayes_ceiling_summary_by_endpoint.csv")
+SUMMARY_LATEX_PATH = Path("/Users/monika/data/bayes_ceiling_summary_by_endpoint.tex")
 
 COHORTS = ("all", "validation", "test")
 TARGET_ENDPOINT = None  # E.g. "AKI"; use None for every clinical endpoint.
@@ -30,6 +40,7 @@ ENDPOINT_TYPE = "clinical_endpoint"
 DEFAULT_EFFECT = 0.5
 DEFAULT_SIGN = 1.0
 PATIENT_ID = "patient_id"
+BAYES_THRESHOLD = 0.5
 
 
 def logit(p: float | np.ndarray) -> float | np.ndarray:
@@ -151,6 +162,31 @@ def oracle_scores(
     return sigmoid(eta), used_parent_count, missing_parents
 
 
+def bayes_error_ceiling(posteriors: np.ndarray) -> float:
+    """Theoretical Bayes error: R* = E[min(p, 1 - p)] for symmetric 0-1 loss."""
+    p = np.asarray(posteriors, dtype=float)
+    return float(np.mean(np.minimum(p, 1.0 - p)))
+
+
+def bayes_classifier_predictions(
+    posteriors: np.ndarray,
+    threshold: float = BAYES_THRESHOLD,
+) -> np.ndarray:
+    """MAP classifier for binary labels: predict 1 iff p >= threshold."""
+    p = np.asarray(posteriors, dtype=float)
+    return (p >= threshold).astype(int)
+
+
+def empirical_bayes_error(
+    posteriors: np.ndarray,
+    labels: np.ndarray,
+    threshold: float = BAYES_THRESHOLD,
+) -> float:
+    """Observed 0-1 loss of the Bayes classifier on a finite sample."""
+    predictions = bayes_classifier_predictions(posteriors, threshold=threshold)
+    return float(np.mean(predictions != np.asarray(labels, dtype=int)))
+
+
 def compute_cohort_results(
     data: pd.DataFrame,
     cohort: str,
@@ -168,6 +204,8 @@ def compute_cohort_results(
             incoming=incoming,
         )
         labels = data[endpoint].to_numpy(int)
+        bayes_error = bayes_error_ceiling(scores)
+        bayes_error_observed = empirical_bayes_error(scores, labels)
 
         records.append(
             {
@@ -178,12 +216,75 @@ def compute_cohort_results(
                 "prevalence": float(labels.mean()),
                 "auc_ceiling": roc_auc(labels, scores),
                 "auprc_ceiling": average_precision(labels, scores),
+                "bayes_error_ceiling": bayes_error,
+                "empirical_bayes_error": bayes_error_observed,
+                "accuracy_oracle": 1.0 - bayes_error_observed,
                 "n_parents_used": n_parents_used,
                 "missing_parents": ",".join(missing_parents),
             }
         )
 
     return pd.DataFrame.from_records(records)
+
+
+def build_endpoint_summary(results: pd.DataFrame) -> pd.DataFrame:
+    """Pivot Bayes error and oracle accuracy to one row per endpoint."""
+    subset = results[
+        ["endpoint", "cohort", "bayes_error_ceiling", "accuracy_oracle", "prevalence"]
+    ].copy()
+
+    wide = subset.pivot_table(
+        index="endpoint",
+        columns="cohort",
+        values=["bayes_error_ceiling", "accuracy_oracle", "prevalence"],
+        aggfunc="first",
+    )
+    wide.columns = [f"{metric}__{cohort}" for metric, cohort in wide.columns]
+    wide = wide.reset_index()
+
+    column_order = ["endpoint"]
+    for cohort in COHORTS:
+        column_order.extend(
+            [
+                f"prevalence__{cohort}",
+                f"bayes_error_ceiling__{cohort}",
+                f"accuracy_oracle__{cohort}",
+            ]
+        )
+    existing = [col for col in column_order if col in wide.columns]
+    return wide[existing].sort_values("endpoint").reset_index(drop=True)
+
+
+def summary_to_latex(summary: pd.DataFrame) -> str:
+    """Render a booktabs table with Bayes error and oracle accuracy per cohort."""
+    rows: list[str] = []
+    for _, row in summary.iterrows():
+        cells = [str(row["endpoint"]).replace("_", r"\_")]
+        for cohort in COHORTS:
+            err = row[f"bayes_error_ceiling__{cohort}"]
+            acc = row[f"accuracy_oracle__{cohort}"]
+            cells.append(f"{err:.4f}")
+            cells.append(f"{100.0 * acc:.2f}\\%")
+        rows.append(" & ".join(cells) + r" \\")
+    header = (
+        r"\begin{table}[htbp]" "\n"
+        r"  \centering" "\n"
+        r"  \caption{Bayes error ceiling and oracle accuracy by clinical endpoint.}" "\n"
+        r"  \label{tab:bayes-ceiling-by-endpoint}" "\n"
+        r"  \small" "\n"
+        r"  \begin{tabular}{lcccccc}" "\n"
+        r"    \toprule" "\n"
+        r"    & \multicolumn{2}{c}{All} & \multicolumn{2}{c}{Validation} & \multicolumn{2}{c}{Test} \\" "\n"
+        r"    Endpoint & Min error & Acc. & Min error & Acc. & Min error & Acc. \\" "\n"
+        r"    \midrule" "\n"
+    )
+    body = "\n".join(f"    {line}" for line in rows)
+    footer = (
+        r"    \bottomrule" "\n"
+        r"  \end{tabular}" "\n"
+        r"\end{table}"
+    )
+    return header + body + "\n" + footer
 
 
 def main() -> None:
@@ -264,6 +365,10 @@ def main() -> None:
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     results.to_csv(OUTPUT_PATH, index=False)
 
+    summary = build_endpoint_summary(results)
+    summary.to_csv(SUMMARY_OUTPUT_PATH, index=False)
+    SUMMARY_LATEX_PATH.write_text(summary_to_latex(summary), encoding="utf-8")
+
     display_columns = [
         "cohort",
         "endpoint",
@@ -272,6 +377,9 @@ def main() -> None:
         "prevalence",
         "auc_ceiling",
         "auprc_ceiling",
+        "bayes_error_ceiling",
+        "empirical_bayes_error",
+        "accuracy_oracle",
         "n_parents_used",
         "missing_parents",
     ]
@@ -281,6 +389,13 @@ def main() -> None:
     print(results[display_columns].to_string(index=False))
     print("=" * 120)
     print(f"Saved: {OUTPUT_PATH}")
+    print()
+    print("Summary per endpoint (Bayes error ceiling + oracle accuracy)")
+    print("=" * 120)
+    print(summary.to_string(index=False))
+    print("=" * 120)
+    print(f"Saved summary CSV: {SUMMARY_OUTPUT_PATH}")
+    print(f"Saved summary LaTeX: {SUMMARY_LATEX_PATH}")
 
 
 if __name__ == "__main__":

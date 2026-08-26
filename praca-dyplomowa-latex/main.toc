@@ -1,0 +1,42 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{List of Symbols and Abbreviations}{9}{section*.3}%
+\contentsline {section}{\numberline {1\relax .\enspace }Introduction}{10}{section.1}%
+\contentsline {section}{\numberline {2\relax .\enspace }Main objective}{11}{section.2}%
+\contentsline {section}{\numberline {3\relax .\enspace }Related work}{12}{section.3}%
+\contentsline {subsection}{\numberline {3.1\relax .\enspace }Knowledge graphs}{12}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2\relax .\enspace }Graph Neural Networks}{13}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1\relax .\enspace }GraphSAGE}{13}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2\relax .\enspace }Relational Graph Convolutional Network}{14}{subsubsection.3.2.2}%
+\contentsline {subsubsection}{\numberline {3.2.3\relax .\enspace }Transformer-based graph convolutions}{14}{subsubsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.3\relax .\enspace }HCR}{16}{subsection.3.3}%
+\contentsline {section}{\numberline {4\relax .\enspace }Dataset}{17}{section.4}%
+\contentsline {subsection}{\numberline {4.1\relax .\enspace }Synthethic dataset}{17}{subsection.4.1}%
+\contentsline {subsubsection}{\numberline {4.1.1\relax .\enspace }Knowledge graph}{17}{subsubsection.4.1.1}%
+\contentsline {subsubsection}{\numberline {4.1.2\relax .\enspace }Patient data}{19}{subsubsection.4.1.2}%
+\contentsline {subsubsection}{\numberline {4.1.3\relax .\enspace }Evaluation scenarios}{23}{subsubsection.4.1.3}%
+\contentsline {subsubsection}{\numberline {4.1.4\relax .\enspace }Resulting patient-level dataset}{23}{subsubsection.4.1.4}%
+\contentsline {subsection}{\numberline {4.2\relax .\enspace }Benchmark Dataset}{25}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1\relax .\enspace }Last-FM dataset}{25}{subsubsection.4.2.1}%
+\contentsline {subsubsection}{\numberline {4.2.2\relax .\enspace }Hetionet knowledge graph}{25}{subsubsection.4.2.2}%
+\contentsline {section}{\numberline {5\relax .\enspace }Main Framework}{26}{section.5}%
+\contentsline {subsection}{\numberline {5.1\relax .\enspace }Link prediction in Graph Reconstruction}{27}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2\relax .\enspace }Endpoint prediction}{27}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {5.2.1\relax .\enspace }Data Representation}{27}{subsubsection.5.2.1}%
+\contentsline {subsubsection}{\numberline {5.2.2\relax .\enspace }Model architecture}{29}{subsubsection.5.2.2}%
+\contentsline {subsubsection}{\numberline {5.2.3\relax .\enspace }Statistical evidence branch}{30}{subsubsection.5.2.3}%
+\contentsline {subsubsection}{\numberline {5.2.4\relax .\enspace }Training setup}{33}{subsubsection.5.2.4}%
+\contentsline {section}{\numberline {6\relax .\enspace }Experiments results}{34}{section.6}%
+\contentsline {subsection}{\numberline {6.1\relax .\enspace }Link prediction in graph reconstuction}{34}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2\relax .\enspace }Endpoint prediction}{35}{subsection.6.2}%
+\contentsline {subsubsection}{\numberline {6.2.1\relax .\enspace }Architecture}{35}{subsubsection.6.2.1}%
+\contentsline {subsubsection}{\numberline {6.2.2\relax .\enspace }HCR configuration}{37}{subsubsection.6.2.2}%
+\contentsline {subsubsection}{\numberline {6.2.3\relax .\enspace }Results per endpoint}{41}{subsubsection.6.2.3}%
+\contentsline {section}{\numberline {7\relax .\enspace }Models benchmark}{42}{section.7}%
+\contentsline {subsection}{\numberline {7.1\relax .\enspace }Link prediction}{43}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2\relax .\enspace }Hetionet knowledge graph}{44}{subsection.7.2}%
+\contentsline {subsubsection}{\numberline {7.2.1\relax .\enspace }Data Representation}{45}{subsubsection.7.2.1}%
+\contentsline {subsubsection}{\numberline {7.2.2\relax .\enspace }Results}{45}{subsubsection.7.2.2}%
+\contentsline {section}{\numberline {8\relax .\enspace }Conclusions}{49}{section.8}%
+\contentsline {section}{References}{55}{section*.45}%
+\contentsline {section}{List of Figures}{57}{section*.45}%
+\contentsline {section}{List of Tables}{58}{section*.45}%
