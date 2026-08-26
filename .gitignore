@@ -1,3 +1,8 @@
+#folder old approach
+src/data/old_approach
+src/models/old_approach
+configs/model/model_old_approach
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
