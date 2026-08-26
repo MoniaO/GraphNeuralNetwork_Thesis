@@ -1,7 +1,0 @@
-# configs/model/hetero_sage.yaml
-# Task A architecture: colleague's Native Hetero GraphSAGE encoder + LinkDecoder.
-name: hetero_sage
-conv_type: hetero_sage
-hidden_channels: 32
-num_layers: 2   # fixed at 2 in HeteroReconGNN today; kept here for run-name logging
-                # and as the natural knob to sweep for oversmoothing experiments

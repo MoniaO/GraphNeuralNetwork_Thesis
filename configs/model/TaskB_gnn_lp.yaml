@@ -1,9 +1,0 @@
-name: gnn_lp
-conv_type: gcn
-hidden_dim: 64
-num_layers: 3
-dropout: 0.2
-batch_norm: true
-activation: relu
-aggr: sum #how to join the messages from different edge types, can be sum, mean, max
-heads: 4
