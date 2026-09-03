@@ -1,0 +1,31 @@
+\begin{tikzpicture}[
+  font=\scriptsize,
+  >=Stealth,
+  node/.style={draw, rounded corners=2pt, align=center, inner sep=2.5pt, minimum height=0.55cm},
+  drug/.style={node, fill=blue!12},
+  mech/.style={node, fill=orange!14},
+  adr/.style={node, fill=yellow!20},
+  endp/.style={node, fill=green!14},
+  ctx/.style={node, fill=gray!12},
+  arr/.style={->, thick, draw=gray!70},
+  cand/.style={->, thick, dashed, draw=red!65}
+]
+\node[font=\bfseries\footnotesize] at (4.2,4.55) {Example subgraph from GSN v3 (Task~A)};
+\node[ctx] (ckd) at (0.2,3.6) {\texttt{ckd}};
+\node[drug] (nsaid) at (0.2,2.4) {\texttt{nsaid}};
+\node[drug] (acei) at (0.2,1.2) {\texttt{acei\_arb}};
+\node[drug] (diur) at (0.2,0.2) {\texttt{diuretic}};
+\node[mech] (rrp) at (3.4,2.4) {\texttt{reduced\_renal}\\\texttt{\_perfusion}};
+\node[mech] (vol) at (3.4,0.5) {\texttt{volume}\\\texttt{\_depletion}};
+\node[adr] (creat) at (6.4,1.8) {\texttt{creatinine}\\\texttt{\_rise}};
+\node[endp] (aki) at (8.8,1.8) {\texttt{AKI}};
+\draw[arr] (ckd) -- (rrp);
+\draw[arr] (nsaid) -- node[above, font=\tiny]{\texttt{drug\_to\_mech.}} (rrp);
+\draw[arr] (acei) -- (rrp);
+\draw[arr] (diur) -- (vol);
+\draw[arr] (rrp) -- (creat);
+\draw[arr] (vol) -- (creat);
+\draw[arr] (creat) -- node[above, font=\tiny]{\texttt{adr\_to\_endp.}} (aki);
+\draw[cand] (nsaid.east) to[bend left=18] node[above, font=\tiny, text=red!70!black]{candidate $A\to G$} (aki.west);
+\node[anchor=west, align=left, font=\tiny] at (5.2,0.15) {solid: message-passing edges in $G_{\mathrm{train}}$\\dashed: held-out candidate (not in MP graph)};
+\end{tikzpicture}

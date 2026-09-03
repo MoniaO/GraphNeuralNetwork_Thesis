@@ -1,0 +1,342 @@
+\chapter{Task A. Directed Link Prediction on the Synthetic Pharmacotherapy Graph}
+\label{ch:taskA-rozwiazanie}
+\label{ch:taskA-ewaluacja}
+\label{ch:taskA-benchmark}
+
+Task~A asks whether directed link prediction on a heterogeneous pharmacotherapy graph improves when a learned structural representation is combined with an explicit statistical description of patient-level dependence around each candidate edge.
+The structural branch encodes training topology; the statistical branch encodes empirical dependence estimated from training patients; a shared decoder fuses both sources into an edge score.
+
+\section{Problem Formulation}
+\label{sec:taskA-problem}
+
+We address directed link prediction among observable nodes of the Synthetic Pharmacotherapy Graph~v3 (Chapter~\ref{ch:dataset}).
+For a candidate directed edge $A\to G$, the model produces a score
+\begin{equation}
+\label{eq:taskA-score}
+s_{AG}=f_{\theta}(A,G;G_{\mathrm{train}},X_{\mathrm{train}}),
+\end{equation}
+where $G_{\mathrm{train}}$ is the message-passing graph available during training and $X_{\mathrm{train}}$ denotes the training-patient observations used to construct node features and pairwise statistical descriptors.
+The score is transformed through the sigmoid function,
+\begin{equation}
+\label{eq:taskA-objective}
+\hat{p}_{AG}=\sigma(s_{AG}),
+\end{equation}
+and the resulting value is used in the binary edge-classification objective.
+
+A positive label indicates that the directed relation is present in the audited graph, whereas a negative label denotes a type-allowed non-edge.
+The prediction is based on two complementary sources of evidence:
+\begin{itemize}
+\item \emph{graph structure}: the typed neighbourhood of $A$ and $G$ represented in $G_{\mathrm{train}}$;
+\item \emph{patient-derived statistical evidence}: empirical dependence patterns estimated from training patients for the local motif surrounding the candidate edge.
+\end{itemize}
+Directionality is determined by the ordered candidate definition and the graph schema, while the pairwise dependence coefficients provide statistical evidence about the variables involved in the candidate relation.
+
+\section{Task-Specific Data Preparation}
+\label{sec:taskA-data}
+
+The shared graph and patient scenarios are defined in Chapter~\ref{ch:dataset}.
+This section specifies how that resource is turned into prediction instances, a message-passing graph, and node features for Task~A.
+The candidate edge inventory is held fixed across observational scenarios, so scenario differences arise from changes in patient-level observability rather than from changes in which edges are scored.
+
+\subsection{Candidate edges and splits}
+\label{sec:taskA-candidates}
+
+After restricting the audited graph to observable nodes, the candidate set contains $366$ positive directed edges and $1{,}098$ negatives ($r_{\mathrm{neg}}=3$), for $1{,}464$ candidates in total.
+Negatives are drawn from non-edges that satisfy
+\begin{equation}
+\label{eq:taskA-neg-conditions}
+u\neq v,\qquad (u,v)\notin E^{+},\qquad \bigl(\mathrm{type}(u),\mathrm{type}(v)\bigr)\in T_{\mathrm{allowed}},
+\end{equation}
+rather than from a uniform draw over all ordered node pairs.
+
+Candidates are split independently of the patient split, at edge level, into train/validation/test partitions with proportions $70/15/15$, stratified by the binary edge label.
+This yields $256/55/55$ positives and $768/165/165$ negatives.
+Patient records are not prediction instances: the training-patient partition is used only to estimate node statistics and pairwise dependence, while labels are attached to candidate edges.
+
+\subsection{Message-passing graph}
+\label{sec:taskA-mp-graph}
+
+The HGT encoder operates on a heterogeneous training graph $G_{\mathrm{train}}$ that is smaller than the full audited graph.
+Only observable nodes enter the encoder; latent generator nodes are excluded.
+Node types and relation names follow the audited v3 ontology (Chapter~\ref{ch:dataset}).
+
+For each positive training relation $u\xrightarrow{r}v$, an auxiliary reverse relation $v\xrightarrow{r^{-1}}u$ is added for message passing.
+Reverse relations have distinct identities and enable bidirectional information flow without implying that the underlying mechanistic relation is reversible.
+
+Message passing uses only positive training edges from the candidate set.
+Validation positives, test positives, and all negative candidates are excluded from $G_{\mathrm{train}}$.
+Held-out candidates are scored by referencing their endpoints in the node embedding table; they are never inserted as edges into $G_{\mathrm{train}}$.
+
+\subsection{Node features}
+\label{sec:taskA-node-feats}
+
+Each observable node $v$ receives a three-dimensional empirical feature vector computed from training patients only,
+\begin{equation}
+\label{eq:taskA-node-x}
+x_v=
+\bigl[
+\mu^{\mathrm{train}}_v,\;
+\sigma^{\mathrm{train}}_v,\;
+m^{\mathrm{train}}_v
+\bigr],
+\end{equation}
+where $\mu^{\mathrm{train}}_v$ and $\sigma^{\mathrm{train}}_v$ are the train-patient mean and standard deviation of $v$, and $m^{\mathrm{train}}_v$ is the train missingness rate.
+Identity embeddings are not used.
+Before message passing, each node type is projected independently,
+\begin{equation}
+\label{eq:taskA-input-proj}
+h_v^{(0)}=\mathrm{Dropout}\!\bigl(
+\mathrm{ReLU}\bigl(
+\mathrm{LayerNorm}(W_{\mathrm{type}(v)}\,x_v)
+\bigr)\bigr),
+\end{equation}
+with $W_{\mathrm{type}(v)}:\mathbb{R}^{3}\to\mathbb{R}^{d}$.
+Input statistics are fixed after preprocessing; projection and convolution weights are learned.
+
+\section{Model Architecture}
+\label{sec:taskA-arch}
+
+\subsection{Architecture Overview}
+\label{sec:taskA-arch-overview}
+
+Figure~\ref{fig:taskA-arch-overview} summarizes the full model.
+The structural branch maps $G_{\mathrm{train}}$ through HGT to a graph pair representation $g_{\mathrm{graph}}$.
+The statistical branch maps the local $AZ$/$AG$/$ZG$ motif through role-specific encoders to $g_{\mathrm{stat}}$.
+Concatenation and a shallow decoder produce the edge logit.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_taskA_arch_simplified.png}
+\caption{Solution architecture for Task~A.
+Patient records yield train-only node features $x_v=[\mu,\sigma,m]$ and pair statistics; candidate edges are split independently at edge level.
+The structural branch maps $G_{\mathrm{train}}$ through HGT to $g_{\mathrm{graph}}\in\mathbb{R}^{64}$; the statistical branch encodes roles $AZ$/$AG$/$ZG$ with separate encoders and masks absent roles to $g_{\mathrm{stat}}\in\mathbb{R}^{24}$; fusion yields an edge logit.}
+\label{fig:taskA-arch-overview}
+\end{figure}
+
+\subsection{Structural Branch}
+\label{sec:taskA-hgt}
+
+The graph encoder is a Heterogeneous Graph Transformer~\cite{hu2020hgt} with
+\begin{equation}
+\label{eq:taskA-hgt-hparams}
+d=32,\qquad L=2,\qquad H=4,
+\end{equation}
+dropout $0.25$, LeakyReLU activations, and a residual connection with LayerNorm after each convolution layer.
+These residual links are standard skip connections inside the encoder; they are not studied as an anti-oversmoothing intervention.
+
+After $L$ layers, each observable node has an embedding $z_v\in\mathbb{R}^{32}$.
+For candidate $A\to G$, the ordered pair representation is
+\begin{equation}
+\label{eq:taskA-qag}
+q_{AG}=\bigl[z_{A}\parallel z_{G}\parallel z_{A}\odot z_{G}\parallel \lvert z_{A}-z_{G}\rvert\bigr]
+\in\mathbb{R}^{128}.
+\end{equation}
+An MLP graph branch ($128\to 128\to 64$ with GELU and LayerNorm) compresses $q_{AG}$ to
+\begin{equation}
+g_{\mathrm{graph}}\in\mathbb{R}^{64}.
+\end{equation}
+
+\subsection{Statistical Evidence Branch}
+\label{sec:taskA-hcr}
+
+The general Hierarchical Correlation Reconstruction (HCR) formulation is stated in Chapter~\ref{ch:related-work}.
+Task~A uses an HCR-inspired fixed-width pair vector so that binary, count, continuous and mixed pairs share one downstream interface.
+HCR coefficients quantify empirical dependence; they do not identify causal direction.
+
+For an ordered pair $(U,V)$, let $I_{UV}$ be the set of training patients with both variables observed and $n=|I_{UV}|$.
+Type-specific orthonormal bases $\{\phi^{(U)}_{j}\}$ and $\{\phi^{(V)}_{k}\}$ yield coefficients
+\begin{equation}
+\label{eq:taskA-ajk}
+a_{jk}
+=
+\frac{1}{n}
+\sum_{i\in I_{UV}}
+\phi^{(U)}_{j}(U_i)\,
+\phi^{(V)}_{k}(V_i),
+\end{equation}
+zero-padded to a $4\times 4$ matrix and stored in the first $16$ dimensions of
+\begin{equation}
+\label{eq:taskA-h40}
+h(U,V)\in\mathbb{R}^{40}.
+\end{equation}
+A binary variable contributes one non-constant contrast; continuous and jittered count variables may contribute up to four low-order basis functions, so the active block ranges from $1\times 1$ (binary--binary) to $4\times 4$.
+
+The remaining dimensions summarize dependence magnitude and complexity, marginal context, joint activity and rarity, estimability, and variable type (Table~\ref{tab:taskA-hcr40}).
+All quantities are fitted on training patients only.
+An estimability indicator distinguishes unsupported pairs (coefficients zeroed) from genuine near-zero dependence.
+Most components are intrinsically bounded or constructed in standardized bases; LayerNorm is applied inside the nonlinear pair encoder.
+Complete formula-level definitions of the type-specific bases and all $40$ vector components are provided in Appendix~\ref{app:hcr-details}.
+
+\begin{table}[!ht]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Grouped composition of the $40$-dimensional HCR-inspired pair representation.}
+\label{tab:taskA-hcr40}
+\begin{tabular}{@{}lcl@{}}
+\toprule
+Block & Dim.\ & Purpose \\
+\midrule
+HCR-inspired coefficients & $16$ & padded dependence-structure matrix $A_{\mathrm{pad}}$ \\
+Dependence summaries & $4$ & magnitude and complexity of retained coefficients \\
+Marginal context & $8$ & type-dependent descriptors of $U$ and $V$ \\
+Joint activity / rarity & $4$ & co-activation enrichment and rarity \\
+Support & $2$ & complete-case fraction and estimability flag \\
+Variable types & $6$ & one-hot types of $U$ and $V$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For binary--binary pairs, signed Pearson $\phi$ is the natural first-order dependence coefficient and corresponds to the lowest-order HCR contrast; richer blocks retain higher-order structure that a single scalar association cannot express.
+
+\subsection{Fusion and Prediction}
+\label{sec:taskA-fusion}
+
+For each candidate $A\to G$, a local context node $Z$ defines three ordered roles $AZ$, $AG$ and $ZG$ (source--context, candidate, context--target).
+The same $40$-dimensional construction is applied to each role, yielding a raw motif of $120$ dimensions.
+Each role is mapped by an independent MLP encoder
+\begin{equation}
+\label{eq:taskA-fr}
+f_{r}:\mathbb{R}^{40}\to\mathbb{R}^{16}\to\mathbb{R}^{8},
+\end{equation}
+followed by a hard role gate
+\begin{equation}
+\label{eq:taskA-role-gate}
+e_{r}=m_{r}\,f_{r}(h_{r}),\qquad m_{r}\in\{0,1\},
+\end{equation}
+so that absent roles (especially missing $Z$) contribute exactly zero.
+The statistical branch output is
+\begin{equation}
+\label{eq:taskA-gstat}
+g_{\mathrm{stat}}=[e_{AZ}\parallel e_{AG}\parallel e_{ZG}]\in\mathbb{R}^{24}.
+\end{equation}
+
+\begin{figure}[!ht]
+\centering
+\resizebox{0.62\textwidth}{!}{\input{figures/fig_taskA_motif.tex}}
+\caption{Role-aware motif for $A\to G$: three ordered pair roles, each with a separate encoder and role mask, concatenated to $g_{\mathrm{stat}}\in\mathbb{R}^{24}$.}
+\label{fig:taskA-motif}
+\end{figure}
+
+Fusion concatenates the branches,
+\begin{equation}
+g_{\mathrm{fusion}}=\bigl[g_{\mathrm{graph}}\parallel g_{\mathrm{stat}}\bigr]\in\mathbb{R}^{88},
+\end{equation}
+and maps $88\to 64\to 1$ (GELU, LayerNorm, dropout) to a single edge logit.
+
+\section{Training and Evaluation}
+\label{sec:taskA-train-eval}
+
+\subsection{Training Objective}
+\label{sec:taskA-loss}
+
+For each candidate $i$ with logit $s_i$ and label $y_i\in\{0,1\}$,
+\begin{equation}
+\label{eq:taskA-sigmoid}
+\hat{p}_{i}=\sigma(s_{i}),
+\end{equation}
+and parameters are optimized by weighted binary cross-entropy,
+\begin{equation}
+\label{eq:taskA-bce}
+\mathcal{L}
+=
+-\frac{1}{N}
+\sum_{i=1}^{N}
+\bigl[
+w_{+}\, y_{i}\log\hat{p}_{i}
++(1-y_{i})\log(1-\hat{p}_{i})
+\bigr],
+\end{equation}
+with $w_{+}=N_{\mathrm{neg}}/N_{\mathrm{pos}}\approx 3$ under the $3{:}1$ negative-sampling ratio.
+Weighting balances class contributions to the loss; it does not change the candidate inventory.
+
+\subsection{Evaluation Metrics}
+\label{sec:taskA-ap}
+
+Model selection uses validation Average Precision (AP)~\cite{sklearn,davis2006},
+\begin{equation}
+\label{eq:taskA-ap}
+\mathrm{AP}
+=
+\sum_{k}
+\bigl(R_{k}-R_{k-1}\bigr)\,P_{k},
+\end{equation}
+where $P_k$ and $R_k$ are precision and recall at successive thresholds on the ranked score list ($R_0=0$).
+This is the Average Precision summary of the ranked prediction list used throughout the thesis.
+AP is appropriate for imbalanced link prediction because it emphasizes precision as recall increases.
+The sealed test set is never used to choose architecture, representation or hyperparameters.
+When discrete metrics such as $F_1$ are reported, the classification threshold is selected on validation only.
+
+\subsection{Model and Training Configuration}
+\label{sec:taskA-train-config}
+
+Table~\ref{tab:taskA-train} lists the model and training configuration of the full model.
+Six observational scenarios are evaluated; the official macro averages five scenarios and excludes the hidden-confounder scenario, which is reported for completeness only.
+
+\begin{table}[!ht]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Task~A: model and training configuration.}
+\label{tab:taskA-train}
+\begin{tabular}{ll}
+\toprule
+Setting & Value \\
+\midrule
+Optimizer & Adam~\cite{kingma2015adam} \\
+Learning rate & $10^{-3}$ \\
+Weight decay & $5\times 10^{-4}$ \\
+Max epochs & $200$ \\
+Early stopping & patience $40$ on validation AP \\
+Gradient clip & $1.0$ (global norm) \\
+Normalization & LayerNorm in HGT and decoder blocks~\cite{ba2016layernorm} \\
+HGT & $d=32$, $L=2$, $H=4$, dropout $0.25$~\cite{hu2020hgt} \\
+Statistical branch & HCR-inspired $40$D pair vectors; MLP role encoders \\
+Fusion & $64+24=88$ dimensional late fusion \\
+Training seeds & five fixed seeds \\
+Selection metric & validation AP \\
+Official macro & mean over five scenarios (excludes hidden confounder) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Experimental Results}
+\label{sec:taskA-results}
+
+Results address three questions: which graph backbone to use, how much explicit statistical context contributes, and how the full model performs across observational scenarios.
+Architecture and hyperparameters were selected on validation AP before sealed-test reporting.
+
+\subsection{Architecture Comparison}
+\label{sec:taskA-stage-a}
+
+With the statistical branch disabled and a common decoder, HGT~\cite{hu2020hgt}, R-GCN~\cite{schlichtkrull2018rgcn}, GraphSAGE~\cite{hamilton2017graphsage} and GATv2~\cite{brody2022gatv2} were compared on the clean scenario.
+Mean validation AP was approximately $0.729$ (HGT), $0.697$ (R-GCN), $0.671$ (GraphSAGE) and $0.650$ (GATv2).
+HGT was retained as the structural encoder for all subsequent experiments.
+
+\subsection{Contribution of Statistical Evidence}
+\label{sec:taskA-stage-c}
+
+With HGT fixed, explicit pairwise statistics were enriched progressively on the clean scenario (three seeds).
+Validation AP rose from approximately $0.719$ with no pairwise statistics, to $0.840$ with signed Pearson $\phi$, $0.853$ with normalized mutual information, $0.913$ with an enriched multi-component representation, and $0.917$ with the full $40$-dimensional HCR-inspired vector.
+The graph-only value $\approx 0.719$ in this ablation is not identical to the $\approx 0.729$ reported in the backbone comparison above: the former is the HGT-only arm of the statistical-enrichment ladder under a shared decoder and seed set, whereas the latter compares alternative graph encoders under a matched backbone-selection protocol.
+Across the five official scenarios the full representation reached a macro validation AP of approximately $0.915$.
+Removing the four derived dependence-summary dimensions reduced validation AP by about $0.008$ on average; the full vector was retained.
+
+\subsection{Final Evaluation}
+\label{sec:taskA-final}
+
+Figure~\ref{fig:taskA-final-metrics} reports the full model under the official multi-scenario protocol.
+Official macro test AP is $0.894$ and test AUROC is $0.967$.
+Performance remains stable under selection bias, noisy documentation and related observational artefacts; the largest train--test AP gap appears in the multi-hospital scenario.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_final_metrics_per_scenario.pdf}
+\caption{Task~A: final performance across observational scenarios.
+Panel~(a): AP on the training partition (at the validation-selected epoch), on validation, and on the sealed test set.
+Panel~(b): AUROC on validation and sealed test.
+Bars are means over five training seeds; whiskers are one standard deviation.
+The hatched scenario is excluded from official macro averages.
+Official macro test AP is $0.894$ and test AUROC is $0.967$ (five-scenario mean; hidden confounder excluded).}
+\label{fig:taskA-final-metrics}
+\end{figure}

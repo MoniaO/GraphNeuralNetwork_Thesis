@@ -1,0 +1,77 @@
+\newpage % Rozdziały zaczynamy od nowej strony.
+\section{Related work}
+
+In this section, we review the concepts and methods underlying both tasks
+addressed in this thesis: knowledge graphs as structured medical knowledge,
+graph neural networks for representation learning on heterogeneous graphs,
+and Hierarchical Correlation Reconstruction (HCR) as a statistical complement
+to learned graph representations.
+We begin with graph-based knowledge representation, then describe deep
+learning on graphs, and finally introduce HCR.
+
+\subsection{Knowledge graphs}
+\label{subsec:related-kg}
+
+Knowledge graphs represent structured knowledge through entities and the
+relations between them.
+Formally, a knowledge graph $G$ is a set of triples
+
+\begin{definition}[Knowledge Graph]
+\label{def:kg}
+$$G \subseteq \mathcal{V} \times \mathcal{R} \times \mathcal{V},$$
+where $\mathcal{V}$ denotes the set of entities (nodes) and $\mathcal{R}$
+the set of relation types (edge labels). Each triple $(h, r, t) \in G$
+corresponds to a directed, labeled edge $h \xrightarrow{r} t$, where $h$
+and $t$ are referred to as the head and tail entity, respectively
+\textcite{hogan2021knowledge}.
+\end{definition}
+
+The key benefit of knowledge graphs is that they provide an interlinked
+representation of knowledge in a human- and machine-understandable format
+(\textcite{barrasa2023building}).
+In biomedical applications, entities may represent drugs, diseases, genes,
+proteins, mechanisms, patient characteristics, or clinical outcomes, while
+edges describe typed relationships between them.
+Such graphs are naturally heterogeneous, because both nodes 
+and relations can carry different semantic types.
+This motivates the heterogeneous-graph formulation:
+
+\begin{definition}[Heterogeneous Graph]
+\label{def:heterokg}
+A heterogeneous graph extends Definition~\ref{def:kg} with explicit type
+information and is defined as a quadruple
+$$G = (V, E, \tau, \phi),$$
+where $V$ is the set of nodes, $E \subseteq V \times V$ is the set of
+edges, and $\tau: V \rightarrow \mathcal{T}_V$, $\phi: E \rightarrow
+\mathcal{T}_E$ are type-mapping functions assigning each node and edge a
+type from finite type sets $\mathcal{T}_V$ and $\mathcal{T}_E$
+\cite{hu2020heterogeneous}. For an edge $e = (u, v) \in E$, the triple
+$\bigl(\tau(u), \phi(e), \tau(v)\bigr)$ defines its schema-level relation,
+which corresponds directly to the \texttt{edge\_type} representation used
+in the \texttt{HeteroData} object in this thesis.
+\end{definition}
+
+Knowledge graphs have been widely applied in biomedical research,
+particularly for integrating information from multiple sources and
+supporting drug discovery (\textcite{maclean2021knowledge}).
+However, many biomedical knowledge graphs primarily encode \emph{associations}
+extracted from literature and curated databases, not
+patient-specific empirical realizations of the mechanisms they describe.
+Popular graph-based methods therefore often ``highlight biological
+associations, failing to model causal relationships in complex dynamic
+biological systems'' \cite{maclean2021knowledge}.
+Recent work has increasingly considered integrating knowledge graphs with
+causal or mechanistic representations
+\cite{toonsi2025causal,lyu2023causal,mesinovic2026causalgnn}.
+
+Beyond biomedicine, knowledge graphs are also combined with empirical
+interaction data in recommendation systems, where models such as KGAT
+propagate representations over a collaborative knowledge graph built from
+user--item interactions and external knowledge \cite{wang2019kgat}.
+The Last-FM benchmark from this line of work is used as a cross-domain
+proxy in link prediction task.
+The reliability of this benchmark was subsequently questioned by
+Shehzad et al.\ \cite{shehzad2025reproducibility} in a reproducibility
+study of intent-aware recommendation models; the corrected Last-FM* split
+used in this thesis is described in Section~\ref{sec:models-benchmark}.
+

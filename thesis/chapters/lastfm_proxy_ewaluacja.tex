@@ -1,0 +1,98 @@
+\chapter{Last-FM* Model Training and Evaluation}
+\label{ch:lastfm-ewaluacja}
+
+This chapter specifies the training objective, checkpoint selection and full-catalog validation used for the Last-FM* model of Chapter~\ref{ch:lastfm-proxy}.
+Sampled validation guides iterative training; full-catalog validation is the primary ranking evaluation on the eligible catalog.
+
+\section{Training Objective and Optimization}
+\label{sec:lastfm-train}
+
+For each training pair $i$ with label $y_i\in\{0,1\}$, the model produces a logit $s_i=s(u_i,X_i)$.
+The sigmoid-transformed quantity
+\begin{equation}
+\label{eq:lastfm-phat}
+\hat{p}_i=\sigma(s_i)
+\end{equation}
+is used inside the binary cross-entropy loss.
+It is a training transform of the ranking score, not an externally calibrated probability of future interaction.
+
+Training minimizes weighted binary cross-entropy,
+\begin{equation}
+\label{eq:lastfm-bce}
+\mathcal{L}
+=
+-\frac{1}{N}\sum_i
+\Bigl[
+w_{+}\,y_i\log\hat{p}_i
++(1-y_i)\log(1-\hat{p}_i)
+\Bigr],
+\end{equation}
+with positive-class weight
+\begin{equation}
+w_{+}=\frac{N_{\mathrm{neg}}}{N_{\mathrm{pos}}}.
+\end{equation}
+Under the frozen $4{:}1$ candidate construction of Section~\ref{sec:lastfm-negatives}, $w_{+}\approx 4$.
+The positive-class weight balances the aggregate contribution of positive and negative training examples to the optimization objective.
+This prevents the larger sampled-negative class from dominating the loss and encourages discrimination between observed interactions and sampled non-interactions.
+Weighting does not make the classes intrinsically more separable.
+
+Frozen optimization settings are:
+Adam with learning rate $10^{-3}$ and weight decay $10^{-4}$;
+ReduceLROnPlateau on sampled validation NDCG@20 (mode $\max$, factor $0.5$, patience $3$, threshold $10^{-4}$, minimum learning rate $6.25\times 10^{-5}$);
+batch size $4096$;
+minimum $15$ epochs and safety ceiling $120$ epochs (resolved training runs used an effective ceiling of $60$);
+early-stopping patience $8$ with $\mathrm{min\_delta}=10^{-4}$ on sampled NDCG@20;
+\texttt{float32} precision without automatic mixed precision;
+no gradient clipping.
+
+\section{Checkpoint Selection with Sampled NDCG@20}
+\label{sec:lastfm-sampled-val}
+
+Sampled validation provides a computationally efficient ranking signal during iterative training.
+It is used for checkpoint selection, learning-rate scheduling and early stopping.
+It is not the final ranking benchmark.
+
+For each validation positive interaction of a user, the candidate list contains that positive item together with $20$ sampled negatives drawn from items outside the user's known history and known positives, subject to a frozen per-user cap of at most $10$ validation positives.
+Relevance is binary on that list: the held-out positive is relevant; sampled negatives are non-relevant.
+NDCG@20 is then computed on this sampled candidate universe.
+
+\section{Full-Catalog Validation}
+\label{sec:lastfm-fullcatalog}
+
+Primary ranking evaluation uses the full eligible catalog
+\begin{equation}
+\label{eq:lastfm-Cu}
+\mathcal{C}_u=I\setminus H_u^{(\mathrm{model\_train})},
+\end{equation}
+where $I$ is the catalog and $H_u^{(\mathrm{model\_train})}$ is the set of items observed for $u$ in \texttt{model\_train}.
+Model-train seen items are masked; validation positives remain eligible; no sampled-negative approximation, popularity pruning or ANN pruning is applied.
+Ties are broken deterministically by lower item identifier when scores coincide.
+
+Let $P_u\subseteq\mathcal{C}_u$ denote the validation relevance set for user $u$.
+For a ranked list of length $K$,
+\begin{align}
+\mathrm{DCG@}K
+&=
+\sum_{k=1}^{K}\frac{2^{r_k}-1}{\log_2(k+1)},
+\label{eq:lastfm-dcg}\\
+\mathrm{IDCG@}K
+&=
+\sum_{k=1}^{|P_u^{\ast}|}\frac{2^{1}-1}{\log_2(k+1)},
+\label{eq:lastfm-idcg}\\
+\mathrm{NDCG@}K
+&=
+\frac{\mathrm{DCG@}K}{\mathrm{IDCG@}K},
+\label{eq:lastfm-ndcg}
+\end{align}
+where $r_k=1$ if the item at rank $k$ is relevant and $0$ otherwise, and $P_u^{\ast}$ is the ideal prefix of length $\min(K,|P_u|)$.
+Recall@K is
+\begin{equation}
+\label{eq:lastfm-recall}
+\mathrm{Recall@}K
+=
+\frac{|\{X\in\mathrm{Top}K(u)\}\cap P_u|}{|P_u|}.
+\end{equation}
+MRR is reported where applicable as the reciprocal rank of the first relevant item.
+
+Sampled and full-catalog NDCG@20 apply the same ranking metric to different candidate universes.
+The full-catalog protocol therefore represents a substantially more demanding ranking problem, and the numerical values are not directly comparable as measures of equal ranking difficulty.

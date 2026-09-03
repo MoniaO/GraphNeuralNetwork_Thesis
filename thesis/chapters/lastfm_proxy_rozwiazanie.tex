@@ -1,0 +1,533 @@
+\chapter{Cross-Domain Validation of Task A. Last-FM*}
+\label{ch:lastfm-proxy}
+\label{ch:lastfm-ewaluacja}
+\label{ch:lastfm-benchmark}
+
+Last-FM* serves as a cross-domain validation of the Task~A modelling pattern: a heterogeneous graph encoder combined with explicit candidate-specific empirical context.
+The transferred template is structural representation plus candidate-conditioned statistics fused in a decoder; the domain and prediction object change from pharmacotherapy edge classification to user--item ranking.
+
+\section{Problem Formulation}
+\label{sec:lastfm-problem}
+
+We consider an implicit-feedback user--item ranking problem on a heterogeneous collaborative knowledge graph built from Last-FM listening events and Freebase-style music relations.
+For a user $u$ and a candidate catalog item $X$, the model assigns a ranking score
+\begin{equation}
+\label{eq:lastfm-score}
+s(u,X)=f_{\theta}(u,X;G_{\mathrm{train}},D_{\mathrm{train}}),
+\end{equation}
+where $G_{\mathrm{train}}$ is the collaborative knowledge graph available to the model and $D_{\mathrm{train}}$ denotes the training interaction data.
+Higher scores indicate items ranked as more compatible with the user's observed training context.
+
+The methodological question is whether ranking improves when an HGT representation of collaborative graph structure is combined with explicit candidate-specific empirical context derived from user interactions.
+
+\section{Dataset and Collaborative Knowledge Graph}
+\label{sec:lastfm-data}
+
+\subsection{Leakage-corrected Last-FM*}
+\label{sec:lastfm-data-star}
+
+Experiments use Last-FM*, the leakage-corrected variant of the Last-FM benchmark associated with KGAT~\cite{wang2019kgat,shehzad2025lastfm}.
+Overlapping train--test interactions are removed and interactions are re-split, yielding zero train--test interaction overlap.
+Table~\ref{tab:lastfm-star-scale} compares the original dump with the corrected resource; Table~\ref{tab:lastfm-splits} states the working splits.
+
+\begin{table}[htbp]
+\centering
+\caption{Last-FM dump versus leakage-corrected Last-FM*.}
+\label{tab:lastfm-star-scale}
+\begin{tabular}{lrr}
+\toprule
+Quantity & Original Last-FM dump & Last-FM* \\
+\midrule
+Users & 23{,}566 & 23{,}529 \\
+Items & 48{,}123 & 48{,}123 \\
+Official train interactions & 1{,}289{,}003 & 1{,}235{,}905 \\
+Official test interactions & 423{,}635 & 306{,}914 \\
+Users with train/test overlap & 17{,}290 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Working splits used in the Last-FM* experiment. Official test remains sealed.}
+\label{tab:lastfm-splits}
+\begin{tabular}{lrl}
+\toprule
+Split & Interactions & Use \\
+\midrule
+model train & 1{,}111{,}803 & CKG construction, histories, statistical fitting, training \\
+validation & 124{,}102 & checkpoint selection and full-catalog validation \\
+test & 306{,}914 & sealed \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Validation is carved exclusively from the corrected training set under a fixed seed and a minimum-history constraint.
+Full-catalog validation uses 23{,}163 users with at least one validation positive.
+Working matrices contain binary implicit feedback only.
+
+\subsection{Collaborative knowledge graph}
+\label{sec:lastfm-ckg}
+
+The HGT encoder operates on a heterogeneous collaborative knowledge graph with two node classes: user and entity.
+Catalog items form a subset of the entity nodes; remaining entities come from the external music knowledge graph.
+
+Message-passing relations comprise user--item interaction edges from the model-train split (and auxiliary reverse relations), together with entity--entity knowledge-graph relations under a deterministic cap of 250{,}000 edges (and their reverses).
+Validation and test user--item interactions are absent from the message-passing graph.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_lastfm_kg_fragment_networkx.png}
+\caption{Illustrative fragment of the Last-FM* collaborative knowledge graph:
+a user, training interactions, and Freebase-style entity neighbours of catalog items.}
+\label{fig:lastfm-kg-fragment}
+\end{figure}
+
+\subsection{Training candidate pairs}
+\label{sec:lastfm-negatives}
+
+Positive training pairs are the observed model-train user--item interactions.
+For each positive pair, four negative user--item pairs are sampled ($r_{\mathrm{neg}}=4$), excluding the user's known interaction history and known positive items.
+The same candidate table is reused across representation ablations so that experiments change features rather than training examples.
+
+\section{Model Architecture}
+\label{sec:lastfm-arch}
+
+\subsection{Architecture Overview}
+\label{sec:lastfm-arch-overview}
+
+Figure~\ref{fig:lastfm-arch-overview} summarizes the complete model.
+An HGT encodes the collaborative knowledge graph; A5 and H3 supply candidate-specific empirical context; late fusion produces a main score; a zero-initialized LEG$_{K2}$ residual adds a second-order correction.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_lastfm_arch_simplified.png}
+\caption{Last-FM* architecture.
+Structural HGT yields $[q_{uX}\parallel\langle z_u,z_X\rangle]\in\mathbb{R}^{257}$.
+A5 uses $H_u$, $X$ and $N_X$; routed Top25 associations feed both H3 and LEG$_{K2}$, with LEG entering only as residual $\delta_{\mathrm{LEG}}$.
+Late fusion is $265$-dimensional ($\parallel$~=~concatenation; $\oplus$~=~residual addition).
+The right column summarizes training and the two development evaluation levels; the sealed external benchmark is defined in Section~\ref{sec:lastfm-train-eval}.}
+\label{fig:lastfm-arch-overview}
+\end{figure}
+
+\subsection{Structural Branch}
+\label{sec:lastfm-hgt}
+
+Each user and each entity receives a learnable embedding of dimension $d=64$, initialized with Xavier uniform weights and updated jointly with the decoder.
+HGT node inputs are therefore learned embeddings; popularity and co-occurrence statistics are not injected into these tables.
+
+The encoder uses
+\begin{equation}
+\label{eq:lastfm-hgt-hparams}
+d=64,\qquad L=2,\qquad H=2,
+\end{equation}
+with dropout $0.1$.
+After message passing on the training collaborative graph, let $z_u,z_X\in\mathbb{R}^{64}$ denote the embeddings of user $u$ and candidate item $X$.
+The ordered pair representation is
+\begin{equation}
+\label{eq:lastfm-qux}
+q_{uX}
+=
+\bigl[z_u \parallel z_X \parallel z_u\odot z_X \parallel |z_u-z_X|\bigr]
+\in\mathbb{R}^{256},
+\end{equation}
+together with the scalar interaction $d_{uX}=\langle z_u,z_X\rangle$, for $257$ structural dimensions in total.
+
+\subsection{Statistical Evidence Branch / Candidate-Specific Context}
+\label{sec:lastfm-stats}
+
+Candidate context is defined relative to the user's training history $H_u$ at several resolutions:
+A5 compares the complete history with the candidate co-occurrence neighbourhood;
+Pearson $\phi$ (A11) scores individual history items against $X$ for routing;
+H3 summarizes the signed associations of the selected items;
+LEG$_{K2}$ summarizes their second-order magnitude.
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.92\textwidth]{fig_lastfm_context.png}
+\caption{Candidate-conditioned history selection: A5 summarises whole-history context with $N_X$; Top25 routing by cross-fitted $A_{11}/\phi$ feeds both H3 and LEG$_{K2}$ from the same selected associations.}
+\label{fig:lastfm-context}
+\end{figure}
+
+\paragraph{Cross-fitted item--item association.}
+For history item $h$ and candidate $X$, co-occurrence across users yields contingency counts from which
+\begin{equation}
+\label{eq:lastfm-phi}
+\phi(h,X)
+=
+\frac{N n_{11}-n_h n_X}
+{\sqrt{n_h(N-n_h)\,n_X(N-n_X)}},
+\qquad
+\phi\in[-1,1].
+\end{equation}
+Association counts for user $u$ are computed from a five-fold partition of training interactions, excluding the fold that contains $u$.
+Validation and test interactions never enter these counts.
+The candidate co-occurrence neighbourhood is $N_X=\{j\neq X:n_{11}(j,X)>0\}$.
+
+\paragraph{A5: full-history candidate context.}
+\begin{equation}
+\label{eq:lastfm-A5}
+\begin{aligned}
+A(u,X)
+=
+\bigl[
+&\log(1+|H_u|),\;
+\log(1+\mathrm{pop}(X)),\;
+\log(1+\deg_{\mathrm{KG}}(X)),\\
+&\qquad
+J_{\mathrm{set}}(H_u,N_X),\;
+C_{\mathrm{set}}(H_u,N_X)
+\bigr]
+\in\mathbb{R}^{5},
+\end{aligned}
+\end{equation}
+where
+\begin{equation}
+\label{eq:lastfm-Jset}
+J_{\mathrm{set}}(H_u,N_X)=\frac{|H_u\cap N_X|}{|H_u\cup N_X|},
+\qquad
+C_{\mathrm{set}}(H_u,N_X)=\frac{|H_u\cap N_X|}{\sqrt{|H_u|\,|N_X|}},
+\end{equation}
+with empty-set cases mapped to zero.
+A5 is standardized on training pairs only.
+
+\paragraph{Candidate-conditioned routing and H3.}
+For each $h\in H_u\setminus\{X\}$, the routing score is $v(h,X)=\phi(h,X)$.
+Alternative association criteria (Jaccard, cosine, co-occurrence, MI, NPMI, $G^{2}$) were screened under a fixed Top25 budget; signed Pearson $\phi$ was retained.
+The Top$K$ items with $K=\min\bigl(25,|H_u\setminus\{X\}|\bigr)$ are summarized by
+\begin{equation}
+\label{eq:lastfm-H3}
+H_3(u,X)=\bigl[\mathrm{mean}(v),\;\mathrm{max}(v),\;\mathrm{top3mean}(v)\bigr]\in\mathbb{R}^{3},
+\end{equation}
+using signed values; an empty routed history is $[0,0,0]$.
+H3 is standardized on training pairs only.
+
+\paragraph{LEG$_{K2}$ residual.}
+The same Top-$K$ association coefficients selected for H3 are additionally summarized using the second Legendre polynomial,
+\begin{equation}
+\label{eq:lastfm-L2}
+L_2(u,X)=\frac{1}{K}\sum_{k=1}^{K}P_2(v_k),
+\qquad
+P_2(v)=\frac{3v^{2}-1}{2}.
+\end{equation}
+While H3 preserves signed first-order summaries of the selected associations, $L_2$ provides a complementary nonlinear summary of their magnitude.
+Because $P_2$ is an even function, strong positive and negative associations both contribute through their squared magnitude, allowing the residual branch to capture structure that is not represented by the signed mean or maximum alone.
+
+Higher-order Legendre terms were also considered during model development.
+The third-order term $P_3$ retains sign and therefore overlaps more strongly with information already represented by the signed H3 statistics, whereas the fourth-order term $P_4$ places greater emphasis on extreme coefficients and can be more sensitive to variation in the relatively small routed set ($K\le 25$).
+The second-order term was therefore retained as the most compact complementary summary of the routed association context:
+\begin{equation*}
+\mathrm{Top}25
+\;\longrightarrow\;
+\begin{cases}
+\mathrm{H3}: & \text{signed summary},\\
+L_2: & \text{nonlinear magnitude summary}.
+\end{cases}
+\end{equation*}
+
+The scalar $L_2(u,X)$ is standardized using training pairs and passed through a small residual MLP producing $\delta_{\mathrm{LEG}}(u,X)$.
+The final linear layer of this branch is initialized to zero, so the residual contribution is initially neutral and is learned only when supported by the training signal.
+
+\subsection{Fusion and Prediction}
+\label{sec:lastfm-fusion}
+
+The main late-fusion input is
+\begin{equation}
+\label{eq:lastfm-265}
+g_{uX}
+=
+\bigl[q_{uX}\parallel d_{uX}\parallel A(u,X)\parallel H_3(u,X)\bigr]
+\in\mathbb{R}^{265}.
+\end{equation}
+A decoder $265\to 128\to 64\to 1$ (LayerNorm, GELU, dropout) produces $s_{B0}(u,X)$.
+LEG$_{K2}$ is not concatenated into $g_{uX}$; it enters only as an additive residual.
+The final ranking score is
+\begin{equation}
+\label{eq:lastfm-score-final}
+s(u,X)=s_{B0}(u,X)+\delta_{\mathrm{LEG}}(u,X).
+\end{equation}
+
+\section{Training and Evaluation}
+\label{sec:lastfm-train-eval}
+
+The Last-FM* experiments use three evaluation levels corresponding to different stages of model development.
+Sampled validation is used for checkpoint selection, full-catalog validation for architectural ablation, and the sealed external benchmark for the final comparison with classical recommenders.
+Although NDCG@20 is used in more than one stage, the corresponding values are interpreted within their respective candidate universes and experimental roles.
+
+\subsection{Training Objective}
+\label{sec:lastfm-train}
+
+For each training pair with ranking score $s_i$ and label $y_i\in\{0,1\}$,
+\begin{equation}
+\hat{p}_i=\sigma(s_i),
+\end{equation}
+is used only inside weighted binary cross-entropy ($w_{+}\approx 4$ under the $4{:}1$ candidate construction).
+The quantity $s(u,X)$ itself is a ranking score, not a calibrated interaction probability.
+Optimization uses Adam (learning rate $10^{-3}$, weight decay $10^{-4}$), ReduceLROnPlateau on sampled validation NDCG@20, batch size $4096$, and early stopping with patience $8$ on the same sampled metric.
+Figure~\ref{fig:lastfm-training-protocol} shows a representative development learning curve for seed~$303$, with the selected checkpoint marked.
+Architecture and per-seed epochs were frozen under this sampled rule before any sealed-test evaluation; full-catalog development metrics and the sealed external benchmark are computed only after freeze and are never used to re-select the epoch.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_lastfm_training_protocol.pdf}
+\caption{Development training dynamics for seed~$303$ of the full Last-FM* model: training loss and sampled validation NDCG@20 versus epoch.
+The dashed line marks the selected checkpoint (epoch~$43$).
+Seeds~$101$ and~$202$ were frozen under the same sampled rule at epochs~$36$ and~$34$.}
+\label{fig:lastfm-training-protocol}
+\end{figure}
+
+\subsection{Checkpoint selection with sampled NDCG@20}
+\label{sec:lastfm-sampled-val}
+
+Sampled validation NDCG@20 was used for checkpoint selection and early stopping during model development.
+For each validation positive, the candidate set consisted of the relevant item and $20$ sampled negatives not present in the user's observed history.
+To limit the contribution of highly active users, at most $10$ validation positives per user were included.
+
+This sampled protocol provides a computationally efficient ranking signal during training.
+It is used exclusively for model selection and is not interpreted as catalog-scale recommendation performance.
+
+\subsection{Development full-catalog evaluation}
+\label{sec:lastfm-fullcatalog}
+
+After checkpoint selection, architectural variants were evaluated against the full eligible catalog.
+For user $u$, the candidate set was defined as
+\begin{equation}
+\label{eq:lastfm-Cu}
+\mathcal{C}_u=I\setminus H_u^{(\mathrm{model\_train})},
+\end{equation}
+where $I$ denotes the item catalog and $H_u^{(\mathrm{model\_train})}$ contains items already observed for that user in the model-training data.
+
+Performance was reported using NDCG@20, Recall@20, and MRR.
+This evaluation was used to quantify the contribution of the candidate-specific empirical components---A5, H3, and the LEG$_{K2}$ residual---relative to the structural HGT baseline under catalog-scale ranking.
+
+\subsection{Sealed external benchmark}
+\label{sec:lastfm-sealed}
+
+The final external benchmark was conducted only after the model specification and per-seed training schedule had been fixed on development data.
+The final models were refitted on the complete corrected training population,
+\begin{equation}
+\label{eq:lastfm-Dtrain-ext}
+\mathcal{D}_{\mathrm{train}}^{\mathrm{external}}
+=
+\mathcal{D}_{\mathrm{model\_train}}
+\cup
+\mathcal{D}_{\mathrm{validation}},
+\end{equation}
+and evaluated on the previously unseen corrected Last-FM* test split using the pinned IntentAwareRS holdout evaluator.
+
+The proposed model and the classical recommendation baselines were evaluated under the same full-catalog candidate-space rules and reported using NDCG@20, Recall@20, and MRR.
+This stage therefore provides the matched external comparison used for the final benchmark results.
+
+\subsection{Computational note}
+\label{sec:lastfm-compute}
+
+Full-catalog neural evaluation on Last-FM* was computationally demanding on the available local hardware because scores had to be produced for a catalog of $48{,}123$ items for each eligible user.
+This constrained the breadth of additional convergence and hyperparameter studies.
+The external comparison therefore follows the prespecified model specification rather than an extensive post-hoc search over training budgets.
+
+\section{Experimental Results}
+\label{sec:lastfm-results}
+
+\subsection{Architecture Comparison}
+\label{sec:lastfm-backbone}
+
+HGT width, depth and number of attention heads were compared under a common development protocol with the decoder family held fixed.
+The selected configuration is $d=64$, $L=2$, $H=2$ with dropout $0.1$; larger width, deeper stacks or additional heads did not justify replacement.
+Table~\ref{tab:lastfm-train} summarizes the frozen training and model settings of the full Last-FM* specification used in all subsequent development and sealed evaluations.
+
+\begin{table}[!ht]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Last-FM*: model and training configuration.}
+\label{tab:lastfm-train}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.85cm} X@{}}
+\toprule
+Setting & Value \\
+\midrule
+Optimizer & Adam~\cite{kingma2015adam} \\
+Learning rate & $10^{-3}$ \\
+Weight decay & $10^{-4}$ \\
+LR schedule & ReduceLROnPlateau on sampled validation NDCG@20;
+  factor~$0.5$, patience~$3$, $\mathrm{min\_lr}=6.25\times 10^{-5}$ \\
+Batch size & $4096$ \\
+Max epochs & $120$ \\
+Early stopping & patience~$8$ on sampled validation NDCG@20 \\
+Loss & weighted binary cross-entropy ($w_{+}\approx 4$; $4{:}1$ candidate construction) \\
+HGT & $d=64$, $L=2$, $H=2$, dropout~$0.1$~\cite{hu2020hgt} \\
+Structural pair & $q_{uX}\in\mathbb{R}^{256}$ plus graph dot $\Rightarrow 257$D \\
+Explicit context & A5 ($5$D), H3 ($3$D), LEG$_{K2}$ residual \\
+Main decoder & $265\to 128\to 64\to 1$ (LayerNorm, GELU, dropout~$0.2$) \\
+LEG$_{K2}$ branch & $1\to 16\to 1$ (GELU; final linear zero-initialized) \\
+Training seeds & $\{101,202,303\}$ \\
+Selection metric & sampled validation NDCG@20 \\
+Frozen epochs & seed~$101\to 36$, seed~$202\to 34$, seed~$303\to 43$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Contribution of Statistical Evidence}
+\label{sec:lastfm-ablation}
+
+With the HGT backbone fixed, a controlled ablation ladder isolates explicit candidate context (Table~\ref{tab:lastfm-ablation}, Figure~\ref{fig:lastfm-ablation-bars}), using seeds $\{101,202,303\}$:
+\begin{enumerate}
+\item HGT only ($257$-dimensional structural input);
+\item HGT + A5;
+\item HGT + A5 + H3;
+\item full model (A5 + H3 plus the LEG$_{K2}$ residual).
+\end{enumerate}
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Last-FM*: development ablation results.
+Sampled NDCG@20 is the checkpoint-selection metric; full-catalog NDCG@20 and Recall@20 evaluate the same checkpoints on the eligible validation catalog.
+These are development validation results and are used to isolate the contribution of explicit candidate-specific context.
+They are not the final external benchmark.}
+\label{tab:lastfm-ablation}
+\setlength{\tabcolsep}{2.6pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Variant & Main decoder & Sampled NDCG@20 & Full-cat.\ NDCG@20 & Full-cat.\ Recall@20 \\
+\midrule
+HGT only & 257D & \(0.4755\) & \(0.0093\) & \(0.0169\) \\
+HGT + A5 & 262D & \(0.7908\) & \(0.0640\) & \(0.1128\) \\
+HGT + A5 + H3 & 265D & \(0.8729\) & \(0.2321\) & \(0.3647\) \\
+Full model (+ LEG$_{K2}$) & 265D + residual & \(0.8733\) & \(0.2764\) & \(0.3768\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_lastfm_ablation_bars.pdf}
+\caption{Last-FM* development ablation ladder.
+Panel~(a): sampled validation NDCG@20 used for checkpoint selection.
+Panel~(b): full-catalog development NDCG@20 of the same checkpoints.
+Error bars show the seed standard deviation over three training seeds.
+The panels use different $y$-axis scales because they evaluate different candidate universes under the same NDCG@20 formula.
+This figure is not an external baseline comparison.}
+\label{fig:lastfm-ablation-bars}
+\end{figure}
+
+The controlled ablation demonstrates that explicit candidate-specific empirical context substantially improves the neural graph model relative to its HGT-only counterpart.
+A5 introduces the first large improvement on both development protocols.
+H3 produces the largest full-catalog increase.
+LEG$_{K2}$ changes sampled NDCG@20 by only about $0.0004$ relative to HGT+A5+H3, while adding a further full-catalog gain of about $0.044$ NDCG@20.
+The development ablation addresses the contribution of the proposed representation within the neural model family.
+It does not by itself establish superiority over strong collaborative-filtering baselines.
+
+\subsection{Full-catalog development ranking and classical baseline}
+\label{sec:lastfm-fullrank}
+
+Epochs were selected using sampled validation NDCG@20; full-catalog development metrics were then computed without re-selection (Table~\ref{tab:lastfm-dev-seeds}).
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Full-model full-catalog development metrics by seed (model train $\to$ validation).
+Sampled NDCG@20 selected the epoch; full-catalog metrics are evaluation only.}
+\label{tab:lastfm-dev-seeds}
+\label{tab:lastfm-true-final}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}crrrrr@{}}
+\toprule
+Seed & Best epoch & Sampled NDCG@20 & Full-cat.\ NDCG@20 & Recall@20 & MRR \\
+\midrule
+101 & 36 & 0.873224 & 0.277432 & 0.375599 & 0.356988 \\
+202 & 34 & 0.873253 & 0.279879 & 0.378722 & 0.359681 \\
+303 & 43 & 0.873515 & 0.271886 & 0.376197 & 0.343391 \\
+\midrule
+Mean \(\pm\) SD & --- & \(0.8733\pm 0.0002\) & \(0.2764\pm 0.0041\) & \(0.3768\) & \(0.3534\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Full-catalog development NDCG@20 by seed for the ablation layers without LEG$_{K2}$.}
+\label{tab:lastfm-fullrank-ablation}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{crrr}
+\toprule
+Seed & HGT only & HGT+A5 & HGT+A5+H3 \\
+\midrule
+101 & 0.008548 & 0.064571 & 0.227969 \\
+202 & 0.009520 & 0.060866 & 0.241332 \\
+303 & 0.009935 & 0.066630 & 0.227054 \\
+\midrule
+Mean & \(0.0093\) & \(0.0640\) & \(0.2321\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For the full model, mean full-catalog development NDCG values were additionally $\mathrm{NDCG}@5=0.2336$ and $\mathrm{NDCG}@10=0.2503$; HitRate@20 was approximately $0.664$.
+
+Under the same full-catalog development protocol, a matched RP$3\beta$ reference already reached NDCG@20 $=0.3227$, Recall@20 $=0.4122$ and MRR $=0.4183$, exceeding the proposed full model (NDCG@20 $=0.2764$).
+Importantly, RP$3\beta$ already outperformed the proposed model under full-catalog development evaluation.
+The sealed external benchmark therefore evaluates whether this qualitative ordering persists on the previously unseen corrected test split.
+
+\subsection{Sealed external benchmark}
+\label{sec:lastfm-sealed-results}
+
+Table~\ref{tab:lastfm-sealed-baselines} reports classical baselines on the sealed corrected test under the pinned holdout evaluator after fitting on $\mathrm{TRAIN\_EXTERNAL}$.
+RP$3\beta$ is the strongest classical baseline (NDCG@20 $=0.2318$, Recall@20 $=0.2588$).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Last-FM*: sealed external benchmark results for classical recommenders fitted on $\mathrm{TRAIN\_EXTERNAL}$ and evaluated once on the corrected Last-FM* test with the pinned holdout evaluator.
+Primary comparison metrics are NDCG@20 and Recall@20.}
+\label{tab:lastfm-sealed-baselines}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Model & NDCG@20 & Recall@20 \\
+\midrule
+TopPop & 0.0091 & 0.0153 \\
+UserKNN & 0.1622 & 0.1819 \\
+ItemKNN & 0.2051 & 0.2369 \\
+P3$\alpha$ & 0.2035 & 0.2385 \\
+\textbf{RP$3\beta$} & \textbf{0.2318} & \textbf{0.2588} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:lastfm-sealed-proposed} reports the proposed model under the same sealed protocol.
+All three prespecified seeds are complete; the mean $\pm$ SD is computed over seeds~$101$, $202$ and~$303$.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Last-FM*: sealed external benchmark results for the proposed full model under the frozen epoch schedule.
+Mean $\pm$ SD is over the three prespecified training seeds.}
+\label{tab:lastfm-sealed-proposed}
+\begin{tabular}{@{}crrr@{}}
+\toprule
+Seed & Frozen epoch & NDCG@20 & Recall@20 \\
+\midrule
+101 & 36 & 0.1685 & 0.2123 \\
+202 & 34 & 0.1762 & 0.2167 \\
+303 & 43 & 0.1706 & 0.2127 \\
+\midrule
+Mean \(\pm\) SD & --- & \(0.1718\pm 0.0040\) & \(0.2139\pm 0.0024\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:lastfm-sealed-benchmark} compares classical baselines and the proposed mean under the same sealed protocol.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_lastfm_sealed_benchmark.pdf}
+\caption{Sealed external Last-FM* benchmark.
+NDCG@20 and Recall@20 for classical recommendation baselines and the proposed model under the same full-catalog holdout evaluation protocol.
+The proposed-model bars report the mean across the three prespecified training seeds, with error bars indicating one standard deviation.}
+\label{fig:lastfm-sealed-benchmark}
+\end{figure}
+
+On the sealed external test, RP$3\beta$ was the strongest classical baseline, reaching NDCG@20 $=0.2318$ and Recall@20 $=0.2588$.
+The proposed model reached mean NDCG@20 $=0.1718\pm 0.0040$ and Recall@20 $=0.2139\pm 0.0024$ across seeds~$101$, $202$ and~$303$ (per-seed NDCG@20: $0.1685$, $0.1762$, $0.1706$).
+Seed~$202$ is the strongest of the three, but all three seeds remain below RP$3\beta$, ItemKNN and P3$\alpha$ on NDCG@20, which is consistent with the development ordering in which RP$3\beta$ already exceeded the proposed model.
+The external benchmark highlights an important distinction between improving a neural graph model and achieving benchmark dominance: explicit candidate-specific statistical context provides substantial ranking signal beyond HGT alone, but strong classical collaborative-filtering methods remain competitive and, in this benchmark, can outperform the more complex neural architecture.
+Full-catalog development and sealed external numbers must not be subtracted as if they were the same experiment.

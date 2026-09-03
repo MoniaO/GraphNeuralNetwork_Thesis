@@ -1,0 +1,41 @@
+\begin{tikzpicture}[
+  font=\scriptsize,
+  >=Stealth,
+  every node/.style={align=center},
+  pair/.style={inner sep=1pt},
+  box/.style={draw, rounded corners=1.5pt, inner sep=2.5pt, minimum height=0.48cm},
+  h/.style={box, fill=orange!12, minimum width=1.55cm},
+  enc/.style={box, fill=teal!10, minimum width=1.85cm},
+  gout/.style={box, fill=green!12, minimum width=3.4cm},
+  arr/.style={->, thick, draw=gray!70}
+]
+% top: ordered pairs
+\node[pair] (paz) at (0.0,2.35) {$(A,Z)$};
+\node[pair] (pag) at (2.6,2.35) {$(A,G)$};
+\node[pair] (pzg) at (5.2,2.35) {$(Z,G)$};
+
+% 40D vectors
+\node[h] (haz) at (0.0,1.55) {$h_{AZ}$ 40D};
+\node[h] (hag) at (2.6,1.55) {$h_{AG}$ 40D};
+\node[h] (hzg) at (5.2,1.55) {$h_{ZG}$ 40D};
+
+% encoder + mask
+\node[enc] (eaz) at (0.0,0.75) {encoder + mask};
+\node[enc] (eag) at (2.6,0.75) {encoder + mask};
+\node[enc] (ezg) at (5.2,0.75) {encoder + mask};
+
+% concat + g_stat
+\node[gout] (cat) at (2.6,-0.05) {$[e_{AZ}\,\Vert\,e_{AG}\,\Vert\,e_{ZG}]$};
+\node[gout] (gst) at (2.6,-0.85) {$g_{\mathrm{stat}}\in\mathbb{R}^{24}$};
+
+\draw[arr] (paz) -- (haz);
+\draw[arr] (pag) -- (hag);
+\draw[arr] (pzg) -- (hzg);
+\draw[arr] (haz) -- (eaz);
+\draw[arr] (hag) -- (eag);
+\draw[arr] (hzg) -- (ezg);
+\draw[arr] (eaz.south) |- (cat.west);
+\draw[arr] (eag) -- (cat);
+\draw[arr] (ezg.south) |- (cat.east);
+\draw[arr] (cat) -- (gst);
+\end{tikzpicture}

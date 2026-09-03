@@ -1,0 +1,34 @@
+\chapter*{Streszczenie}
+\addcontentsline{toc}{chapter}{Streszczenie}
+
+\noindent
+Przedmiotem pracy dyplomowej jest przetestowanie możliwości łączenia mechanistycznej wiedzy zakodowanej w formie grafu wiedzy (ang.\ knowledge graph) z danymi empirycznymi pochodzącymi z populacji pacjentów.
+Zagadnienie to jest rozpatrywane na dwóch uzupełniających się, w docelowym środowisku klinicznym, płaszczyznach.
+Zadanie~A koncentruje się na predykcji krawędzi (ang.\ link prediction) w grafie mechanistycznym, z wykorzystaniem topologii grafu wiedzy oraz statystycznej wiedzy na temat zjawiska uzyskanej z danych pacjenckich.
+Natomiast Zadanie~B ma wykorzystywać mechanistyczny graf wiedzy do predykcji wystąpienia klinicznych punktów końcowych, rozumianych jako zdarzenia wymagające interwencji klinicznej, wykorzystując graf jako wspólny szkielet strukturalny, podczas gdy obserwacje dotyczące poszczególnych pacjentów stanowią dane wejściowe na poziomie węzłów.
+
+Oba zadania wykorzystują grafowe sieci neuronowe (ang.\ Graph Neural Networks) oraz dane empiryczne przekazane do modelu w formie statystyk, ze szczególnym uwzględnieniem oceny siły zależności między zmiennymi.
+Implementacje w obu zadaniach różnią się docelowymi architekturami, głębokością message passingu, połączeniami rezydualnymi, a także sposobem wykorzystania gałęzi statystycznej w architekturze sieci.
+W części statystycznej wspólnym mianownikiem jest jednak wykorzystanie metody Hierarchical Correlation Reconstruction (HCR), która umożliwia opis zależności pomiędzy zmiennymi różnych typów za pomocą ortonormalnych funkcji bazowych i odpowiadających im współczynników, pozwalając uwzględniać zarówno proste, jak i bardziej złożone struktury zależności.
+
+W przypadku syntetycznego benchmarku finalny model dla Zadania~A osiąga wartość Average Precision na zbiorze walidacyjnym na poziomie około $0{,}919$, przy czym wyniki analizy ablacyjnej wskazują, że jawne uwzględnienie kontekstu statystycznego zapewnia znaczną poprawę w porównaniu z samą reprezentacją topologii grafu.
+W Zadaniu~B moduł statystyczny przynosi największe korzyści w sytuacjach, gdy głębsze warstwy message passingu prowadzą do utraty informacji predykcyjnych, podczas gdy połączenia rezydualne pozwalają zachować te informacje w obrębie ścieżki grafowej.
+W rezultacie na grafie syntetycznym działanie obu mechanizmów nie zawsze się sumuje.
+
+Ogólny charakter tych obserwacji zweryfikowano dodatkowo za pomocą dwóch międzydomenowych eksperymentów.
+W przypadku zbioru Last-FM* (z korektą wycieku danych) stopniowe wprowadzanie jawnego kontekstu specyficznego dla kandydata podnosi wartość wskaźnika NDCG@20 w ramach ewaluacji próbkowanej z około $0{,}475$ dla modelu HGT do około $0{,}873$ dla modelu pełnego, który w walidacji na pełnym katalogu osiąga wynik NDCG@20 na poziomie około $0{,}276$.
+W eksperymencie porównawczym dotyczącym przewidywania klinicznych punktów końcowych, opartym na zbiorze Hetionet, moduł statystyczny ponownie okazuje się szczególnie cenny w przypadku głębszych modeli: dla konfiguracji sześciowarstwowej podnosi on wartość AUC na zbiorze testowym z $0{,}585$ dla modelu opartego wyłącznie na grafie do $0{,}757$, natomiast połączenie informacji statystycznej z propagacją rezydualną pozwala osiągnąć wynik $0{,}760$.
+
+Wyniki potwierdzają wspólny wniosek metodologiczny: ustrukturyzowane reprezentacje grafów i jawna informacja o zależnościach empirycznych stanowią atrakcyjny, uzupełniający się zestaw źródeł informacji zarówno do rekonstrukcji grafów, jak i predykcji na poziomie pacjenta.
+Ich względny wkład zależy od zadania oraz od tego, jak skutecznie grafowa sieć neuronowa zachowuje istotne informacje podczas kolejnych etapów propagacji i agregacji informacji w grafie.
+Eksperymenty na podobnych zbiorach danych stanowią metodologiczne testy obciążeniowe, jednak ich wyniki należy interpretować ostrożnie przed jakimkolwiek zastosowaniem w realnych warunkach klinicznych.
+
+\medskip
+\noindent\textbf{Słowa kluczowe:}
+grafy wiedzy,
+grafowe sieci neuronowe,
+grafy heterogeniczne,
+predykcja linków,
+predykcja klinicznych punktów końcowych,
+Hierarchical Correlation Reconstruction,
+farmakoterapia.

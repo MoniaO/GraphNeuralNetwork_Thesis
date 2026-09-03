@@ -1,0 +1,21 @@
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >=Stealth,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=3pt, minimum height=0.7cm},
+  s/.style={box, fill=orange!14},
+  f/.style={box, fill=green!12},
+  arr/.style={->, thick, draw=gray!65}
+]
+\node[font=\bfseries\normalsize] at (3.8,2.15) {Late fusion + LEG residual};
+\node[f, minimum width=2.4cm] (main) at (0.3,1.2) {265D input};
+\node[f, minimum width=1.5cm] (sb0) at (3.2,1.2) {$s_{B0}$};
+\node[s, minimum width=1.5cm] (leg) at (0.3,0.15) {LEG};
+\node[s, minimum width=1.5cm] (dleg) at (3.2,0.15) {$\delta_{\mathrm{LEG}}$};
+\node[box, fill=white, minimum width=0.7cm] (plus) at (5.0,0.7) {$+$};
+\node[box, fill=white, minimum width=1.4cm] (out) at (6.7,0.7) {$s(u,X)$};
+\draw[arr] (main) -- (sb0);
+\draw[arr] (leg) -- (dleg);
+\draw[arr] (sb0.east) -- (plus.west);
+\draw[arr] (dleg.east) -- ++(0.2,0) |- (plus.south);
+\draw[arr] (plus) -- (out);
+\end{tikzpicture}

@@ -1,0 +1,108 @@
+\chapter{Related Work}
+\label{ch:related-work}
+
+This chapter reviews the background that motivates combining structured knowledge graphs with explicit statistical dependence estimates:
+biomedical knowledge graphs, graph neural networks for heterogeneous relational data, Hierarchical Correlation Reconstruction, and knowledge-aware recommendation with evaluation reliability.
+
+\section{Knowledge Graphs in Biomedicine}
+\label{sec:related-kg}
+
+Knowledge graphs represent structured knowledge through entities and the relations between them.
+Formally, a knowledge graph $G$ may be viewed as a set of triples
+\begin{equation}
+G \subseteq \mathcal{V} \times \mathcal{R} \times \mathcal{V},
+\end{equation}
+where $\mathcal{V}$ denotes the set of entities (nodes) and $\mathcal{R}$ the set of relation types (edge labels).
+Each triple $(h, r, t) \in G$ corresponds to a directed, labelled edge $h \xrightarrow{r} t$~\cite{hogan2021knowledge}.
+
+The key benefit is an interlinked representation that is intelligible to both humans and machines~\cite{barrasa2023building}.
+In biomedical applications, entities may represent drugs, diseases, genes, proteins, mechanisms, patient characteristics, or clinical outcomes, while edges describe typed relationships between them.
+Such graphs are naturally heterogeneous, with node and edge type maps
+\begin{equation}
+G = (V, E, \tau, \phi),
+\end{equation}
+where $\tau: V \rightarrow \mathcal{T}_V$ and $\phi: E \rightarrow \mathcal{T}_E$~\cite{hu2020hgt}.
+
+Knowledge graphs have been widely applied for integrating biomedical sources and supporting drug discovery~\cite{maclean2021knowledge}.
+Many such graphs primarily encode associations from literature and curated databases rather than patient-specific empirical realisations of the mechanisms they describe, and often ``highlight biological associations, failing to model causal relationships in complex dynamic biological systems''~\cite{maclean2021knowledge}.
+Recent work increasingly considers integrating knowledge graphs with causal or mechanistic representations~\cite{toonsi2025causal,lyu2023causal,mesinovic2025causal}.
+
+\section{Graph Neural Networks for Relational and Heterogeneous Data}
+\label{sec:related-gnn}
+
+Graph neural networks (GNNs) learn node representations by aggregating information from neighbouring nodes through message passing~\cite{hamilton2017graphsage}.
+After $K$ layers, a node's representation can incorporate its $K$-hop neighbourhood.
+At layer $k$,
+\begin{equation}
+\label{eq:related-mp}
+h_v^{(k)}
+=
+\mathrm{UPDATE}\!\Bigl(
+h_v^{(k-1)},\
+\mathrm{AGGREGATE}\bigl(\{h_u^{(k-1)} : u \in \mathcal{N}(v)\}\bigr)
+\Bigr).
+\end{equation}
+Architectures differ mainly in how neighbours and, on heterogeneous graphs, relation types are transformed and aggregated.
+
+GraphSAGE~\cite{hamilton2017graphsage} aggregates sampled neighbourhoods with mean, LSTM or pooling operators and concatenates the node's own representation, enabling inductive application to unseen nodes.
+Relational Graph Convolutional Networks (R-GCNs)~\cite{schlichtkrull2018rgcn} apply relation-specific transformations,
+\begin{equation}
+\label{eq:related-rgcn}
+h_v^{(l+1)}
+=
+\sigma\!\left(
+\sum_{r \in \mathcal{R}}
+\sum_{u \in \mathcal{N}_r(v)}
+\frac{1}{c_{v,r}}
+W_r^{(l)} h_u^{(l)}
++
+W_0^{(l)} h_v^{(l)}
+\right),
+\end{equation}
+optionally with basis decomposition when the relation inventory is large.
+Both families appear as structural baselines in Task~A.
+
+Attention-based GNNs learn neighbour importance rather than using a fixed aggregation rule~\cite{velickovic2018gat}.
+Transformer-style operators project node states into queries, keys and values and aggregate with softmax-normalised attention~\cite{vaswani2017attention}.
+For heterogeneous graphs, the Heterogeneous Graph Transformer (HGT) makes attention scores and message transformations depend on source type, target type and edge relation~\cite{hu2020hgt}.
+For an edge from source $s$ to target $t$, HGT represents semantics as the meta-relation $(\tau_s, \phi(e), \tau_t)$.
+HGT is the primary structural encoder in Task~A and in the Last-FM* proxy, because typed pharmacotherapy and collaborative-knowledge-graph relations require type-aware message passing rather than a single shared convolution.
+
+\section{Statistical Dependence and Hierarchical Correlation Reconstruction}
+\label{sec:related-hcr}
+\label{subsec:hcr_def}
+
+Hierarchical Correlation Reconstruction (HCR), proposed by Jaros\l{}aw Duda, represents probability distributions and statistical dependencies through coefficients of an orthonormal basis expansion~\cite{duda2018hcr,duda2018hcr-ts,duda2020hcr-income,duda2023hcr-wolfram,duda2025hcr-mi}.
+Lower-order coefficients describe broad dependence patterns; higher-order coefficients capture more complex departures from independence.
+
+For variables $X$ and $Y$ with orthonormal bases $\{\phi_j^{(X)}\}$ and $\{\phi_k^{(Y)}\}$, empirical cross-dependence coefficients are
+\begin{equation}
+a_{jk}
+=
+\frac{1}{n}
+\sum_{i=1}^{n}
+\phi_j^{(X)}(X_i)\,
+\phi_k^{(Y)}(Y_i).
+\end{equation}
+For a binary variable $B\in\{0,1\}$ with prevalence $p_B=P(B=1)$,
+\begin{equation}
+\phi_1(B)=\frac{B-p_B}{\sqrt{p_B(1-p_B)}},
+\end{equation}
+so the lowest-order coefficient $a_{11}$ is a standardized first-order dependence descriptor.
+The same principle extends to other variable types via suitable marginal bases.
+
+HCR is used here as a statistical representation of empirical dependence, not as a method for identifying causal effects.
+Causal direction and mechanistic interpretation are supplied by the directed graph schema.
+The term HCR denotes the orthonormal-basis coefficient construction; larger task-specific vectors that combine those coefficients with additional descriptors are called HCR-inspired representations.
+In Task~A they describe the local dependency motif around a candidate edge; in Task~B they supply an endpoint-neighbourhood evidence channel alongside the GNN representation.
+The common principle is combining learned graph representations with explicit statistical dependence estimated from observations.
+
+\section{Knowledge-Aware Recommendation and Evaluation Reliability}
+\label{sec:related-rec}
+
+Beyond biomedicine, knowledge graphs are combined with empirical interaction data in recommendation systems.
+KGAT propagates representations over a collaborative knowledge graph built from user--item interactions and external knowledge~\cite{wang2019kgat}.
+The Last-FM benchmark from that line of work is used here as a cross-domain proxy for the link-prediction template developed on the pharmacotherapy graph.
+
+The reliability of this benchmark was questioned by Shehzad et al.~\cite{shehzad2025lastfm} in a reproducibility study of intent-aware recommendation models.
+The corrected Last-FM* split used in Chapter~\ref{ch:lastfm-proxy} removes train--test interaction leakage and is therefore the appropriate resource for methodological transfer claims.

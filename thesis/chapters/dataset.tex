@@ -1,0 +1,162 @@
+\chapter{Dataset}
+\label{ch:dataset}
+
+\section{Synthetic Pharmacotherapy Dataset}
+
+The primary dataset used in this thesis is Synthetic Pharmacotherapy Graph v3, a controlled benchmark designed to connect a known mechanistic graph structure with patient-level empirical observations.
+The dataset was constructed specifically to support both tasks investigated in the thesis: reconstruction of graph relations in Task~A and patient-level endpoint prediction in Task~B.
+It consists of two complementary components: a directed pharmacotherapy graph and patient-level records generated from that graph.
+
+The use of synthetic data provides access to a known reference graph and to the complete data-generating process.
+This makes it possible to introduce controlled observational artefacts while preserving the underlying mechanistic structure.
+The dataset should therefore be interpreted as methodological ground truth for model evaluation.
+Graph coefficients, baseline probabilities and realised endpoint rates are simulation parameters and must not be interpreted as estimates of real clinical effects.
+
+\section{Pharmacotherapy Knowledge Graph}
+
+The graph was designed as a directed acyclic graph (DAG) representing pathways from patient characteristics and drug exposures, through physiological mechanisms and intermediate adverse states, to clinical outcomes.
+Graph construction started from clinically relevant endpoints and proceeded backwards through their expected determinants and mechanistic pathways.
+
+Domain knowledge in pharmacology was used to define and review the initial set of drug classes, risk factors, mechanisms and clinical endpoints.
+Claude Fable~5 was used as an AI-assisted modelling tool to propose candidate mechanistic pathways, including drug--drug and drug--disease interaction structures.
+Importantly, the model was used to support pathway drafting rather than to determine the final graph automatically.
+Proposed relations were reviewed and could be accepted, rejected or modified before inclusion in the graph specification.
+
+The graph was developed iteratively and subsequently audited for structural consistency.
+The final v3 graph contains 155 nodes and 405 directed edges and is acyclic, with no duplicate nodes, duplicate edges or references to missing nodes.
+The nodes are organised into six semantic categories:
+
+\begin{table}[ht]
+\centering
+\caption{Node types in Synthetic Pharmacotherapy Graph v3.}
+\label{tab:dataset-node-types}
+\begin{tabular}{@{}llp{7.2cm}@{}}
+\toprule
+Node type & Number & Role \\
+\midrule
+\texttt{patient\_context} & 24 & demographics, comorbidities and other patient-level characteristics \\
+\texttt{drug\_exposure} & 29 & exposure to drug classes \\
+\texttt{mechanism} & 49 & physiological mechanisms, interaction gates and drug-load variables \\
+\texttt{adr\_or\_intermediate\_state} & 28 & intermediate adverse or physiological states \\
+\texttt{observation\_or\_selection} & 12 & testing, documentation and selection processes \\
+\texttt{clinical\_endpoint} & 13 & target clinical outcomes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These categories distinguish patient context, treatment, biological mechanisms, intermediate consequences, observation processes and final clinical events.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{01_node_counts_by_type_and_layer.png}
+\caption{Number of nodes in each semantic layer of Synthetic Pharmacotherapy Graph~v3.}
+\label{fig:dataset-node-counts}
+\end{figure}
+
+Directed edges represent different semantic relationships, including background risk, treatment assignment, drug-to-mechanism effects, mechanistic progression, adverse-state progression, observation processes, and drug--drug or drug--disease interactions.
+Edge attributes include the simulated magnitude and sign of an effect, which are subsequently used by the patient generator.
+
+The graph contains 13 clinical endpoints regarded as points of clinical state requiring intervention:
+AKI, DILI, Depression, Falls, Delirium, GI bleeding, Hyponatremia, Hyperkalemia, QT arrhythmia, Hospitalization, Serotonin syndrome, Rhabdomyolysis, and Lactic acidosis.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{causal_dag_type_overview.pdf}
+\caption{Overview of the synthetic pharmacotherapy DAG with node colours by semantic type.}
+\label{fig:dag-overview}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_aki_kg_fragment_networkx.png}
+\caption{AKI-related fragment of the Synthetic Pharmacotherapy Graph~v3: all audited ancestors of the AKI endpoint ($32$ nodes / $79$ edges), drawn with NetworkX.
+Node colours follow the v3 ontology (patient context, drug exposure, mechanism, ADR/intermediate state, clinical endpoint).
+The full graph is larger; this excerpt is for orientation.}
+\label{fig:aki-kg-fragment}
+\end{figure}
+
+\section{Patient-Level Data Generation}
+
+The graph defines a common mechanistic structure, whereas the patient table represents individual realisations of that structure.
+For each simulated patient, values are generated for the graph variables in topological order.
+Patient-context variables are generated first, followed by drug exposures, mechanisms, intermediate states and finally clinical endpoints.
+As a result, a parent variable is always realised before a downstream child variable is generated.
+
+Most stochastic binary nodes are generated using an additive logistic model.
+For node $i$,
+\begin{equation}
+\eta_i
+=
+\mathrm{logit}(p_i^{0})
++
+\sum_{j\in\mathrm{parents}(i)}
+s_{ij}\,w_{ij}\,x_j,
+\end{equation}
+followed by
+\begin{equation}
+x_i\sim\mathrm{Bernoulli}\!\left(\sigma(\eta_i)\right),
+\end{equation}
+where $p_i^{0}$ denotes the baseline probability of the node, $x_j$ is the realised value of parent $j$, and $w_{ij}$ and $s_{ij}$ denote the simulated effect magnitude and sign associated with the edge $j\to i$.
+Count and continuous parents are standardised before entering the additive predictor.
+
+Not all variables are stochastic.
+The generator also contains deterministic quantities representing clinically meaningful combinations such as drug loads, drug--drug interaction gates, drug--disease interactions and cumulative adverse-event burden.
+For example, some interaction variables are activated only when several required drug exposures are simultaneously present.
+
+The dataset additionally separates an underlying clinical state from whether that state is observed or documented.
+For example,
+\begin{equation}
+\texttt{elevated\_creatinine\_recorded}
+=
+\texttt{creatinine\_rise}
+\times
+\texttt{creatinine\_tested}.
+\end{equation}
+A true creatinine rise can therefore occur without being present in the recorded representation if testing is not performed.
+This distinction allows documentation and selection artefacts to be introduced without changing the underlying mechanistic graph.
+
+The clean dataset contains 20{,}000 simulated patients.
+Each row corresponds to one patient, while graph nodes correspond to patient-level variables.
+The 155 graph variables include binary, count and continuous values; the dataset additionally contains technical identifiers such as \texttt{patient\_id} and \texttt{hospital\_id}.
+
+\section{Observational Scenarios}
+
+Six scenarios were generated from the same underlying pharmacotherapy graph.
+They were designed to test whether the models remain robust when the patient-level evidence is affected by different observational artefacts.
+
+\begin{table}[ht]
+\centering
+\caption{Observational scenarios derived from the same pharmacotherapy graph.}
+\label{tab:dataset-scenarios}
+\begin{tabularx}{\textwidth}{@{}lXr@{}}
+\toprule
+Scenario & Purpose & Patients \\
+\midrule
+\texttt{clean} & reference setting with complete generated information & 20{,}000 \\
+\texttt{hidden\_confounder} & latent severity remains active in generation but is withheld from observed data & 20{,}000 \\
+\texttt{selection\_bias} & cohort restricted according to healthcare-contact and testing variables & 14{,}062 \\
+\texttt{no\_overlap} & selected treatment exposures become rare in particular patient subgroups & 20{,}000 \\
+\texttt{noisy\_documentation} & imperfect recording with false-negative and false-positive documentation & 20{,}000 \\
+\texttt{multihospital} & heterogeneous treatment and documentation processes across four simulated hospitals & 20{,}000 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The scenarios differ in the observability and distribution of patient-level data, while the underlying graph semantics are preserved.
+Importantly, the \texttt{selection\_bias} dataset is an intentional subset of the original population and therefore contains 14{,}062 patients.
+
+\section{Patient Splits and Use Across Tasks}
+
+Patients are divided into training, validation and test sets in proportions of 70\%, 15\% and 15\%.
+For the clean cohort, this corresponds to 14{,}000 training patients, 3{,}000 validation patients and 3{,}000 test patients.
+The split is defined at the patient level and reused across the alternative scenarios to maintain comparable patient partitions whenever possible.
+
+The two tasks use this split differently.
+In Task~A, patient records are not themselves the prediction instances: the training-patient partition is used to estimate node-level statistics and pairwise dependence measures, while the prediction instances are candidate graph edges.
+The Task~A candidate inventory, negative-sampling rule and edge-level split are defined in Chapter~\ref{ch:taskA-rozwiazanie}.
+
+In Task~B, the patient split itself defines the training, validation and test populations.
+Each patient contributes individual node values and clinical endpoint labels, while the graph provides the common mechanistic scaffold.
+
+All statistics derived from patient-level data are computed using the appropriate training partition only.
+For Task~B, endpoint values, post-event or definitional intermediates, and other variables unavailable at the intended prediction point are excluded from predictive inputs.

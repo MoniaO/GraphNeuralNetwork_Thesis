@@ -1,0 +1,271 @@
+\chapter{Discussion and Limitations}
+\label{ch:joint-discussion}
+
+\section{Common Methodological Principle}
+\label{sec:joint-shared}
+
+The two prediction tasks investigated in this thesis address different objects, but are
+based on a common methodological principle: structured graph knowledge and explicit
+empirical statistical evidence provide different, potentially complementary descriptions
+of the same system.
+
+In Task~A, the prediction object is a candidate directed relation. The structural branch
+describes the position of the candidate nodes within the heterogeneous graph, while the
+statistical branch describes empirical dependence patterns observed in the patient
+population. In Task~B, the graph topology is shared across patients and the prediction
+object becomes a patient-specific clinical endpoint. Patient observations are propagated
+through the graph, while an explicit statistical evidence branch provides an additional
+description of endpoint-related dependencies.
+
+The common modelling template can therefore be summarized as
+\begin{equation}
+\text{structured graph representation}
+\;+\;
+\text{explicit empirical evidence}
+\;\rightarrow\;
+\text{task-specific prediction}.
+\end{equation}
+The relative contribution of the two components is task dependent. Statistical evidence is
+particularly useful when relevant information is not adequately represented or preserved
+by the graph pathway, whereas a sufficiently effective graph encoder may already capture
+part of the same signal.
+On the synthetic Task~B benchmark this distinction is concrete: when residual connections
+preserve endpoint-relevant information inside the message-passing stack, the evaluated
+statistical-evidence variants do not provide a consistent additional improvement over the
+corresponding graph-only residual models, whereas the same branch recovers substantial
+performance when deep models degrade without residual propagation.
+
+\section{What the Two Synthetic Tasks Show}
+\label{sec:joint-synthetic}
+
+\subsection*{Task~A: confronting structured knowledge with observational evidence}
+
+Task~A demonstrates that patient-derived statistical evidence can provide substantial
+information beyond heterogeneous graph topology alone. Progressive enrichment of the
+candidate-specific statistical representation improves directed edge ranking relative to the
+graph-only HGT baseline.
+
+Importantly, statistical dependence does not determine edge direction. Direction is supplied
+by the ordered candidate definition and the mechanistic graph schema. HCR-derived
+coefficients provide empirical evidence about relationships between variables, but are not
+interpreted as causal effects.
+Task~A can therefore be understood as confronting prior structured knowledge with
+population-level observational evidence under a controlled reconstruction objective.
+It does not perform causal discovery.
+
+Residual connections inside the Task~A HGT encoder are standard skip connections with
+LayerNorm; they are architectural details of the structural branch and are not studied as an
+anti-oversmoothing intervention in that chapter.
+
+\subsection*{Task~B: structural context for patient-level endpoints}
+
+Task~B examines whether a shared mechanistic graph can provide useful structural context
+for predicting patient-level clinical endpoints.
+
+The experiments show that the usefulness of the statistical branch depends strongly on the
+state of the graph propagation pathway. Without residual connections, deeper models can
+lose endpoint-relevant information, while the explicit statistical branch can provide a
+direct alternative information route. When residual propagation preserves the graph signal,
+the statistical branch does not provide a consistent additional improvement on the
+synthetic benchmark.
+With residual connections enabled, the evaluated statistical-evidence variants did not
+provide a consistent additional improvement over the corresponding graph-only residual
+models on the synthetic benchmark.
+
+\section{Cross-Domain Proxy Experiments}
+\label{sec:joint-proxies}
+
+The proxy experiments test whether the architectural principle survives substantial
+changes in graph semantics and prediction objective rather than establishing direct domain
+transfer.
+
+Last-FM* replaces pharmacotherapy variables with users, items and knowledge-graph
+entities and changes the objective from directed graph reconstruction to recommendation
+ranking. The development ablation shows that candidate-specific empirical context
+substantially improves the neural HGT model.
+The matched sealed benchmark additionally
+shows that improving a neural graph model does not imply superiority over strong
+classical recommenders:
+development gains over HGT are not equivalent to sealed-test dominance, and the proposed
+full model remains below the strongest classical baseline (RP$3\beta$) under the sealed
+external protocol.
+
+The three Last-FM* result levels therefore answer different questions and must not be
+interchanged.
+Sampled validation NDCG@20 is a cheap checkpoint-selection proxy;
+full-catalog development ranking isolates the contribution of candidate-specific context
+relative to HGT alone;
+only the sealed external evaluation is comparable to published recommender numbers under
+the same evaluator.
+In particular, the LEG residual in Last-FM* is an additive correction in decoder score space
+and must not be conflated with residual connections inside a message-passing stack:
+on the sampled checkpoint metric LEG changes NDCG@20 by only about $0.0004$, whereas on
+full-catalog development ranking it raises mean NDCG@20 from about $0.232$ (HGT+A5+H3)
+to about $0.276$ (full model).
+
+The Hetionet-derived proxy performs the analogous stress test for Task~B. It preserves the
+endpoint-prediction logic while introducing different graph semantics and longer,
+partially latent information pathways. Under this setting, explicit statistical evidence
+becomes particularly useful for deeper models, and statistical evidence and residual
+propagation can become complementary:
+at six layers, test AUROC rises from $0.585$ for the graph-only model to $0.757$ with
+statistical evidence alone and $0.760$ when both mechanisms are combined.
+Hetionet remains a methodological proxy rather than clinical validation.
+
+\section{Prediction versus Mechanistic Clinical Reasoning}
+\label{sec:joint-mechanistic-reasoning}
+
+Predictive performance alone does not fully determine the clinical usefulness of a model.
+A patient-level predictor primarily addresses the question of whether a clinical event is
+likely to occur. Clinical decision making additionally requires understanding which observed
+factors and plausible mechanisms may contribute to that risk and which of them could
+potentially be modified.
+
+This distinction is especially important in pharmacotherapy. The same clinical endpoint may
+arise through different combinations of drug exposure, comorbidity, physiological state,
+laboratory abnormalities and intermediate adverse effects. A predicted risk of an endpoint
+is therefore potentially more informative when it can be related to plausible mechanistic
+routes than when it is presented as an isolated score.
+
+The graph-based formulation investigated in this thesis provides a structural basis for such
+an extension. The present work evaluates graph reconstruction and endpoint prediction;
+it does not yet identify patient-specific causal mechanisms. A natural next stage would be
+to determine which regions and pathways of the mechanistic graph are supported by the
+observations of an individual patient.
+
+Instead of treating the predicted endpoint as the final
+output, prediction becomes one component of a broader reasoning process:
+\begin{equation}
+\text{endpoint risk}
+\;\rightarrow\;
+\text{plausible mechanistic routes}
+\;\rightarrow\;
+\text{modifiable factors}
+\;\rightarrow\;
+\text{possible intervention hypotheses}.
+\end{equation}
+The present architecture does not perform intervention analysis; the sequence above is a
+motivating interpretation for future work.
+
+\section{Observational Data, Explainability and Causal Interpretation}
+\label{sec:joint-observational-causal}
+
+Clinical data are generated
+through a healthcare process that includes decisions about testing, treatment,
+documentation and follow-up. Consequently, recorded associations may reflect both the
+patient's underlying condition and institution-specific patterns of observation or clinical
+practice.
+
+This issue motivates the controlled observational scenarios used in the synthetic benchmark,
+including selection bias, noisy documentation and multi-hospital variation. In the synthetic
+setting these processes can be modified while the underlying graph remains fixed. In real
+clinical data, the corresponding observation mechanisms would be substantially more
+complex and only partially observable.
+
+Mechanistic prior knowledge may provide useful structure when empirical associations are
+unstable across institutions or populations. It does not remove confounding or establish
+causal direction, but it provides an explicit hypothesis about how variables are related that
+can be evaluated against observations.
+
+Model explainability and mechanistic explanation should also remain conceptually distinct.
+Feature attribution can indicate which model inputs contributed to a prediction, but this
+does not establish that those variables constitute the mechanism responsible for the
+clinical event. A mechanistic graph provides a different form of explanation by explicitly
+representing hypothesized relationships and pathways; causal interpretation still requires
+additional assumptions and validation.
+
+The present thesis therefore remains at the level of predictive modelling supported by
+mechanistic priors and empirical dependence. Future work could connect this framework
+with dedicated causal-discovery or causal-inference methods, but such extensions should
+not be inferred from predictive performance alone.
+
+\section{Average Precision and Asymmetric Error Costs in Graph Reconstruction}
+\label{sec:joint-ap-reconstruction}
+
+Average Precision provides a threshold-independent summary of the trade-off between
+recovering existing relations and avoiding unsupported ones.
+It is well suited to model comparison and checkpoint selection in the present
+link-prediction setting.
+However, it does not explicitly assign different downstream costs to false-positive and
+false-negative errors.
+
+This distinction becomes important when link prediction is interpreted as graph
+reconstruction rather than only as binary classification.
+A false-negative prediction leaves a potentially valid relation unresolved.
+A false-positive prediction introduces into the reconstructed graph a relation that is absent
+from the audited reference structure.
+
+This difference can be expressed conceptually as
+\begin{equation}
+\label{eq:joint-cfp-cfn}
+C_{\mathrm{FP}}>C_{\mathrm{FN}},
+\end{equation}
+when the predicted graph is intended to support subsequent structural or mechanistic
+reasoning.
+The inequality is not imposed by the current training objective; rather, it represents a
+task-dependent consideration for downstream use of reconstructed edges.
+
+A missed edge preserves uncertainty about a part of the graph.
+A spurious edge can instead convert uncertainty into an incorrect structural assertion and
+may alter the set of paths and neighbourhoods available for subsequent reasoning.
+In applications in which predicted relations are incorporated into a knowledge graph, it may
+therefore be preferable to recover a smaller set of high-confidence edges rather than to
+maximize recall at the cost of introducing unsupported structure.
+
+AP evaluates the overall quality of the candidate-edge ranking, but it does not determine the
+operating point at which a predicted edge should be accepted into an expanded graph.
+Future graph-completion studies could therefore complement AP with precision-oriented
+operating-point measures, for example precision at a prescribed recall level, precision among
+the highest-ranked candidates, or a validation-selected threshold $\tau$ in a selective
+acceptance rule
+\begin{equation}
+\label{eq:joint-eadd}
+\hat{E}_{\mathrm{add}}
+=
+\bigl\{(A,G):s_{AG}\ge\tau\bigr\}.
+\end{equation}
+Consequently, graph completion intended for knowledge enrichment should ultimately be
+treated not only as a ranking problem, but also as a selective knowledge-acceptance
+problem. A high-scoring candidate should become an asserted graph relation only when the
+available evidence satisfies an acceptance criterion appropriate to its downstream use.
+The present study does not implement such a deployment rule.
+
+\section{Limitations and Deployment Implications}
+\label{sec:joint-limitations}
+
+The primary limitation of the present study is the synthetic nature of the pharmacotherapy
+benchmark. The known graph and data-generating process provide a controlled environment
+for methodological evaluation, but cannot reproduce the full heterogeneity, measurement
+noise and confounding of real clinical records.
+At the same time, the controlled setting is useful for studying architectural questions that
+would be difficult to isolate when both the graph structure and observation process are
+unknown. The synthetic benchmark should therefore be interpreted as methodological
+ground truth rather than as a substitute for clinical evidence.
+
+The Last-FM* and Hetionet experiments extend the methodological stress testing beyond
+the original synthetic setting, but neither constitutes validation on real patient data.
+Generator-based oracle references in Task~B are synthetic artefacts and should not be read
+as clinical ceilings or as strict theoretical upper bounds.
+
+A practical feature of the proposed framework is its modularity. The graph encoder and
+explicit statistical branch can be modified independently, allowing alternative
+message-passing operators, dependence estimators or domain-specific evidence channels
+to be evaluated without redesigning the complete architecture.
+
+The explicit statistical evidence branch is comparatively lightweight once cohort-level
+statistics have been precomputed, although the computational cost of the complete system
+depends on graph size, message-passing architecture and the number of candidate
+predictions required.
+
+Separating structural and statistical evidence also improves inspectability. Individual
+dependence coefficients, evidence blocks and learned gates can be examined independently
+of the latent GNN representation. This does not make the complete model intrinsically
+interpretable, but provides an explicit evidence layer that can support auditing and
+hypothesis generation.
+
+The patient-specific graph formulation can also be viewed as one possible methodological
+building block toward future mechanistic digital-twin systems. The present architecture is
+not a digital twin: it lacks temporal state updating, validated intervention models,
+counterfactual estimation and real-world clinical calibration. Nevertheless, representing
+patient observations on a shared mechanistic graph provides a possible intermediate step
+between static risk prediction and dynamic patient-specific mechanistic modelling.
