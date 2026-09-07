@@ -2,77 +2,377 @@
 \label{ch:related-work}
 
 This chapter reviews the background that motivates combining structured knowledge graphs with explicit statistical dependence estimates:
-biomedical knowledge graphs, graph neural networks for heterogeneous relational data, Hierarchical Correlation Reconstruction, and knowledge-aware recommendation with evaluation reliability.
+biomedical knowledge graphs, graph neural networks for heterogeneous relational data, 
+Hierarchical Correlation Reconstruction, and knowledge-aware recommendation with evaluation reliability.
 
 \section{Knowledge Graphs in Biomedicine}
 \label{sec:related-kg}
 
-Knowledge graphs represent structured knowledge through entities and the relations between them.
-Formally, a knowledge graph $G$ may be viewed as a set of triples
+The term \emph{knowledge graph} (KG), though traceable to proposals from the
+1970s, entered widespread use after Google's 2012 announcement of its
+knowledge graph, built on resources such as DBpedia and Freebase
+\cite{hogan2021knowledge}. Since then, the concept has been adopted far
+beyond web search, as it provides an interlinked representation of
+knowledge in a human- and machine-understandable
+format~\cite{barrasa2023building}.
+
+This growth has been particularly visible in biomedicine, where
+KGs are used to integrate heterogeneous sources such as
+drugs, genes, diseases, and mechanisms of action (the biochemical process by which a drug produces its effect) 
+~\cite{maclean2021knowledge}.
+In biomedical KGs, entities (nodes $V$) may represent drugs, diseases, genes,
+proteins, mechanisms, patient characteristics, or clinical outcomes, while
+edges ($E$) describe typed relationships (e.g.,
+\emph{drug--treats--disease}, \emph{gene--associates--disease}).
+Such graphs are naturally heterogeneous and admit the form~\cite{hu2020hgt}
 \begin{equation}
-G \subseteq \mathcal{V} \times \mathcal{R} \times \mathcal{V},
+\label{eq:hetero-graph}
+\begin{gathered}
+G = \bigl(V, E, \tau, \phi\bigr), \\[0.3em]
+{\scriptstyle
+\tau \colon V \longrightarrow \mathcal{T}_V \text{ and }
+\phi \colon E \longrightarrow \mathcal{T}_E
+}
+\end{gathered}
 \end{equation}
-where $\mathcal{V}$ denotes the set of entities (nodes) and $\mathcal{R}$ the set of relation types (edge labels).
-Each triple $(h, r, t) \in G$ corresponds to a directed, labelled edge $h \xrightarrow{r} t$~\cite{hogan2021knowledge}.
 
-The key benefit is an interlinked representation that is intelligible to both humans and machines~\cite{barrasa2023building}.
-In biomedical applications, entities may represent drugs, diseases, genes, proteins, mechanisms, patient characteristics, or clinical outcomes, while edges describe typed relationships between them.
-Such graphs are naturally heterogeneous, with node and edge type maps
-\begin{equation}
-G = (V, E, \tau, \phi),
-\end{equation}
-where $\tau: V \rightarrow \mathcal{T}_V$ and $\phi: E \rightarrow \mathcal{T}_E$~\cite{hu2020hgt}.
+Within this domain, knowledge graphs support a wide range of tasks,
+spanning drug-drug interaction prediction, drug development, 
+and clinical decision support~\cite{cui2025hkgreview}.
+Among these, clinical decision support centres on
+patient-level data as a core, rather than drug- or trial-related data.
+Graph-based approaches within this patient-centric
+setting have been applied to different tasks such as clinical prediction tasks including
+in-hospital mortality and readmission~\cite{jiang2024graphcare}, survival
+analysis~\cite{tan2023gnnsurv}, and multimodal risk prediction from
+electronic health records (EHR)~\cite{zitnik2024graphai}.
 
-Knowledge graphs have been widely applied for integrating biomedical sources and supporting drug discovery~\cite{maclean2021knowledge}.
-Many such graphs primarily encode associations from literature and curated databases rather than patient-specific empirical realisations of the mechanisms they describe, and often ``highlight biological associations, failing to model causal relationships in complex dynamic biological systems''~\cite{maclean2021knowledge}.
-Recent work increasingly considers integrating knowledge graphs with causal or mechanistic representations~\cite{toonsi2025causal,lyu2023causal,mesinovic2025causal}.
+At this point it is important to note that such clinical prediction models
+could pursue different aims, such as risk prediction or treatment effect estimation. 
+Risk models
+predict the probability of an outcome under the patient's observed
+factual course of care, whereas treatment effect estimation asks a
+counterfactual question: how would the outcome differ under an
+alternative treatment decision~\cite{hoogland2021tutorial}. This distinction motivates
+ the design of our knowledge graph, which is structured to reflect 
+ intended causal relations between entities and patient trajectories in 
+ relation to specific treatments (drugs) and patient characteristics.
+The decision was motivated by Toonsi et al.~\cite{toonsi2025causal} who propose
+causal
+knowledge graphs as a means of addressing several shortcomings of the
+standard modelling pipeline simultaneously. 
+As KG's edges are
+intended to encode causal, rather than purely associative, relations,
+causal knowledge graphs are more robust to distribution
+shift between clinics and better suited to reasoning under incomplete
+documentation, while also allowing prior medical knowledge to support
+downstream prediction tasks~\cite{cui2025hkgreview}. 
 
-\section{Graph Neural Networks for Relational and Heterogeneous Data}
-\label{sec:related-gnn}
+Such graphs could be dynamically constructed from empirical data.
+Standard pipelines for constructing KG include a dedicated
+step for completing missing relations between entities using graph
+databases or link prediction models, typically applied to graphs
+derived from literature and curated sources~\cite{cui2025hkgreview}. 
 
-Graph neural networks (GNNs) learn node representations by aggregating information from neighbouring nodes through message passing~\cite{hamilton2017graphsage}.
-After $K$ layers, a node's representation can incorporate its $K$-hop neighbourhood.
+%This
+%thesis revisits the same construction step applying link prediction 
+%to reconstruct relations within graphs
+%built from empirical data.
+
+Taken together, these observations motivate two complementary tasks
+studied in this thesis: reconstructing
+knowledge graphs via empirical patient-level data, and predicting clinical outcomes
+on the resulting structure via node classification. The
+tasks are addressed by GNNs described in the following section.
+
+\subsection{Graph Neural Networks}
+\label{subsec:related-gnn}
+
+Graph neural networks (GNNs) learn node representations by aggregating
+information from neighbouring nodes through message passing
+\cite{hamilton2017graphsage}.
+After $K$ message-passing layers, the representation of a node can
+incorporate information from its $K$-hop neighbourhood.
+During training, every node is represented not only by its own features, as
+in traditional neural networks, but also by the features of its neighbours.
+Unlike earlier graph-embedding methods with fixed representations, GNNs
+build node embeddings inductively through aggregation, so inference does not
+require all nodes to be present during training.
+
+Formally, the representation $h_v^{(K)}$ of node $v$ depends on the features
+of all nodes within its $K$-hop neighbourhood.
 At layer $k$,
 \begin{equation}
 \label{eq:related-mp}
-h_v^{(k)}
-=
-\mathrm{UPDATE}\!\Bigl(
-h_v^{(k-1)},\
-\mathrm{AGGREGATE}\bigl(\{h_u^{(k-1)} : u \in \mathcal{N}(v)\}\bigr)
-\Bigr).
+\begin{gathered}
+h_v^{(k)} = \text{UPDATE}\Bigl(h_v^{(k-1)},\ \text{AGGREGATE}\bigl(\{h_u^{(k-1)} : u \in \mathcal{N}(v)\}\bigr)\Bigr), \\[0.3em]
+{\scriptstyle
+\mathcal{N}(v) \text{ --- neighbourhood of node } v
+}
+\end{gathered}
 \end{equation}
-Architectures differ mainly in how neighbours and, on heterogeneous graphs, relation types are transformed and aggregated.
+so that information from a node $u$ at graph distance $d$ from $v$ only
+reaches $v$ once $K \geq d$.
+Different GNN architectures mainly differ in how neighbouring information
+and, on heterogeneous graphs, relation types are transformed and aggregated.
+Several architectures relevant to this thesis are reviewed below.
 
-GraphSAGE~\cite{hamilton2017graphsage} aggregates sampled neighbourhoods with mean, LSTM or pooling operators and concatenates the node's own representation, enabling inductive application to unseen nodes.
-Relational Graph Convolutional Networks (R-GCNs)~\cite{schlichtkrull2018rgcn} apply relation-specific transformations,
+\subsubsection{GraphSAGE}
+
+GraphSAGE~\cite{hamilton2017graphsage} was introduced for inductive and
+scalable representation learning on large graphs.
+It instantiates the general message-passing scheme using one of three
+aggregation functions---mean, LSTM, or pooling---so that the same learned
+functions can later be applied to unseen nodes.
+GraphSAGE concatenates a node's own representation with the aggregated
+neighbour representation and L2-normalises the result after each layer.
+In order to improve scalability, it samples a fixed number of neighbours per node.
+
+\subsubsection{Relational Graph Convolutional Network}
+
+Relational Graph Convolutional Networks (R-GCNs)
+\cite{schlichtkrull2018rgcn} extend graph convolutional networks to
+multi-relational graphs, in which edges represent different types of
+relationships.
+Unlike a standard GCN, which applies the same transformation to messages
+from all neighbours, R-GCN applies a relation-specific transformation.
+
+For a node $v$, the representation at layer $l+1$ is computed as
 \begin{equation}
-\label{eq:related-rgcn}
-h_v^{(l+1)}
-=
-\sigma\!\left(
+\label{eq:rgcn}
+\begin{gathered}
+h_v^{(l+1)} =
+\sigma \left(
 \sum_{r \in \mathcal{R}}
 \sum_{u \in \mathcal{N}_r(v)}
 \frac{1}{c_{v,r}}
 W_r^{(l)} h_u^{(l)}
 +
 W_0^{(l)} h_v^{(l)}
-\right),
+\right), \\[0.4em]
+{\scriptstyle
+\mathcal{R}\text{ --- relation types},\ 
+\mathcal{N}_r(v)\text{ --- neighbours of }v\text{ under }r,\ 
+c_{v,r}\text{ --- normalisation}
+} \\[0.15em]
+{\scriptstyle
+W_r^{(l)}\text{ --- relation-specific weights},\ 
+W_0^{(l)}h_v^{(l)}\text{ --- self-loop},\ 
+\sigma\text{ --- activation}
+}
+\end{gathered}
 \end{equation}
-optionally with basis decomposition when the relation inventory is large.
-Both families appear as structural baselines in Task~A.
 
-Attention-based GNNs learn neighbour importance rather than using a fixed aggregation rule~\cite{velickovic2018gat}.
-Transformer-style operators project node states into queries, keys and values and aggregate with softmax-normalised attention~\cite{vaswani2017attention}.
-For heterogeneous graphs, the Heterogeneous Graph Transformer (HGT) makes attention scores and message transformations depend on source type, target type and edge relation~\cite{hu2020hgt}.
-For an edge from source $s$ to target $t$, HGT represents semantics as the meta-relation $(\tau_s, \phi(e), \tau_t)$.
-HGT is the primary structural encoder in Task~A and in the Last-FM* proxy, because typed pharmacotherapy and collaborative-knowledge-graph relations require type-aware message passing rather than a single shared convolution.
+When the number of relation types is large, assigning a separate full weight
+matrix to each relation can lead to overfitting.
+R-GCN therefore introduces basis decomposition, in which each
+relation-specific matrix is expressed as a linear combination of $B$ shared
+basis matrices:
+\begin{equation}
+\label{eq:rgcn-basis}
+\begin{gathered}
+W_r^{(l)} =
+\sum_{b=1}^{B} a_{rb}^{(l)} V_b^{(l)}, \\[0.4em]
+{\scriptstyle
+V_b^{(l)}\in\mathbb{R}^{d_{\mathrm{out}}\times d_{\mathrm{in}}}\text{ --- shared basis},\ 
+a_{rb}^{(l)}\text{ --- coefficient for relation }r
+}
+\end{gathered}
+\end{equation}
+
+\subsubsection{Transformer-based message passing}
+
+%Attention-based GNNs learn the importance of neighbouring nodes rather than
+%using a fixed aggregation rule \cite{velickovic2018graphattention}.
+Transformer-based graph neural networks adapt the self-attention mechanism
+from the Transformer architecture of Vaswani et al.~\cite{vaswani2017attention} to
+graph-structured data.
+For each node $i$, its input representation $\mathbf{h}_i$ is projected into
+query, key, and value vectors:
+\begin{equation}
+\label{eq:transformer-qkv}
+\begin{gathered}
+\mathbf{q}_i = \mathbf{W}_{Q}\mathbf{h}_i, \qquad
+\mathbf{k}_i = \mathbf{W}_{K}\mathbf{h}_i, \qquad
+\mathbf{v}_i = \mathbf{W}_{V}\mathbf{h}_i, \\[0.4em]
+{\scriptstyle
+\mathbf{W}_{Q},\;\mathbf{W}_{K},\;\mathbf{W}_{V}\text{ --- learnable projection matrices}
+}
+\end{gathered}
+\end{equation}
+For an edge from source node $j$ to target node $i$, the attention
+coefficient is
+\begin{equation}
+\begin{gathered}
+e_{ij} =
+\frac{\mathbf{q}_{i}^{\top}\mathbf{k}_{j}}{\sqrt{d_k}}, \\[0.4em]
+{\scriptstyle
+d_k\text{ --- dimensionality of the key vectors}
+}
+\end{gathered}
+\end{equation}
+The attention coefficients are normalised across all neighbours of the
+target node using the softmax function:
+\begin{equation}
+\label{eq:transformer-softmax}
+\begin{gathered}
+\alpha_{ij} =
+\frac{\exp(e_{ij})}
+{\sum_{r \in \mathcal{N}(i)} \exp(e_{ir})}, \\[0.4em]
+{\scriptstyle
+\mathcal{N}(i)\text{ --- neighbourhood of target node }i
+}
+\end{gathered}
+\end{equation}
+The node's representation is updated by aggregating value projections of
+its neighbours, weighted by the learned attention coefficients:
+\begin{equation}
+\begin{gathered}
+\mathbf{h}'_i =
+\sum_{j \in \mathcal{N}(i)}
+\alpha_{ij}\mathbf{v}_{j}, \\[0.4em]
+{\scriptstyle
+\alpha_{ij}\text{ --- attention weight},\ 
+\mathbf{v}_{j}\text{ --- value projection of neighbour }j
+}
+\end{gathered}
+\end{equation}
+
+To capture multiple complementary interaction patterns, graph Transformers
+commonly use multi-head attention.
+The output of head $m$ for node $i$ is:
+\begin{equation}
+\begin{gathered}
+\mathbf{h}_i^{\prime(m)} =
+\sum_{j \in \mathcal{N}(i)}
+\alpha_{ij}^{(m)}\mathbf{v}_{j}^{(m)}, \\[0.4em]
+{\scriptstyle
+m\in\{1,\ldots,H\},\ 
+\mathbf{W}_{Q}^{(m)},\;\mathbf{W}_{K}^{(m)},\;\mathbf{W}_{V}^{(m)}\text{ --- independent projections per head}
+}
+\end{gathered}
+\end{equation}
+The outputs of all $H$ heads are combined by concatenation or averaging.
+
+All architectures mentioned above are homogeneous from nature, but can be applied to heterogeneous
+graphs through an appropriate configuration of the \texttt{HeteroConv} layer in
+PyTorch Geometric (PyG). \texttt{HeteroConv} is a generic wrapper that applies
+a separately specified message-passing operator to each edge type, i.e., each
+meta-relation between a source node type and a target node type~\cite{wojcik2026grafowe}.
+This mechanism is used in Task B which allowed to experiment with different graph architectures 
+on joined setting.
+
+
+\subsubsection{Heterogeneous Graph Transformer}
+
+In response to the demand for preserving heterogeneous structure during modelling, Hu et al.~\cite{hu2020hgt} 
+proposed the Heterogeneous Graph Transformer (HGT).
+For attention-based message passing on heterogeneous graphs, the
+Heterogeneous Graph Transformer (HGT) makes attention scores and message
+transformations dependent on the types of source and target nodes and on the
+edge relation.
+Unlike the \texttt{HeteroConv}-wrapped TransformerConv described above,
+which instantiates a fully independent set of attention parameters for
+each edge type and aggregates their outputs only after each layer has
+been computed separately, HGT shares a single underlying attention
+mechanism across all edge and node types, using type-specific projection
+matrices. This allows HGT to learn
+interactions across types directly, at a lower parameter cost as the
+number of types grows~\cite{hu2020hgt}.
+
+The HGT layer decomposes message passing
+into three components: heterogeneous mutual attention, heterogeneous
+message passing, and target-specific aggregation. Each component uses a
+separate set of weight matrices for every combination of source node
+type, edge type, and target node type -- referred to as a
+\emph{meta relation} $(\tau_s, \phi(e), \tau_t)$.
+%For an edge from source node $s$ to target node $t$, HGT represents its
+%semantics as a meta-relation $(\tau_s, \phi(e), \tau_t)$, where $\tau_s$
+%and $\tau_t$ denote the source and target node types and $\phi(e)$ denotes
+%the edge type.
+So that HGT extends the query, key, and value projections introduced in
+Eq.~\eqref{eq:transformer-qkv} by conditioning each weight matrix on node
+type: $\mathbf{W}_{Q}^{\tau_t}$, $\mathbf{W}_{K}^{\tau_s}$, and
+$\mathbf{W}_{M}^{\tau_s}$ replace the shared $\mathbf{W}_{Q}$,
+$\mathbf{W}_{K}$, and $\mathbf{W}_{V}$, so that
+\begin{equation}
+\mathbf{q}_t = \mathbf{W}_{Q}^{\tau_t}\mathbf{h}_t, \qquad
+\mathbf{k}_s = \mathbf{W}_{K}^{\tau_s}\mathbf{h}_s, \qquad
+\mathbf{m}_s = \mathbf{W}_{M}^{\tau_s}\mathbf{h}_s.
+\end{equation}
+The attention coefficient additionally depends on the edge type through a
+relation-specific matrix $\mathbf{W}^{\phi(e)}_{\text{ATT}}$:
+\begin{equation}
+e_{ts} =
+\frac{\left(\mathbf{q}_t^{\top}\mathbf{W}^{\phi(e)}_{\text{ATT}}\mathbf{k}_s\right)}
+{\sqrt{d_k}},
+\qquad
+\alpha_{ts} = \frac{\exp(e_{ts})}{\sum_{r \in \mathcal{N}(t)} \exp(e_{tr})}.
+\end{equation}
+The message is similarly transformed by a relation-specific matrix
+$\mathbf{W}^{\phi(e)}_{\text{MSG}}$ and aggregated across all neighbours
+of $t$:
+\begin{equation}
+\label{eq:hgt-aggregation}
+\mathbf{h}'_t =
+\sum_{s \in \mathcal{N}(t)}
+\alpha_{ts}\left(\mathbf{m}_s\mathbf{W}^{\phi(e)}_{\text{MSG}}\right)~\cite{hu2020hgt}.
+\end{equation}
+Relation-specific transformations affect both the attention
+score and the transferred message, so that HGT assigns different
+importance to neighbours based not only on their features, but also on
+the semantic type of their connection to the target node.
+
+As $\mathbf{h}'_t$ combines information from source nodes of
+potentially different types and feature distributions, it is mapped back
+into the target node's type-specific space via a target-type-dependent
+projection, followed by a non-linear activation and a residual
+connection to the previous layer:
+\begin{equation}
+\mathbf{h}''_t =
+\mathbf{A}\text{-}\mathrm{Linear}_{\tau_t}
+\left(\sigma\left(\mathbf{h}'_t\right)\right)
++ \mathbf{h}_t^{(l-1)}~\cite{hu2020hgt}.
+\end{equation}
+
+This capacity to differentiate neighbours by both node type and
+relation semantics is particularly relevant to the knowledge graphs
+built for the purpose of this thesis, where clinically distinct relation types --
+such as drug--drug interactions versus drug--outcome relations -- 
+ carry different predictive weight. 
+HGT is the primary structural encoder in Task~A and proxy to Task~A, because typed
+pharmacotherapy and collaborative-knowledge-graph relations require type-aware message
+passing. 
+
+
+
+% DropEdge (Rong et al., 2020) randomly removes a fraction of edges independently in every layer during training, slowing the rate of information mixing and acting as a structural regularizer.
+
+% Jumping Knowledge (Xu et al., 2018) aggregates the outputs of all layers (via concatenation, cat, or elementwise max) rather than only the last one, letting a node fall back on a shallower, less-smoothed representation when the deepest layer has become uninformative.
+
+% Weisfeiler-Lehman --- two nodes with identical initial features and structurally equivalent neighborhoods 
+% cannot be assigned distinct representations by any number of convolutional layers.
+
+% leave-one-out
 
 \section{Statistical Dependence and Hierarchical Correlation Reconstruction}
 \label{sec:related-hcr}
 \label{subsec:hcr_def}
 
-Hierarchical Correlation Reconstruction (HCR), proposed by Jaros\l{}aw Duda, represents probability distributions and statistical dependencies through coefficients of an orthonormal basis expansion~\cite{duda2018hcr,duda2018hcr-ts,duda2020hcr-income,duda2023hcr-wolfram,duda2025hcr-mi}.
+Empirical comparisons between graph-based and tabular models report
+mixed results, with gains from graph structure often modest and
+architecture-dependent~\cite{tabgraphs2024,zhu2025stroketh}. Rather than
+resolving this solely through architecture search, this thesis follows
+the Wide\,\&\,Deep paradigm~\cite{cheng2016wideanddeep,gao2021wdgnn}, in
+which a linear or statistically-grounded branch complements a deep,
+graph-based branch. The wide branch memorises direct, low-order
+statistical dependencies that message passing may dilute through
+neighbourhood aggregation, while the deep branch generalises through
+learned relational representations.  
+In this thesis, the wide branch is introduced using
+Hierarchical Correlation Reconstruction (HCR) described in this section.
+
+HCR, proposed by Jaros\l{}aw Duda, represents probability distributions and statistical dependencies through coefficients of an orthonormal basis expansion~\cite{duda2018hcr,duda2018hcr-ts,duda2020hcr-income,duda2023hcr-wolfram,duda2025hcr-mi}.
 Lower-order coefficients describe broad dependence patterns; higher-order coefficients capture more complex departures from independence.
 
 For variables $X$ and $Y$ with orthonormal bases $\{\phi_j^{(X)}\}$ and $\{\phi_k^{(Y)}\}$, empirical cross-dependence coefficients are
@@ -91,18 +391,28 @@ For a binary variable $B\in\{0,1\}$ with prevalence $p_B=P(B=1)$,
 so the lowest-order coefficient $a_{11}$ is a standardized first-order dependence descriptor.
 The same principle extends to other variable types via suitable marginal bases.
 
-HCR is used here as a statistical representation of empirical dependence, not as a method for identifying causal effects.
-Causal direction and mechanistic interpretation are supplied by the directed graph schema.
-The term HCR denotes the orthonormal-basis coefficient construction; larger task-specific vectors that combine those coefficients with additional descriptors are called HCR-inspired representations.
-In Task~A they describe the local dependency motif around a candidate edge; in Task~B they supply an endpoint-neighbourhood evidence channel alongside the GNN representation.
-The common principle is combining learned graph representations with explicit statistical dependence estimated from observations.
+HCR has demonstrated practical value in domains requiring reliable,
+interpretable estimates of conditional distributions instead of single
+point predictions. In virtual screening for drug discovery, HCR-based
+prediction of ADMET property distributions enables inexpensive
+selection of compounds with properties nearly certain to fall within a
+desired range, while automatically flagging predictions with high
+uncertainty for manual review~\cite{szarek2022hcrmolecular}. In income
+credibility assessment using Polish household budget survey data, HCR
+produced more accurate proxies for low-income households than
+conventional tax-record matching, showing its ability to model the
+conditional distribution directly instead of relying on a single
+regression estimate~\cite{duda2020hcr-income,brzezinski2022polishinequality}.
 
-\section{Knowledge-Aware Recommendation and Evaluation Reliability}
-\label{sec:related-rec}
-
-Beyond biomedicine, knowledge graphs are combined with empirical interaction data in recommendation systems.
-KGAT propagates representations over a collaborative knowledge graph built from user--item interactions and external knowledge~\cite{wang2019kgat}.
-The Last-FM benchmark from that line of work is used here as a cross-domain proxy for the link-prediction template developed on the pharmacotherapy graph.
-
-The reliability of this benchmark was questioned by Shehzad et al.~\cite{shehzad2025lastfm} in a reproducibility study of intent-aware recommendation models.
-The corrected Last-FM* split used in Chapter~\ref{ch:lastfm-proxy} removes train--test interaction leakage and is therefore the appropriate resource for methodological transfer claims.
+Based on those results, in this work HCR is used as a statistical representation of empirical and 
+associative dependence to complement the GNN representation.
+Causal direction and
+mechanistic interpretation are instead supplied by the directed graph
+schema itself built for the purpose of this thesis.
+In general the term HCR denotes the orthonormal-basis coefficient construction, whereas this thesis
+uses HCR-inspired representations -- larger task-specific vectors that 
+combine those coefficients with additional descriptors.
+In Task~A they describe the local dependency motif around a candidate edge, while in Task~B they supply 
+an endpoint-neighbourhood evidence channel alongside the GNN representation.
+The common principle is combining learned graph representations with explicit statistical 
+dependence estimated from observations.
