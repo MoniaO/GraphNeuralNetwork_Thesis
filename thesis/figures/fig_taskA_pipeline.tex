@@ -1,0 +1,30 @@
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >=Stealth,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=3pt, minimum height=0.7cm, minimum width=1.55cm},
+  g/.style={box, fill=blue!12},
+  s/.style={box, fill=orange!14},
+  f/.style={box, fill=green!12},
+  arr/.style={->, thick, draw=gray!65}
+]
+\node[font=\bfseries\normalsize] at (4.1,3.6) {Task~A frozen pipeline};
+\node[g] (gt) at (0.0,2.4) {$G_{\mathrm{train}}$};
+\node[g] (hgt) at (2.0,2.4) {HGT};
+\node[g] (q) at (4.0,2.4) {$q_{AG}$};
+\node[g] (gg) at (6.0,2.4) {$g_{\mathrm{graph}}$};
+\node[s] (mot) at (0.0,0.75) {Motif};
+\node[s] (hcr) at (2.0,0.75) {40D$\times$3};
+\node[s] (enc) at (4.0,0.75) {Roles};
+\node[s] (gs) at (6.0,0.75) {$g_{\mathrm{stat}}$};
+\node[f] (fuse) at (8.15,1.55) {Fusion88};
+\node[box, fill=white] (out) at (8.15,0.2) {logit};
+\draw[arr] (gt) -- (hgt);
+\draw[arr] (hgt) -- (q);
+\draw[arr] (q) -- (gg);
+\draw[arr] (mot) -- (hcr);
+\draw[arr] (hcr) -- (enc);
+\draw[arr] (enc) -- (gs);
+\draw[arr] (gg.east) -- ++(0.3,0) |- (fuse.west);
+\draw[arr] (gs.east) -- ++(0.3,0) |- (fuse.west);
+\draw[arr] (fuse) -- (out);
+\end{tikzpicture}

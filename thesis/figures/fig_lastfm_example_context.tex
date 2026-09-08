@@ -1,0 +1,29 @@
+\begin{tikzpicture}[
+  font=\scriptsize,
+  >=Stealth,
+  node/.style={draw, rounded corners=2pt, align=center, inner sep=2.5pt, minimum height=0.55cm},
+  user/.style={node, fill=blue!12},
+  item/.style={node, fill=orange!14},
+  ent/.style={node, fill=green!12},
+  arr/.style={->, thick, draw=gray!70},
+  cand/.style={->, thick, dashed, draw=red!65}
+]
+\node[font=\bfseries\footnotesize] at (4.0,3.7) {Example collaborative KG fragment (Last-FM*)};
+\node[user] (u) at (0.3,2.0) {user $u$};
+\node[item] (h1) at (2.8,3.05) {history $h_1$};
+\node[item] (h2) at (2.8,2.0) {history $h_2$};
+\node[item] (h3) at (2.8,0.95) {history $h_3$};
+\node[item] (x) at (5.6,2.0) {candidate $X$};
+\node[ent] (art) at (8.0,2.85) {artist};
+\node[ent] (tag) at (8.0,1.15) {KG entity};
+\draw[arr] (u) -- (h1);
+\draw[arr] (u) -- (h2);
+\draw[arr] (u) -- (h3);
+\draw[cand] (u) -- node[above, font=\tiny, text=red!70!black]{score $s(u,X)$} (x);
+\draw[arr] (h1) -- (art);
+\draw[arr] (h2) -- (art);
+\draw[arr] (x) -- (art);
+\draw[arr] (x) -- (tag);
+\draw[arr, dashed, gray] (h2) to[bend left=12] node[above, font=\tiny]{A11 route} (x);
+\node[anchor=west, align=left, font=\tiny] at (0.0,0.15) {solid: CKG / history links used in encoding\\dashed red: candidate user--item pair; gray: history routing toward $X$};
+\end{tikzpicture}

@@ -1,0 +1,170 @@
+% Rozdziały zaczynamy od nowej strony.
+\subsection{Graph Neural Networks}
+\label{subsec:related-gnn}
+
+Graph neural networks (GNNs) learn node representations by aggregating
+information from neighbouring nodes through message passing
+\cite{hamilton2017inductive}.
+After $K$ message-passing layers, the representation of a node can
+incorporate information from its $K$-hop neighbourhood.
+During training, every node is represented not only by its own features, as
+in traditional neural networks, but also by the features of its neighbours.
+Unlike earlier graph-embedding methods with fixed representations, GNNs
+build node embeddings inductively through aggregation, so inference does not
+require all nodes to be present during training.
+
+Formally, the representation $h_v^{(K)}$ of node $v$ depends on the features
+of all nodes within its $K$-hop neighbourhood.
+At layer $k$,
+\begin{equation}
+h_v^{(k)} = \text{UPDATE}\Bigl(h_v^{(k-1)},\ \text{AGGREGATE}\bigl(\{h_u^{(k-1)} : u \in \mathcal{N}(v)\}\bigr)\Bigr),
+\end{equation}
+so that information from a node $u$ at graph distance $d$ from $v$ only
+reaches $v$ once $K \geq d$.
+Different GNN architectures mainly differ in how neighbouring information
+and, on heterogeneous graphs, relation types are transformed and aggregated.
+Several architectures relevant to this thesis are reviewed below.
+
+\subsubsection{GraphSAGE}
+
+GraphSAGE \cite{hamilton2017inductive} was introduced for inductive and
+scalable representation learning on large graphs.
+It instantiates the general message-passing scheme using one of three
+aggregation functions---mean, LSTM, or pooling---so that the same learned
+functions can later be applied to unseen nodes.
+GraphSAGE concatenates a node's own representation with the aggregated
+neighbour representation and L2-normalises the result after each layer.
+To improve scalability, it samples a fixed number of neighbours per node
+rather than using the full neighbourhood.
+
+\subsubsection{Relational Graph Convolutional Network}
+
+Relational Graph Convolutional Networks (R-GCNs)
+\cite{schlichtkrull2018modeling} extend graph convolutional networks to
+multi-relational graphs, in which edges represent different types of
+relationships.
+Unlike a standard GCN, which applies the same transformation to messages
+from all neighbours, R-GCN applies a relation-specific transformation.
+
+For a node $v$, the representation at layer $l+1$ is computed as
+
+\begin{equation}
+\label{eq:rgcn}
+h_v^{(l+1)} =
+\sigma \left(
+\sum_{r \in \mathcal{R}}
+\sum_{u \in \mathcal{N}_r(v)}
+\frac{1}{c_{v,r}}
+W_r^{(l)} h_u^{(l)}
++
+W_0^{(l)} h_v^{(l)}
+\right),
+\end{equation}
+
+where $\mathcal{R}$ is the set of relation types,
+$\mathcal{N}_r(v)$ denotes the set of neighbours connected to node $v$
+through relation $r$, $W_r^{(l)}$ is a trainable weight matrix specific to
+relation $r$, and $c_{v,r}$ is a normalisation constant.
+The term $W_0^{(l)} h_v^{(l)}$ is a self-loop transformation that preserves
+the node's own representation.
+Finally, $\sigma$ denotes a non-linear activation function.
+
+When the number of relation types is large, assigning a separate full weight
+matrix to each relation can lead to overfitting.
+R-GCN therefore introduces basis decomposition, in which each
+relation-specific matrix is expressed as a linear combination of $B$ shared
+basis matrices:
+
+\begin{equation}
+\label{eq:rgcn-basis}
+W_r^{(l)} =
+\sum_{b=1}^{B} a_{rb}^{(l)} V_b^{(l)},
+\end{equation}
+
+where $V_b^{(l)} \in
+\mathbb{R}^{d_{\mathrm{out}} \times d_{\mathrm{in}}}$ is the $b$-th shared
+basis matrix and $a_{rb}^{(l)}$ is a trainable coefficient specifying the
+contribution of this basis to relation $r$.
+
+\subsubsection{Transformer-based graph convolutions}
+
+Attention-based GNNs learn the importance of neighbouring nodes rather than
+using a fixed aggregation rule \cite{velickovic2018graphattention}.
+Transformer-based graph neural networks adapt the self-attention mechanism
+from the Transformer architecture \textcite{vaswani2017attention} to
+graph-structured data.
+For each node $i$, its input representation $\mathbf{h}_i$ is projected into
+query, key, and value vectors:
+\begin{equation}
+\mathbf{q}_i = \mathbf{W}_{Q}\mathbf{h}_i, \qquad
+\mathbf{k}_i = \mathbf{W}_{K}\mathbf{h}_i, \qquad
+\mathbf{v}_i = \mathbf{W}_{V}\mathbf{h}_i,
+\end{equation}
+where $\mathbf{W}_{Q}$, $\mathbf{W}_{K}$, and $\mathbf{W}_{V}$ are learnable
+weight matrices.
+For an edge from source node $j$ to target node $i$, the attention
+coefficient is
+\begin{equation}
+    e_{ij} =
+    \frac{\mathbf{q}_{i}^{\top}\mathbf{k}_{j}}{\sqrt{d_k}},
+    \end{equation}
+    where $d_k$ denotes the dimensionality of the key vectors.
+
+The attention coefficients are normalised across all neighbours
+$\mathcal{N}(i)$ of the target node using the softmax function:
+    \begin{equation}
+    \alpha_{ij} =
+    \frac{\exp(e_{ij})}
+    {\sum_{r \in \mathcal{N}(i)} \exp(e_{ir})}.
+    \end{equation}
+The node's representation is updated by aggregating value projections of
+its neighbours, weighted by the learned attention coefficients:
+\begin{equation}
+\mathbf{h}'_i =
+\sum_{j \in \mathcal{N}(i)}
+\alpha_{ij}\mathbf{v}_{j}.
+\end{equation}
+
+To capture multiple complementary interaction patterns, graph Transformers
+commonly use multi-head attention.
+For each head $m \in \{1, \ldots, H\}$, independent projection matrices
+$\mathbf{W}_{Q}^{(m)}$, $\mathbf{W}_{K}^{(m)}$, and
+$\mathbf{W}_{V}^{(m)}$ are learned.
+The output of head $m$ for node $i$ is:
+\begin{equation}
+\mathbf{h}_i^{\prime(m)} =
+\sum_{j \in \mathcal{N}(i)}
+\alpha_{ij}^{(m)}\mathbf{v}_{j}^{(m)}.
+\end{equation}
+The outputs of all $H$ heads are combined by concatenation or averaging.
+
+All architectures mentioned in this section can be applied to heterogeneous
+graphs through an appropriate configuration of the \texttt{HeteroConv} layer in
+PyTorch Geometric (PyG). \texttt{HeteroConv} is a generic wrapper that applies
+a separately specified message-passing operator to each edge type, i.e., each
+meta-relation between a source node type and a target node type
+\textcite{wojcik2026grafowe}.
+
+For attention-based message passing on heterogeneous graphs, the
+Heterogeneous Graph Transformer (HGT) makes attention scores and message
+transformations dependent on the types of source and target nodes and on the
+edge relation type \textcite{hu2020heterogeneous}.
+For an edge from source node $s$ to target node $t$, HGT represents its
+semantics as a meta-relation $(\tau_s, \phi(e), \tau_t)$, where $\tau_s$
+and $\tau_t$ denote the source and target node types and $\phi(e)$ denotes
+the edge type.
+The target node produces a query, whereas the source node produces a key and
+a value. Relation-specific transformations affect both the attention score
+and the transferred message.
+HGT can therefore assign different importance to neighbours depending not
+only on their features, but also on the semantic type of their connection to
+the target node.
+
+% DropEdge (Rong et al., 2020) randomly removes a fraction of edges independently in every layer during training, slowing the rate of information mixing and acting as a structural regularizer.
+
+% Jumping Knowledge (Xu et al., 2018) aggregates the outputs of all layers (via concatenation, cat, or elementwise max) rather than only the last one, letting a node fall back on a shallower, less-smoothed representation when the deepest layer has become uninformative.
+
+% Weisfeiler-Lehman --- two nodes with identical initial features and structurally equivalent neighborhoods 
+% cannot be assigned distinct representations by any number of convolutional layers.
+
+% leave-one-out

@@ -1,0 +1,522 @@
+\subsection{Endpoint prediction}
+
+Task B is formulated as multi-label node classification on a heterogeneous, per-patient graph. 
+Instead of building one global graph and treating patients as additional nodes, 
+every patient is represented 
+as a copy of the same fixed causal DAG topology, with node feature vectors instantiated from 
+that patient's 
+individual covariates. 
+Formally, for a patient graph \(G_p = (V, E)\) shared across the cohort, with patient-specific node features
+\(x_p\). \(\mathcal{V}_{\text{target}} \subset V\) denote the set of
+endpoint nodes used as prediction targets. The model computes
+
+\[
+\hat{y}_{p,v} = \sigma\big(f_\theta(G_p, x_p)_v\big), \quad v \in \mathcal{V}_{\text{target}}
+\]
+
+where \(f_\theta\) is a heterogeneous graph neural network shared across all patients, 
+and only the endpoints
+target embeddings are read out by the classification head.
+%do przemyslenia
+
+\subsubsection{Data Representation}
+\label{subsec:taskb_data}
+
+The first thing in applying GNNs is to built properly the input into neural network. The input graph for the node 
+classification task was built based on: 
+
+\begin{enumerate}[label=\alph*)]
+    \item \textbf{nodes}
+    \item \textbf{edges}
+    \item \textbf{per-scenario patient sample table} 
+\end{enumerate}
+
+Based on those items \texttt{HeteroData} object was created which was represented by objects type presented in the table
+
+\begin{table}[t]
+    \centering
+    \caption{Components of the per-patient \texttt{HeteroData} graph representation.}
+    \label{tab:heterodata_components}
+    \begin{tabularx}{\textwidth}{@{}l X@{}}
+        \toprule
+        \textbf{Component} & \textbf{Description} \\
+        \midrule
+        Node types &
+        Six semantic categories of nodes shared across all patient graphs: \texttt{patient\_context}, \texttt{drug\_exposure}, \texttt{mechanism}, \texttt{adr\_or\_intermediate\_state}, \texttt{observation\_or\_selection}, and \texttt{clinical\_endpoint}. \\
+        \addlinespace
+        Relations &
+        Keyed by \texttt{(src\_type, "to", dst\_type)};
+        \texttt{edge\_type} is encoded as a one-hot block inside
+        \texttt{edge\_attr}. This keeps the number of distinct convolutional
+        relation modules in \texttt{HeteroConv} small while still letting
+        edge-type information reach the message function. \\
+        \addlinespace
+        Edge attributes (\texttt{edge\_attr}) &
+        Fixed-length vector per edge (see \cref{tab:edge_attr_layout}): signed
+        effect \texttt{effect\_size}$\times$\texttt{effect\_sign}, audit scalars
+        \texttt{activation\_frequency}, \texttt{mechanistic\_confidence},
+        \texttt{evidence\_weight}, and a one-hot \texttt{edge\_type} block. \\
+        \addlinespace
+        Node features (\texttt{x}) &
+        The patient's observed values for a node \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The patient data is encoded on nodes level. In \cref{fig:architecture} there is presented the exemplary DAG for one 
+of patient. 
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth, height=0.45\textheight, keepaspectratio]{rysunki/patient_dag_101.png}
+    \caption{The description of the two tasks addressed in the thesis.}
+    \label{fig:patient_dag}
+\end{figure}
+
+Two structural exclusion mechanisms are applied before any feature is computed: 
+\begin{enumerate}[label=\alph*)]
+    \item nodes flagged \texttt{exclude\_from\_observed\_model} or \texttt{is\_latent} (hidden confounders); 
+    \item nodes that are structural descendants of any endpoint in the DAG (e.g. documentation nodes such as 
+    \texttt{hospital\_contact}, \texttt{fall\_reported}, which are caused by the endpoint rather than causal parents of it)
+\end{enumerate}
+
+ All normalization statistics (mean/std for continuous node values) 
+ and all statistical evidence features (\cref{subsec:hcr_application}) are computed exclusively on the training split of patients, to 
+ prevent both node-level and patient-level information leakage across splits.
+
+\paragraph{Prediction targets.}
+Although the knowledge graph defines 13 
+clinical outcomes nodes, the model is trained and evaluated on a
+subset of 11 clinical endpoints, excluding
+%\texttt{AKI}, \texttt{DILI}, \texttt{Depression}, \texttt{Delirium},
+%\texttt{GI\_bleeding}, \texttt{Hyponatremia}, \texttt{Hyperkalemia},
+%\texttt{QT\_arrhythmia}, \texttt{Serotonin\_syndrome},
+%\texttt{Rhabdomyolysis}, and \texttt{Lactic\_acidosis}.
+%The remaining two endpoints---
+\texttt{Hospitalization} and
+\texttt{Falls}. They are retained in the per-patient graph topology and in
+patient labels, but are excluded from the multi-target prediction head.
+
+This choice follows both the graph structure and the clinical scope of
+the task. \texttt{Hospitalization} was excluded because the DAG models it
+as a downstream consequence of other endpoints
+(\texttt{endpoint\_to\_hospitalization}), which makes it a poor fit for
+parallel multi-target prediction alongside those same outcomes. 
+\texttt{Falls}, by contrast, is a geriatric outcome that has different 
+casual pathways than other endpoints that originate from exposures
+and mechanistic intermediates in the pharmacotherapy graph. Based on 
+these conditions, falls and
+hospitalisation are treated as downstream, multifactorial events outside
+that primary prediction scope.
+
+For reporting, all eleven targets are trained, but macro-averaged metrics
+(AUC, AP, \% of oracle AUC; \cref{eq:pct-ceiling}) are computed on eight endpoints only.
+\texttt{Serotonin\_syndrome}, \texttt{Rhabdomyolysis}, and
+\texttt{Lactic\_acidosis} are omitted from the aggregate because their
+extreme rare prevalence makes
+split-level AUC and AP unstable.
+
+\subsubsection{Model architecture}
+
+The core architecture is a stack of heterogeneous graph convolutional layers wrapped in \texttt{HeteroConv},
+shared across relation types but parameterized identically for every patient graph. The following
+convolution backbones 
+are supported through a common registry and were benchmarked against each other: 
+GraphSAGE, R-GCN, and TransformerConv. 
+All three are applied to the heterogeneous patient DAG via \texttt{HeteroConv}.
+Each directed edge in the graph carries a fixed \texttt{edge\_attr} vector 
+assembled at
+graph-build phase from the audited edge table (\cref{tab:edge_attr_layout}).
+In model design relations are grouped by node-type pairs \texttt{(src\_type, to, dst\_type)}
+and the semantic \texttt{edge\_type} is
+retained as a one-hot suffix in \texttt{edge\_attr}. 
+This vector is consumed differently depending on the convolution
+operator (\cref{tab:edge_attr_by_conv}).
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{Layout of the Task~B \texttt{edge\_attr} vector.}
+  \label{tab:edge_attr_layout}
+  \begin{tabularx}{\textwidth}{@{}l l X@{}}
+    \toprule
+    \textbf{Block} & \textbf{Columns} & \textbf{Source} \\
+    \midrule
+    Signed effect &
+    1 &
+    \texttt{effect\_size} $\times$ \texttt{effect\_sign} \\
+    Audit scalars &
+    3 &
+    \texttt{activation\_frequency}, \texttt{mechanistic\_confidence},
+    \texttt{evidence\_weight} \\
+    Edge-type one-hot &
+    $|\texttt{edge\_type}|$ &
+    semantic edge category from the audited DAG \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{Use of \texttt{edge\_attr} by convolution backbone in Task~B.}
+  \label{tab:edge_attr_by_conv}
+  \begin{tabularx}{\textwidth}{@{}l X@{}}
+    \toprule
+    \textbf{Backbone} & \textbf{Edge features used in message passing} \\
+    \midrule
+    GraphSAGE &
+    none (topology only; \texttt{edge\_attr} stored but not passed to
+    \texttt{SAGEConv}) \\
+    TransformerConv &
+    full \texttt{edge\_attr} via \texttt{edge\_dim} \\
+    R-GCN &
+    relation identity via separate modules per edge type, not via the
+    Task~B \texttt{edge\_attr} vector \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+A design issue that was handled during experiments is the duplication of the self-transform across relations. 
+Several PyG convolution layers (SAGEConv, TransformerConv) internally add their own linear self-loop term,
+ wrapped per-relation inside \texttt{HeteroConv}, this term is silently duplicated once per incoming 
+relation type for a given node type. The implementation removes this internal duplication 
+(\texttt{root\_weight}=False for SAGE/Transformer) and replaces it with a single, explicit, 
+controlled self-transform per layer per node type. 
+% For GAT-family layers, where the self-dependency is baked into the attention query and cannot be disabled, the explicit self-transform 
+% acts as an additional controlled term on top of the irreducible built-in dependency. GraphConv/GCN, which has no 
+% \texttt{root\_weight} parameter at all, is deliberately excluded from this mechanism, since its built-in self-transform 
+% cannot be removed without reimplementing the layer.
+%node identity 
+
+A node-identity embedding, added after the input projection, was introduced to resolve a specific representational 
+collapse. Message-passing GNNs are bounded in expressive power by the 1-dimensional Weisfeiler-Lehman graph 
+isomorphism test. In the dataset, several 
+endpoint nodes of the same type (e.g. Serotonin syndrome, Rhabdomyolysis, Lactic acidosis) share 
+identical static audited attributes and comparable topological 
+positions, and were therefore indistinguishable to the model except through such positional cues.
+To break this symmetry, a learnable embedding table is maintained per node type, indexed by each node's fixed 
+local index, and added to the projected input features before the first convolutional layer, following the same 
+principle underlying position aware node embeddings in .
+%oversmoothing (i will see if i should present it or rephrase it somehow)
+
+This connects directly to the model's handling of oversmoothing. Using multiple message-passing 
+layers, repeated aggregation causes node representations to converge toward 
+indistinguishability. To mitigate this, several oversmoothing countermeasures were 
+tested like
+residual connections, Jumping Knowledge, DropEdge, and PairNorm, from which only 
+residual connections were found the most effective and were used in the final results presented
+in the thesis.
+%These methods were evaluated both 
+%individually and in combination with the HCR enrichment described in \cref{subsec:hcr_application}.
+
+% \subsubsection{Statistical evidence branch}
+% \label{subsec:hcr_application}
+
+% In addition to the purely structural GNN pathway, approch presented in the thesis incorporates 
+% a statistical evidence 
+% side-channel with dependecies inspired by HCR described in \cref{subsec:hcr_def}. 
+% This channel is motivated by the 
+% observation that some parent-endpoint dependencies are well captured by simple, 
+% well-understood pairwise 
+% statistics computed directly from the training cohort, and that combining such statistics
+%  with the deep GNN 
+% representation captures the strong signal from direct parents and smoothed signal 
+% from further layers.
+% There were run couple of experiments with HCR configurations and GNNs. However, in general the approach was about
+% computation of contingency-table statistics for each target endpoint and direct parents or pre-direct parents in 
+% the audited DAG (restricted to nodes with inferred 
+% binary, count, or continuous value types). The statistics computed was as followed per (parent, endpoint) 
+% pair: the \(\varphi\)-coefficient, normalized mutual information, a tanh-scaled log odds 
+% ratio, risk difference, and a tanh-scaled log lift, plus prevalence and support terms. There 
+% are nine to forty-one 
+% channels depending on configuration.
+% %dopisac dlaczego u nas jest 41/42 a w przypadku task a 41
+% %leave-one-out
+
+% As these coefficients are computed with the patient's own endpoint label as part of the statistic, a naive 
+% computation would leak the label into the feature. This was addressed with an 
+% exact leave-one-out correction: every training patient's coefficient is computed from all other training patients
+% only, using a closed-form re-weighting of the population statistic.
+ 
+%  Continuous and count-valued parents are mapped to comparable pseudo-uniform scores via a train-only empirical 
+%  CDF transform (with deterministic, patient-ID-seeded jitter for count variables), and Legendre polynomial bases 
+%  are used to capture non-linear dependence on continuous parents.
+
+%  Four integration modes were supported: 
+%  \begin{enumerate}[label=\alph*)]
+%     \item linear approach - a single scalar HCR score added directly to the GNN logit,
+%     \item nonlinear encoder - parent-endpoint evidence vectors pooled and passed through a shared MLP
+%     \item separate encoders per parent node type - every direct parent passed through a separated MLP
+%     \item triple relations - relations not only focused on direct parents, but direct parents and grandparents. 
+%  \end{enumerate}
+
+
+%  The pooling in HCRPairEncoder masks out padding positions (endpoints with fewer parents than the batch's 
+%  maximum) and returns a neutral zero vector for endpoints with no eligible parents, avoiding division by zero.
+
+%jak jest wszystko polaczone dokladniej
+
+\subsubsection{Statistical evidence branch}
+\label{subsec:hcr_application}
+
+In addition to the deep graph representation learned by the GNN, the endpoint
+prediction approach includes a \emph{statistical evidence branch}---a wide
+side-channel that supplies cohort-level dependence statistics.
+The branch is an \emph{HCR-inspired} way of representing dependencies
+(\cref{subsec:hcr_def}).
+The HCR construction---a cohort coefficient multiplied by a
+patient-specific activation and summed over parents---is retained as one
+implementation mode (\emph{linear}).
+The remaining configurations extend this idea with additional
+contingency-table statistics, non-binary parent handling, higher-order path
+moments, and learned fusion with the GNN head.
+
+This channel is motivated by the 
+observation that some parent-endpoint dependencies are well captured by simple, 
+well-understood pairwise 
+statistics computed directly from the training cohort, and that combining such statistics
+ with the deep GNN 
+representation captures the strong signal from direct parents and smoothed signal 
+from further layers.
+All modes of the statistical branch are summarized in
+Table~\ref{tab:fusion_modes} and below they is included detailed explanation
+of every mode characteristics.
+
+\paragraph{Scope of variables and parents.}
+For each target endpoint, evidence is computed over its \emph{direct parents}
+in the patient graph (subject to the structural exclusions described in
+\cref{subsec:taskb_data}).
+Pairwise statistics relate one parent to one endpoint at a single hop.
+Higher-order evidence over \emph{grandparent--parent--endpoint} paths
+(\(G \rightarrow P \rightarrow Y\), where \(G\), \(P\), and \(Y\) denote the
+grandparent, parent, and endpoint \emph{nodes} on a DAG-consistent triple) is computed separately in the
+\emph{triple} extension.  It is
+stored in its own evidence tensor (13 channels per triple slot), and fused 
+through a dedicated encoder block.
+Several evidence dimensionalities were evaluated, including binary-only
+parents (compact 10-channel evidence) and all parent value types (binary,
+count, and continuous; 42-channel evidence).
+
+\paragraph{HCR core coefficients.}
+For a binary parent \(R\) and binary endpoint node \(Y\), the primary association
+coefficient is the \(\varphi\)-coefficient 
+%(equivalently denoted \(a_{11}\) in the implementation) 
+derived from the training-cohort contingency table. For
+each patient \(p\), the parent activation is the standardized binary score
+\(\phi_1(R)\). The HCR
+patient evidence for that parent--endpoint pair is the product
+\(s_{p,rv} = a_{11,rv}\,\phi_1(R_p)\) (channel \texttt{s\_evidence}). 
+In
+\emph{linear} mode the endpoint-wide score is the sum over eligible direct
+parents,
+\[
+  s_{p,v} = \sum_{r \in \mathrm{Pa}(v)} a_{11,rv}\,\phi_1(R_p),
+\]
+and a single learned scalar per endpoint scales this score before it is
+added to the GNN logit. 
+%This is the only configuration that implements HCR
+%in the strict sense; all other modes treat \(a_{11}\) and \(\phi_1\) as
+%channels inside a richer evidence vector.
+
+\paragraph{Extended pairwise evidence channels.}
+Beyond the HCR core, the same contingency table yields supplementary
+association measures that
+provide complementary views of parent--endpoint dependence for a learned
+encoder: normalized mutual information, a tanh-scaled log odds ratio, risk
+difference, tanh-scaled log lift, parent and endpoint prevalence, and
+support (the fraction of training patients with both variables observed).
+These are assembled into a fixed-order evidence vector per
+(patient, parent, endpoint) slot. Two pairwise dimensionalities were used:
+\begin{itemize}
+  \item \textbf{10 channels}: compact
+        binary-parent representation with explicit \texttt{s\_evidence};
+  \item \textbf{42 channels}:
+        enriched representation including matrix-energy summaries, marginal
+        entropies, type indicators, and the patient activation channel.
+\end{itemize}
+\paragraph{Evidence encoders and endpoint-specific fusion.}
+In \emph{nonlinear} and \emph{triple} modes, a shared \texttt{HCRPairEncoder}
+processes each evidence slot with the same MLP
+(\texttt{Linear}$\rightarrow$\texttt{ReLU}$\rightarrow$\texttt{Linear}),
+mean-pools over parent or triple slots using a padding mask, and collapses
+the pooled embedding to a scalar logit contribution.
+In \emph{nonlinear} mode only, that contribution is further scaled by a
+learned per-endpoint weight (\texttt{hcr\_endpoint\_weight}).
+
+In \emph{typed\_concat} (and \emph{typed+triple}), the architecture differs
+in two respects.
+First, evidence is partitioned by \emph{parent node type}: each of the four
+parent categories
+(\texttt{drug\_exposure}, \texttt{mechanism},
+\texttt{adr\_or\_intermediate\_state}, \texttt{patient\_context}) is encoded
+by its own \texttt{HCRPairEncoder} instance applied to a separate evidence
+tensor (\texttt{hcr\_typed\_\{type\}\_features}).
+These encoders are shared across endpoints; they differ only in the semantic
+role of the parents they read.
+Second, fusion is \emph{endpoint-specific}: a learnable gate matrix
+\texttt{hcr\_type\_gate} $\in \mathbb{R}^{|\mathcal{V}_{\text{target}}| \times B}$
+(with $B=4$ parent-type blocks, or $B=5$ when a triple block is enabled)
+scales each type-level embedding separately for every target endpoint before
+concatenation.
+The gated embeddings are concatenated with the GNN target node embedding and
+passed jointly to the classification head, rather than being added to the
+endpoint logit.
+In \emph{typed+triple}, triple-path evidence is encoded by an additional
+\texttt{hcr\_triple\_encoder} and included as a fifth block, subject to its
+own per-endpoint gate column in \texttt{hcr\_type\_gate}.
+
+\paragraph{Non-binary parents.}
+Count- and continuous-valued direct parents are handled outside the binary
+\(\varphi\)-coefficient framework. Values are mapped to comparable
+pseudo-uniform scores via a train-only empirical CDF transform; count
+variables receive deterministic, patient-ID-seeded jitter before
+transformation. Non-linear dependence on continuous parents is represented
+through a Legendre polynomial basis. These channels extend  the binary \emph{patient activation} 
+in the 42-dimensional branch.
+
+\paragraph{Triple-path extension.}
+In order to capture more complex dependencies,
+third-order moments are computed over graph-consistent
+triples \(G \rightarrow P \rightarrow Y\). The main coefficient $a_{111}$ 
+is estimated from a $2 \times 2 \times 2$
+contingency table over three binary nodes on each DAG-consistent path
+$G \rightarrow P \rightarrow Y$ (grandparent, parent, and endpoint node).
+It generalizes the pairwise $\varphi$-coefficient, which uses only two
+variables at a time.
+The triple vector also retains the three pairwise marginals
+(\(a_{11}^{GP}, a_{11}^{GY}, a_{11}^{PY}\)), prevalence terms, support,
+patient activations, and an explicit patient evidence product
+\(a_{111}\,\phi_G\,\phi_P\). 
+Triple evidence uses the same slot-based encoder
+interface as pairwise evidence.
+
+% Four fusion modes connect the statistical branch to the GNN. They differ in
+% what evidence tensor is built and how it is combined with the deep
+% representation (Table~\ref{tab:fusion_modes}).
+
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{Fusion modes for the statistical evidence branch in Task~B.}
+  \label{tab:fusion_modes}
+  \begin{tabularx}{\textwidth}{@{}l l X X@{}}
+    \toprule
+    \textbf{Mode} & \textbf{Evidence tensor} & \textbf{Encoder} & \textbf{Fusion with GNN} \\
+    \midrule
+    \texttt{linear}
+      & Scalar HCR score
+        \(s_{p,v}=\sum_r a_{11,rv}\,\phi_1(R_p)\) per endpoint
+      & None (precomputed wide scores)
+      & Added to endpoint logit;
+        one learned scalar per endpoint
+        (\texttt{hcr\_wide\_weight}) \\
+    \addlinespace[3pt]
+    \texttt{nonlinear}
+      & Pairwise 10D or 42D vectors per
+        (patient, parent, endpoint) slot
+      & Shared \texttt{HCRPairEncoder};
+        mean-pool over parent slots
+      & Encoder output added to logit;
+        optional per-endpoint scale
+        (\texttt{hcr\_endpoint\_weight}) \\
+    \addlinespace[3pt]
+    \texttt{typed\_concat}
+      & 42D pairwise vectors, split into four
+        type-specific tensors (\texttt{drug\_exposure},
+        \texttt{mechanism},
+        \texttt{adr\_or\_intermediate\_state},
+        \texttt{patient\_context})
+      & One \texttt{HCRPairEncoder} per parent
+        \emph{type} (shared across endpoints);
+        gate matrix \texttt{hcr\_type\_gate}
+        $[|\mathcal{V}_{\text{target}}| \times 4]$
+      & Gated type embeddings concatenated with
+        GNN target embedding \emph{before}
+        the classification head \\
+    \addlinespace[3pt]
+    \texttt{triple}
+      & 13-channel vectors per
+        (patient, triple, endpoint) slot
+        along paths \(G \rightarrow P \rightarrow Y\)
+      & Shared \texttt{HCRPairEncoder} on
+        triple slots (replaces pairwise
+        evidence in this mode)
+      & Encoder output added to logit
+        (no per-endpoint scalar) \\
+    \addlinespace[3pt]
+    \emph{typed+triple}
+      & Typed 42D pairwise blocks \emph{and}
+        13-channel triple block
+        (\texttt{hcr\_use\_triples=True})
+      & Four typed encoders plus
+        \texttt{hcr\_triple\_encoder}; gates
+        $[|\mathcal{V}_{\text{target}}| \times 5]$ (one column
+        per block, including triple)
+      & All gated blocks concatenated with GNN
+        embedding before the head
+        (same join as \texttt{typed\_concat}) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Training setup}
+
+Training iterates over patient graphs batched via PyG DataLoader. The experiments were run with
+targeted binary cross-entropy and focal loss with class-balance-aware weighting. 
+Weight and focal alpha were computed from the training split's endpoint prevalence, since clinical outcomes
+are rare and highly imbalanced. Model selection uses ReduceLROnPlateau on validation performance, and 
+evaluation is reported separately per endpoint and in aggregate, using AUROC, AP, and prevalence-normalized 
+lift.
+%alongside the representation-level over-smoothing diagnostics (MAD, cosine similarity, Dirichlet energy) 
+%used to relate architectural choices. 
+ As the synthetic dataset generated for this project contains
+ rare events and class imbalance, AP was chosen as a key performance
+ metric. It focuses on the positive class and reflects the trade-off
+ between precision and recall. Below there are included the equations for calculating metrics.
+ 
+ \emph{AUC} is the area under the receiver operating characteristic curve (ROC-AUC) 
+ and is defined as:
+ \begin{equation}
+   \mathrm{ROC\mbox{-}AUC}
+   =
+   \int_0^1 \mathrm{TPR}(\mathrm{FPR})\,d\mathrm{FPR}.
+   \end{equation}
+   where $\mathrm{TPR}$ is the true positive rate and $\mathrm{FPR}$ is the false positive rate.
+ 
+ \emph{AP} is the area under the precision--recall curve and is defined as:
+ \begin{equation}
+   \mathrm{AP} =
+   \sum_{n}
+   \left(R_n - R_{n-1}\right) P_n,
+   \end{equation}
+   where $P_n$ and $R_n$ denote precision and recall at the $n$-th threshold,
+   respectively.
+ 
+ \emph{Lift} is the AP divided by the prevalence baseline, that is, the
+ factor by which the model improves over a random ranking, e.g. at a mean
+ prevalence of $5.5\%$ a lift of $2.3$ corresponds to an AP of $0.125$.
+ 
+ In addition to the traditional metrics described above, a
+ \emph{generator-based oracle AUC} was computed for the node-classification
+ task. As the dataset is synthetic, the logistic generative model for
+ each endpoint is known: each patient is scored with the true parent effects
+ from the audited DAG and ROC-AUC is evaluated on the resulting
+ probabilities. Model performance is reported relative to this reference via
+ \emph{\% of oracle AUC}:
+ 
+ \begin{equation}
+   \frac{\mathrm{AUC} - 0.5}{\mathrm{AUC}_{\mathrm{Oracle}} - 0.5} \cdot 100\%,
+   \label{eq:pct-ceiling}
+ \end{equation}
+ %
+ where $\mathrm{AUC}_{\mathrm{Oracle}} = 0.651$ is the macro-averaged oracle
+ AUC over the same eight endpoints used in aggregate reporting
+ (\cref{tab:app_endpoints}). This metric expresses the share of ranking
+ signal recoverable under the known generator, relative to random performance
+ at $0.5$. It is \emph{not} a Bayes-optimal error bound; it is a
+ simulation-based performance ceiling derived from the generative model.
+ 
+ 
+ 

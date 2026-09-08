@@ -1,0 +1,474 @@
+\chapter{HCR-Inspired Pair Representation: Detailed Definition}
+\label{app:hcr-details}
+
+The statistical branch in Task~A represents each ordered variable pair $(U,V)$ by a fixed $40$-dimensional vector.
+Its core construction is inspired by Hierarchical Correlation Reconstruction (HCR), where dependence is represented through coefficients of products of orthonormal basis functions~\cite{duda2018hcr,duda2018hcr-ts,duda2020hcr-income}.
+The implementation extends this coefficient representation with fixed-width summaries describing dependence magnitude, marginal distributions, joint activation, data support, estimability and variable type.
+This appendix gives the complete formula-level definition used by the final model.
+
+Two layers must be kept distinct.
+\begin{enumerate}[label=(\arabic*)]
+\item \textbf{HCR inspiration.}
+Dependence is encoded through coefficients of products of type-specific orthonormal basis functions, following the HCR principle of representing statistical dependence in an orthonormal expansion~\cite{duda2018hcr,duda2018hcr-ts,duda2020hcr-income}.
+\item \textbf{Thesis-specific extensions.}
+Fixed-width padding, derived dependence summaries, marginal descriptors, joint-activation descriptors, support and estimability features, and type metadata provide a common interface for heterogeneous binary, count and continuous variables.
+\end{enumerate}
+The resulting object is therefore called an \emph{HCR-inspired pair representation}.
+It is a statistical dependence descriptor and does not identify causal direction.
+
+\section{Overall $40$-dimensional representation}
+\label{app:hcr-overall}
+
+Define
+\begin{equation}
+h(U,V)\in\mathbb{R}^{40}.
+\end{equation}
+Let
+\begin{equation}
+I_{UV}=\{i:U_i\text{ and }V_i\text{ are both observed}\}
+\end{equation}
+and
+\begin{equation}
+n=|I_{UV}|,
+\end{equation}
+with $n_{\mathrm{train}}$ denoting the total number of training patients.
+All bases and statistical descriptors are fitted from training patients only.
+
+The slot composition is
+\begin{center}
+\begin{tabular}{@{}cl@{}}
+\toprule
+Slots & Content \\
+\midrule
+$0$--$15$ & padded HCR-inspired coefficient matrix \\
+$16$--$19$ & derived dependence summaries \\
+$20$--$23$ & marginal descriptors of $U$ \\
+$24$--$27$ & marginal descriptors of $V$ \\
+$28$--$31$ & joint activation / enrichment / rarity \\
+$32$ & complete-case support \\
+$33$ & estimability indicator \\
+$34$--$36$ & one-hot type of $U$ \\
+$37$--$39$ & one-hot type of $V$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+Dimension check:
+\begin{equation}
+16+4+4+4+4+1+1+3+3=40.
+\end{equation}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Block layout of the $40$-dimensional HCR-inspired pair representation.}
+\label{tab:app-hcr40-blocks}
+\begin{tabular}{@{}ccl@{}}
+\toprule
+Slots & Dim.\ & Block \\
+\midrule
+$0$--$15$ & $16$ & padded coefficient matrix $A_{\mathrm{pad}}$ \\
+$16$--$19$ & $4$ & derived dependence summaries \\
+$20$--$23$ & $4$ & marginal descriptors $m(U)$ \\
+$24$--$27$ & $4$ & marginal descriptors $m(V)$ \\
+$28$--$31$ & $4$ & joint activation / enrichment / rarity \\
+$32$ & $1$ & complete-case support $S$ \\
+$33$ & $1$ & estimability indicator $I_{\mathrm{sup}}$ \\
+$34$--$36$ & $3$ & one-hot type of $U$ \\
+$37$--$39$ & $3$ & one-hot type of $V$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{HCR-inspired coefficient matrix}
+\label{app:hcr-matrix}
+
+For each variable construct type-specific non-constant orthonormal basis functions
+\begin{equation}
+\phi^{(U)}_{j},\quad j=1,\ldots,d_{U},
+\qquad
+\phi^{(V)}_{k},\quad k=1,\ldots,d_{V}.
+\end{equation}
+Define
+\begin{equation}
+\label{eq:app-ajk}
+a_{jk}
+=
+\frac{1}{n}
+\sum_{i\in I_{UV}}
+\phi^{(U)}_{j}(U_i)\,
+\phi^{(V)}_{k}(V_i).
+\end{equation}
+Equivalently, with design matrices $\Phi_U$ and $\Phi_V$ whose rows are the evaluated basis functions on complete cases,
+\begin{equation}
+A_{UV}=\frac{1}{n}\Phi_U^{\mathsf{T}}\Phi_V.
+\end{equation}
+Zero-pad the active block to
+\begin{equation}
+A_{\mathrm{pad}}\in\mathbb{R}^{4\times 4}
+\end{equation}
+and store it row-wise (row-major) in slots~$0$--$15$:
+\begin{equation}
+A_{\mathrm{pad}}
+=
+\begin{bmatrix}
+a_{11} & a_{12} & a_{13} & a_{14}\\
+a_{21} & a_{22} & a_{23} & a_{24}\\
+a_{31} & a_{32} & a_{33} & a_{34}\\
+a_{41} & a_{42} & a_{43} & a_{44}
+\end{bmatrix}.
+\end{equation}
+Active block sizes by pair type are
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Pair type & Active block \\
+\midrule
+binary $\times$ binary & $1\times 1$ \\
+binary $\times$ continuous & $1\times 4$ \\
+binary $\times$ count & $1\times 4$ \\
+count $\times$ count & up to $4\times 4$ \\
+count $\times$ continuous & up to $4\times 4$ \\
+continuous $\times$ continuous & up to $4\times 4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+The coefficient $a_{11}$ describes the lowest-order dependence mode; higher-order coefficients allow the representation to capture additional nonlinear structure rather than reducing every pair to one correlation number.
+Individual higher-order coefficients are not assigned unique causal or clinical meanings.
+
+\section{Binary basis and connection to Pearson $\phi$}
+\label{app:hcr-binary}
+
+For $B\in\{0,1\}$, with training prevalence $p_{B}=P(B=1)$, define the standardized non-constant basis function
+\begin{equation}
+\label{eq:app-phi-binary}
+\phi^{(B)}_{1}(B)
+=
+\frac{B-p_{B}}{\sqrt{p_{B}(1-p_{B})}}.
+\end{equation}
+For a binary--binary pair,
+\begin{equation}
+\label{eq:app-a11-phi}
+a_{11}
+=
+\frac{p_{11}-p_{U}p_{V}}{\sqrt{p_{U}(1-p_{U})\,p_{V}(1-p_{V})}},
+\end{equation}
+which is equivalent to the Pearson $\phi$ coefficient.
+For binary pairs, $a_{11}$ therefore reduces to Pearson $\phi$.
+This is the conceptual link between the simple binary association used elsewhere and the more general HCR-inspired coefficient representation.
+
+\section{Continuous variables}
+\label{app:hcr-continuous}
+
+Continuous variables are transformed using the empirical training distribution.
+The training rank / pseudo-observation construction is
+\begin{equation}
+\label{eq:app-ecdf}
+u_{i}
+=
+\mathrm{clip}\!\left(
+\frac{\tfrac{1}{2}(\ell_{i}+r_{i})+0.5}{N_{\mathrm{train}}+1},
+10^{-6},\,1-10^{-6}
+\right),
+\end{equation}
+where $\ell_{i}$ and $r_{i}$ are the left and right rank positions of tied observations in the sorted training sample.
+The transformed value is expanded in shifted orthonormal Legendre functions
+\begin{equation}
+\label{eq:app-legendre}
+\psi_{j}(u)=\sqrt{2j+1}\,P_{j}(2u-1),\qquad j=1,\ldots,4,
+\end{equation}
+where $P_{j}$ is the Legendre polynomial of order $j$.
+The rank transformation removes dependence on the original marginal scale, while the orthonormal polynomial expansion provides several low-order modes with which joint dependence can be represented.
+Legendre polynomials are the chosen orthonormal basis in this implementation; they are not themselves the HCR method.
+
+\section{Count variables}
+\label{app:hcr-count}
+
+Counts are capped using the training $99.5$th percentile,
+\begin{equation}
+\label{eq:app-count-cap}
+C^{c}=\min(C,c_{\max}),\qquad c_{\max}=q_{0.995}.
+\end{equation}
+Repeated integer values are handled with deterministic distributional jitter,
+\begin{equation}
+\label{eq:app-jitter}
+u_{i}=F_{C}(c_{i}^{-})+\xi_{i}\,P(C=c_{i}),\qquad \xi_{i}\in(0,1),
+\end{equation}
+where $\xi_{i}$ is deterministic and reproducible.
+The transformed values are then passed through the same four shifted Legendre basis functions used for continuous variables.
+Count variables are \emph{not} simply binarized in the final model.
+
+\section{Four derived dependence summaries (slots~$16$--$19$)}
+\label{app:hcr-summaries}
+
+The following four deterministic summaries of the active coefficient matrix are stored in slots~$16$--$19$.
+
+For slot~$16$ (total energy),
+\begin{equation}
+D_{\mathrm{tot}}=\|A\|_{F}^{2}=\sum_{j,k}a_{jk}^{2}.
+\end{equation}
+For slot~$17$ (mean energy),
+\begin{equation}
+D_{\mathrm{mean}}=\frac{\|A\|_{F}^{2}}{d_{U}\,d_{V}}.
+\end{equation}
+For slot~$18$ (low-order energy fraction),
+\begin{equation}
+R_{\mathrm{low}}
+=
+\frac{\|A_{1:2,1:2}\|_{F}^{2}}{\|A\|_{F}^{2}+\varepsilon},
+\end{equation}
+with $\varepsilon=10^{-12}$ in the implementation.
+For slot~$19$ (strongest coefficient),
+\begin{equation}
+M_{\max}=\max_{j,k}\lvert a_{jk}\rvert.
+\end{equation}
+
+Interpretation:
+$D_{\mathrm{tot}}$ is overall dependence magnitude;
+$D_{\mathrm{mean}}$ normalizes that magnitude by the number of active coefficients;
+$R_{\mathrm{low}}$ is the fraction of dependence concentrated in low-order modes;
+$M_{\max}$ is the strength of the strongest individual dependence mode.
+These four values are deterministic summaries of $A$, not independent statistical estimators.
+
+A paired ablation that removed slots~$16$--$19$ (reducing the vector from $40$ to $36$ dimensions) lowered validation Average Precision (AP) by approximately $0.008$ on average, which supports retaining the summaries while treating them as derived rather than independent evidence.
+
+\section{Type-specific marginal descriptors (slots~$20$--$27$)}
+\label{app:hcr-marginals}
+
+Each variable contributes a four-dimensional marginal vector
+\begin{equation}
+m(U)\in\mathbb{R}^{4},\qquad m(V)\in\mathbb{R}^{4},
+\end{equation}
+with slots~$20$--$23$ storing $m(U)$ and slots~$24$--$27$ storing $m(V)$.
+
+\subsection*{Binary}
+\begin{enumerate}[label=\arabic*.]
+\item prevalence $p_{1}=P(B=1)$;
+\item normalized binary entropy
+\begin{equation}
+H_{2}(p_{1})
+=
+\frac{-p_{1}\ln p_{1}-(1-p_{1})\ln(1-p_{1})}{\ln 2};
+\end{equation}
+\item bounded imbalance $\tanh\bigl(\mathrm{logit}(p_{1})/4\bigr)$, where
+\begin{equation}
+\mathrm{logit}(p)=\ln\frac{p}{1-p};
+\end{equation}
+\item positive-state rarity $(n_{1}+1)^{-1/2}$.
+\end{enumerate}
+
+\subsection*{Count}
+Using the capped count $C^{c}$:
+\begin{enumerate}[label=\arabic*.]
+\item zero mass $P(C^{c}=0)$;
+\item scaled count intensity
+\begin{equation}
+\frac{\mathbb{E}[\log(1+C^{c})]}{\log(1+c_{\max})};
+\end{equation}
+\item normalized empirical count entropy $H(\hat{\pi})/\log K_{\mathrm{obs}}$, where
+\begin{equation}
+K_{\mathrm{obs}}=\max\bigl(|\mathrm{unique}(C^{c})|,2\bigr)
+\end{equation}
+and
+\begin{equation}
+H(\hat{\pi})=-\sum_{r}\hat{\pi}_{r}\log\hat{\pi}_{r};
+\end{equation}
+\item bounded dispersion descriptor
+\begin{equation}
+\tanh\!\left(
+\log\frac{\mathrm{Var}(C^{c})+\varepsilon}{\mathbb{E}[C^{c}]+\varepsilon}
+\right).
+\end{equation}
+\end{enumerate}
+
+\subsection*{Continuous}
+Define the robust standardized value
+\begin{equation}
+\label{eq:app-zr}
+z_{r}
+=
+\frac{x-\mathrm{median}(x)}{1.4826\,\mathrm{MAD}(x)+\varepsilon},
+\end{equation}
+with
+\begin{equation}
+\mathrm{MAD}(x)=\mathrm{median}\bigl(\lvert x-\mathrm{median}(x)\rvert\bigr).
+\end{equation}
+Let
+\begin{equation}
+z_{0}
+=
+\frac{z_{r}-\mathbb{E}[z_{r}]}{\mathrm{std}(z_{r})+\varepsilon},
+\end{equation}
+using the population standard deviation over finite training observations, and set
+\begin{equation}
+\gamma_{1}=\mathbb{E}[z_{0}^{3}],\qquad \gamma_{2}=\mathbb{E}[z_{0}^{4}].
+\end{equation}
+The four continuous descriptors are
+\begin{enumerate}[label=\arabic*.]
+\item bounded skewness $\tanh(\gamma_{1}/3)$;
+\item bounded excess kurtosis / tail-weight descriptor $\tanh((\gamma_{2}-3)/10)$;
+\item extreme tail mass $P(\lvert z_{r}\rvert>1.5)$;
+\item signed tail asymmetry $P(z_{r}>1.5)-P(z_{r}<-1.5)$.
+\end{enumerate}
+Skewness and kurtosis use $z_{0}$; the tail descriptors continue to use $z_{r}$.
+The hyperbolic tangent is used only as a bounded monotonic transform, not as an additional statistical measure.
+
+\section{Joint activation and rarity (slots~$28$--$31$)}
+\label{app:hcr-joint}
+
+Define a type-specific activation indicator
+\begin{equation}
+\label{eq:app-act}
+\mathrm{act}(X)
+=
+\begin{cases}
+\mathbf{1}[X\ge 0.5], & X\text{ binary},\\
+\mathbf{1}[X>0], & X\text{ count},\\
+\mathbf{1}[\lvert z_{r}\rvert>1.5], & X\text{ continuous}.
+\end{cases}
+\end{equation}
+Marginal activation rates are
+\begin{equation}
+p_{+}(U)=\frac{1}{n}\sum_{i}\mathrm{act}(U_{i}),
+\qquad
+p_{+}(V)=\frac{1}{n}\sum_{i}\mathrm{act}(V_{i}),
+\end{equation}
+and joint activation is
+\begin{equation}
+p_{++}
+=
+\frac{1}{n}
+\sum_{i}
+\mathbf{1}\bigl[\mathrm{act}(U_{i})=1\wedge\mathrm{act}(V_{i})=1\bigr].
+\end{equation}
+\begin{itemize}
+\item slot~$28$: joint activation rate $p_{++}$;
+\item slot~$29$: excess joint activation over independence $\Delta=p_{++}-p_{+}(U)p_{+}(V)$;
+\item slot~$30$: log-lift
+\begin{equation}
+L=\log\frac{p_{++}+\varepsilon}{p_{+}(U)p_{+}(V)+\varepsilon};
+\end{equation}
+\item slot~$31$: joint-rarity descriptor
+\begin{equation}
+n_{++}=\sum_{i}\mathbf{1}\bigl[\mathrm{act}(U_{i})=1\wedge\mathrm{act}(V_{i})=1\bigr],
+\qquad
+R_{++}=(n_{++}+1)^{-1/2}.
+\end{equation}
+\end{itemize}
+The quantity $R_{++}$ is an engineered rarity descriptor, not a classical rarity estimator.
+
+\section{Support and estimability (slots~$32$--$33$)}
+\label{app:hcr-support}
+
+For slot~$32$,
+\begin{equation}
+S=\frac{n_{\mathrm{complete}}}{n_{\mathrm{train}}},
+\end{equation}
+which communicates how much of the training population supports the pair estimate.
+For slot~$33$, $I_{\mathrm{sup}}\in\{0,1\}$.
+The estimability indicator distinguishes a genuinely small or near-zero dependence estimate from an unavailable estimate that was zero-filled because support was insufficient.
+
+In the frozen implementation a pair is unsupported if
+\begin{equation}
+n_{\mathrm{complete}}<50,
+\end{equation}
+and, for binary--binary pairs, if the minimum of the four level counts
+\begin{equation}
+\lvert\{U=0\}\rvert,\;
+\lvert\{U=1\}\rvert,\;
+\lvert\{V=0\}\rvert,\;
+\lvert\{V=1\}\rvert
+\end{equation}
+among complete cases is smaller than $5$.
+When unsupported, the coefficient matrix is zeroed while enrichment and type metadata may still be filled.
+
+\section{Variable-type metadata (slots~$34$--$39$)}
+\label{app:hcr-types}
+
+slots~$34$--$36$ store
+\begin{equation}
+\mathrm{type}(U)=\mathrm{one\text{-}hot}(\mathrm{binary},\mathrm{count},\mathrm{continuous}),
+\end{equation}
+and slots~$37$--$39$ store the analogous one-hot vector for $V$.
+These indicators are needed because zero-padding has different meanings for different pair types:
+for a binary--binary pair most of the $4\times 4$ coefficient matrix is structurally absent, whereas for a continuous--continuous pair a zero coefficient may represent a genuinely small estimated dependence mode.
+
+\section{Final composition}
+\label{app:hcr-compose}
+
+The complete vector is
+\begin{equation}
+\begin{aligned}
+h(U,V)
+=
+\bigl[
+&\mathrm{vec}(A_{\mathrm{pad}})
+\parallel
+D_{\mathrm{tot}}
+\parallel
+D_{\mathrm{mean}}
+\parallel
+R_{\mathrm{low}}
+\parallel
+M_{\max}
+\\
+&\parallel
+m(U)
+\parallel
+m(V)
+\parallel
+p_{++}
+\parallel
+\Delta
+\parallel
+L
+\parallel
+R_{++}
+\\
+&\parallel
+S
+\parallel
+I_{\mathrm{sup}}
+\parallel
+t_{U}
+\parallel
+t_{V}
+\bigr]
+\in\mathbb{R}^{40},
+\end{aligned}
+\end{equation}
+where $\parallel$ denotes concatenation and $\mathrm{vec}$ is row-major flattening.
+Dimension check:
+\begin{equation}
+16+4+4+4+4+1+1+3+3=40,
+\end{equation}
+where the four after the two marginal blocks are the joint-activity features.
+
+\section{Connection to the Task~A motif}
+\label{app:hcr-motif}
+
+For candidate $A\to G$ with local context node $Z$, the statistical branch constructs independently
+\begin{equation}
+h_{AZ}=h(A,Z),\qquad
+h_{AG}=h(A,G),\qquad
+h_{ZG}=h(Z,G),
+\end{equation}
+each in $\mathbb{R}^{40}$.
+These three vectors are not immediately concatenated into the fusion input.
+Each role is first passed through its own $40\to 16\to 8$ role encoder, and absent motif roles are masked,
+\begin{equation}
+e_{r}=m_{r}\,E_{r}(h_{r}),
+\end{equation}
+yielding
+\begin{equation}
+g_{\mathrm{stat}}
+=
+\bigl[e_{AZ}\parallel e_{AG}\parallel e_{ZG}\bigr]
+\in\mathbb{R}^{24}.
+\end{equation}
+
+\section{Source and inspiration note}
+\label{app:hcr-source}
+
+The coefficient construction is inspired by Hierarchical Correlation Reconstruction: dependence is encoded through expectations of products of orthonormal basis functions~\cite{duda2018hcr,duda2018hcr-ts,duda2020hcr-income}.
+The fixed $40$-dimensional representation used here is an application-specific extension of that principle rather than a direct reproduction of a canonical HCR feature vector.
+In particular, the marginal, joint-activation, support, rarity and type descriptors were introduced to provide a common interface for heterogeneous binary, count and continuous variables and are not attributed to the original HCR formulation.

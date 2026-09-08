@@ -1,0 +1,187 @@
+\chapter{Experimental Progression and Ablation Strategy}
+\label{ch:taskA-benchmark}
+
+Chapter~\ref{ch:taskA-rozwiazanie} defined the frozen Task~A architecture and Chapter~\ref{ch:taskA-ewaluacja} defined how it was trained and validated.
+This chapter reports the experiments in the order in which design decisions were frozen.
+The progression has three stages: graph-backbone selection, statistical-representation ablation, and decoder comparison.
+
+\section{Backbone Selection}
+\label{sec:taskA-stage-a}
+
+First, the statistical branch was disabled and several graph encoders were compared under a common decoder.
+
+The tested architectures included HGT~\cite{hu2020hgt}, R-GCN~\cite{schlichtkrull2018rgcn}, GraphSAGE~\cite{hamilton2017graphsage}, and GATv2~\cite{brody2022gatv2}.
+
+HGT achieved the strongest validation AP and was therefore frozen as the graph backbone before the statistical representation experiments.
+
+This separation is important because otherwise improvements from the HCR-inspired branch~\cite{duda2018hcr,duda2018hcr-ts,duda2020hcr-income} could be confounded with changes in the graph encoder.
+
+\section{Statistical Representation Ablation}
+\label{sec:taskA-stage-c}
+
+With the HGT backbone fixed, the statistical component was added progressively to determine how much explicit dependency information contributed beyond graph topology alone.
+
+HGT only, without explicit pairwise statistics: validation AP $\approx 0.719$.
+
+Signed Pearson $\phi$: AP increased to $\approx 0.840$, showing that even a single continuous dependency coefficient provided substantial complementary information.
+
+Normalized mutual information (NMI): AP increased further to $\approx 0.853$.
+In the implementation, pairwise NMI is
+\begin{equation}
+\label{eq:taskA-nmi}
+\mathrm{NMI}(U,V)=\frac{I(U;V)}{\sqrt{H(U)\,H(V)}},
+\end{equation}
+with natural logarithm in
+\begin{equation}
+I(U;V)=\sum_{u,v}p(u,v)\log\frac{p(u,v)}{p(u)p(v)},
+\end{equation}
+and discrete/continuous variables discretized on the training split before evaluation (complete cases only; undefined pairs return $0$).
+
+Enriched multi-component dependency representation: performance rose to $\approx 0.913$.
+
+Final enriched HCR-inspired representation: validation AP reached $\approx 0.917$.
+
+The progression shows that the main improvement came from progressively enriching the statistical description of the local dependency structure surrounding the candidate edge. The final representation was also more stable across scenarios, reaching an official five-scenario macro validation AP of approximately $0.915$ (six scenarios evaluated; hidden confounder excluded from the official macro).
+
+Explicit statistical dependency information provided complementary evidence that was not fully captured by the graph representation alone.
+
+\section{Decoder Architecture: MLP versus KAN}
+\label{sec:taskA-mlp-kan}
+
+Although the synthetic dataset is dominated by binary variables, real-world pharmacotherapy data are typically more heterogeneous and often contain continuous or count-valued measurements, such as laboratory values, dose, physiological parameters, or temporal exposure variables. A future use case of the proposed framework is therefore the enrichment of rapidly evolving knowledge graphs with relationships supported not only by curated clinical knowledge, but also by noisy and heterogeneous real-world data, for example hospital records. For this reason, a second pair encoder was tested to assess whether the statistical branch could be replaced by a more flexible nonlinear decoder without changing the rest of the architecture. The HGT encoder, graph representation and final Fusion88 decoder remained unchanged. Only the three role-specific statistical pair encoders were replaced.
+
+The standard MLP pair encoder was:
+\begin{equation}
+40\to 16\to 8,
+\end{equation}
+implemented as:
+\begin{equation}
+\mathrm{Linear}(40,16)\to\mathrm{GELU}\to\mathrm{LayerNorm}\to\mathrm{Dropout}\to\mathrm{Linear}(16,8)\to\mathrm{LayerNorm}.
+\end{equation}
+The alternative KAN encoder~\cite{liu2024kan} used a direct mapping:
+\begin{equation}
+40\to 8,
+\end{equation}
+with a KANLinear layer followed by LayerNorm. Three independent KAN encoders were used for the AZ, AG and ZG roles, exactly as in the MLP version. Therefore, both variants produced the same statistical representation size:
+\begin{equation}
+3\times 8=24.
+\end{equation}
+The purpose of this experiment was not to demonstrate that KAN is superior to the MLP, but to test whether replacing the pairwise nonlinear reader would substantially change model performance.
+
+The results remained similar.
+The MLP achieved a slightly higher validation AP, while the KAN variant preserved comparable performance without degrading the overall architecture.
+The conclusion is that replacing the role-specific MLP pair encoders with a shallow KAN did not materially deteriorate performance, suggesting that the statistical representation itself was more important than the exact form of the pair decoder.
+
+\section{Results}
+\label{sec:taskA-results}
+
+All numbers below come from the frozen artefacts
+\texttt{outputs/taskA\_final\_large\_grid\_11.08.2026/} (Stage~A/C)
+and
+\texttt{outputs/taskA\_FINAL\_14.08.2026/} (FINAL MLP vs KAN).
+Selection used validation AP; sealed test was not used to rank models.
+Official multi-scenario averages exclude \texttt{hidden\_confounder}.
+That scenario is plotted with hatching for completeness, but it does not enter the macro.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_final_metrics_per_scenario.pdf}
+\caption{FINAL MLP-stat metrics by scenario.
+Panel~(a): AP on the training partition (at the validation-selected epoch), on validation, and on the sealed test set.
+Panel~(b): AUC on validation and sealed test.
+Bars are means over five training seeds; whiskers are one standard deviation.
+The hatched scenario is excluded from official macro averages.}
+\label{fig:taskA-final-metrics}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{FINAL MLP-stat, per scenario (mean $\pm$ SD over five seeds).
+The official macro averages the five scenario means and excludes hidden confounder.}
+\label{tab:taskA-final-per-scenario}
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{lcccc}
+\toprule
+Scenario & Valid AP & Test AP$^\dagger$ & Valid AUC & Test AUC$^\dagger$ \\
+\midrule
+Clean & $0.919\pm 0.010$ & $0.904\pm 0.020$ & $0.957\pm 0.005$ & $0.970\pm 0.004$ \\
+Selection bias & $0.909\pm 0.008$ & $0.903\pm 0.013$ & $0.950\pm 0.006$ & $0.970\pm 0.002$ \\
+No overlap & $0.911\pm 0.021$ & $0.881\pm 0.018$ & $0.961\pm 0.005$ & $0.958\pm 0.004$ \\
+Noisy documentation & $0.917\pm 0.006$ & $0.903\pm 0.020$ & $0.959\pm 0.003$ & $0.970\pm 0.004$ \\
+Multi-hospital & $0.943\pm 0.009$ & $0.880\pm 0.034$ & $0.975\pm 0.002$ & $0.968\pm 0.003$ \\
+Hidden confounder$^\ddagger$ & $0.918\pm 0.007$ & $0.902\pm 0.021$ & $0.957\pm 0.005$ & $0.969\pm 0.003$ \\
+\midrule
+Official macro & $0.920$ & $0.894$ & $0.960$ & $0.967$ \\
+\bottomrule
+\end{tabular}\\[0.4em]
+{\footnotesize $^\dagger$ sealed test, not used for model selection.\\
+$^\ddagger$ shown for completeness; excluded from the official macro.}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{fig_final_mlp_learning.pdf}
+\caption{FINAL MLP-stat learning curves.
+Train and validation AP versus epoch.
+Each scenario is first averaged over five seeds; the plotted line is then the mean over the five official scenarios, with a band of one standard deviation across those scenarios.
+Hidden confounder is excluded.
+The persistent train--validation gap is expected under class imbalance and does not reverse the validation ranking used for checkpoint selection.}
+\label{fig:taskA-mlp-learning}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Experimental milestones.
+Multi-scenario means exclude hidden confounder.
+Stage~A and the Stage~C screen were run on \texttt{clean} only.}
+\label{tab:taskA-milestones}
+\setlength{\tabcolsep}{3.8pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.15cm}
+                >{\raggedright\arraybackslash}p{3.55cm}
+                >{\raggedright\arraybackslash}p{3.35cm}
+                >{\raggedright\arraybackslash}p{2.55cm}
+                l}
+\toprule
+Stage & What was tested & Protocol & Mean valid AP & Chosen \\
+\midrule
+A. Backbone
+  & HGT, R-GCN, GraphSAGE, GATv2
+    ($g_{\mathrm{stat}}=\mathbf{0}$)
+  & \texttt{clean}, 3 seeds, common Fusion88 decoder
+  & HGT $0.729$ \newline R-GCN $0.697$ \newline SAGE $0.671$ \newline GATv2 $0.650$
+  & HGT \\
+\addlinespace
+C. Statistics
+  & S0 (none), $\phi$, NMI, S9, S10
+  & Frozen HGT, \texttt{clean}, 3 seeds
+  & S0 $0.719$ \newline $\phi$ $0.840$ \newline NMI $0.853$ \newline S9 $0.913$ \newline S10 $0.917$
+  & S10 \\
+\addlinespace
+C. Robustness
+  & S9 vs S10
+  & Frozen HGT, 5 official scenarios, 3 seeds
+  & S9 $0.909$ \newline S10 $0.915$
+  & S10 \\
+\addlinespace
+FINAL
+  & MLP-stat vs KAN-stat
+    (S10, Fusion88)
+  & 5 official scenarios $\times$ 5 seeds
+  & MLP $0.920$ \newline KAN $0.907$
+  & MLP \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_final_mlp_vs_kan.pdf}
+\caption{Learning dynamics of the two FINAL pair encoders under an otherwise identical stack (HGT + Fusion88 + S10).
+Panel~(a): MLP $40\to 16\to 8$.
+Panel~(b): shallow KAN $40\to 8$.
+Aggregation as in Figure~\ref{fig:taskA-mlp-learning}.
+Both encoders fit the training pairs; MLP reaches a slightly higher validation AP, which is why it was kept as the FINAL reader.}
+\label{fig:taskA-mlp-vs-kan}
+\end{figure}

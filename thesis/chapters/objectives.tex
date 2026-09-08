@@ -1,0 +1,22 @@
+\chapter{Objectives and Contributions}
+\label{ch:objectives}
+
+The main objective of this thesis is to investigate how structured knowledge represented by a medical knowledge graph can be combined with statistical evidence derived from patient-level data.
+The problem is studied through two complementary tasks: graph reconstruction and patient-level clinical endpoint prediction.
+
+The specific contributions of the thesis are:
+
+\paragraph{Task A. Directed link prediction.}
+A method is developed for evaluating candidate directed relations in a heterogeneous pharmacotherapy graph by combining two sources of information: a graph representation learned from the available topology and an explicit statistical representation derived from patient-level observations.
+The graph component is based on a Heterogeneous Graph Transformer (HGT), while the statistical component describes local dependence around each candidate relation using HCR coefficients together with additional statistical descriptors.
+Both components are combined in a common decoder.
+The same general principle is additionally tested in the Last-FM* proxy task under a different graph structure and ranking objective in order to examine whether the value of combining structural and explicit empirical information is specific to the pharmacotherapy graph or can persist after a substantial change of domain.
+
+\paragraph{Task B. Patient-level endpoint prediction.}
+A patient-specific prediction framework is developed in which the shared pharmacotherapy graph provides the structural representation and patient observations provide individual input information.
+Several GNN architectures and graph depths are evaluated, including the effect of residual connections on deeper message passing.
+The graph representation is further complemented with an HCR-derived statistical side-channel describing dependencies between endpoints and their direct or higher-order graph neighbourhood.
+Different forms of this statistical branch, including pairwise, type-specific and higher-order representations, are compared.
+The resulting models are evaluated separately for clinical endpoints using metrics appropriate for imbalanced outcomes, including AUROC, Average Precision (AP) and lift.
+
+In both cases, graph-based representation learning and explicit statistical dependence are treated as complementary sources of information rather than as competing alternatives.

@@ -1,0 +1,16 @@
+# LaTeX build junk
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.toc
+*.synctex.gz
+*.synctex(busy)
+.DS_Store
+
+# Keep main.pdf and chapter sources tracked.

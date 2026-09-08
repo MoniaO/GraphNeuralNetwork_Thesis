@@ -1,0 +1,111 @@
+\chapter{Model Optimization and Evaluation Strategy}
+\label{ch:taskA-ewaluacja}
+
+Chapter~\ref{ch:taskA-rozwiazanie} defined the Task~A architecture.
+This chapter defines how that architecture is optimized and how checkpoints are selected.
+The same three-step logic is reused for the proxy task in Chapter~\ref{ch:lastfm-ewaluacja}: training loss first, validation metric second, sealed test last.
+
+\section{Training objective}
+\label{sec:taskA-loss}
+
+The training set constructed in the previous chapter contains three negative candidate edges for each positive edge.
+Therefore, although the negative examples are structurally matched to the positive ones, the resulting prediction problem remains class-imbalanced.
+For each candidate edge $i$, the model produces a logit $s_{i}$, which is converted into a probability through the sigmoid function,
+\begin{equation}
+\label{eq:taskA-sigmoid}
+\hat{p}_{i}=\sigma(s_{i}).
+\end{equation}
+Model parameters are optimized using weighted binary cross-entropy,
+\begin{equation}
+\label{eq:taskA-bce}
+\mathcal{L}
+=
+-\frac{1}{N}
+\sum_{i=1}^{N}
+\bigl[
+w_{+}\, y_{i}\log\hat{p}_{i}
++(1-y_{i})\log(1-\hat{p}_{i})
+\bigr],
+\end{equation}
+where $y_{i}\in\{0,1\}$ denotes the true edge label and the positive-class weight is defined as
+\begin{equation}
+\label{eq:taskA-wpos}
+w_{+}=\frac{N_{\mathrm{neg}}}{N_{\mathrm{pos}}}.
+\end{equation}
+Under the nominal $3{:}1$ negative-sampling ratio,
+\begin{equation}
+w_{+}\approx 3.
+\end{equation}
+The weighting does not change the number of training examples.
+Instead, it balances the contribution of the positive and negative classes to the optimization objective, preventing the more numerous negative examples from dominating the loss and encouraging the model to learn discrimination between observed edges and sampled non-edges.
+
+\section{Validation metric: Average Precision}
+\label{sec:taskA-ap}
+
+Model selection is based on validation Average Precision (AP), computed with
+\texttt{sklearn.metrics.average\_precision\_score}~\cite{sklearn}.
+In the experimental artefacts this quantity is logged under the name \texttt{auprc}/\texttt{AUPRC}; throughout this thesis we use AP for the mathematical quantity and note the logging alias where figures retain the old label.
+AP is appropriate for imbalanced link prediction because it emphasizes precision as recall increases~\cite{davis2006}.
+
+Precision and recall at a threshold are
+\begin{equation}
+\label{eq:taskA-precision}
+\mathrm{Precision}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}},
+\qquad
+\mathrm{Recall}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}}.
+\end{equation}
+AP summarizes the precision--recall curve as a weighted mean of precision values at successive recall increments,
+\begin{equation}
+\label{eq:taskA-ap}
+\mathrm{AP}
+=
+\sum_{k}
+\bigl(R_{k}-R_{k-1}\bigr)\,P_{k},
+\end{equation}
+where $P_{k}$ and $R_{k}$ are precision and recall at the $k$-th threshold in the ranked list of predicted scores (with $R_{0}=0$).
+This is \emph{not} the same as trapezoidal numerical integration of the precision--recall curve; scikit-learn documents the distinction explicitly.
+Figures generated from the frozen runs may still display the axis label ``AUPRC''; that label denotes the AP in~\eqref{eq:taskA-ap}.
+
+A fixed classification threshold is required only when reporting discrete metrics such as precision, recall, or $F_{1}$.
+In such cases, the threshold is selected on the validation set (best $F_{1}$) and then kept fixed for train/test reporting within the same epoch.
+The sealed test set is never used to choose the threshold, architecture, statistical representation, or hyperparameters.
+
+\section{Frozen training configuration}
+\label{sec:taskA-train-config}
+
+Table~\ref{tab:taskA-train} records the effective training configuration of the FINAL MLP-stat stack, as stored in
+\texttt{outputs/taskA\_FINAL\_14.08.2026/MANIFEST\_14.08.2026.json}
+and the Stage~A freeze note
+\texttt{STAGE\_A\_FREEZE\_HGT\_TOP1\_11.08.2026.md}.
+In particular, the frozen HGT uses $d=32$, $L=2$, $H=4$, and dropout $0.25$ (not a later $L{=}3$/$H{=}8$ draft).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Frozen Task~A training and model-selection settings (FINAL 14.08).}
+\label{tab:taskA-train}
+\begin{tabular}{ll}
+\toprule
+Setting & Value \\
+\midrule
+Optimizer & Adam~\cite{kingma2015adam} \\
+Learning rate & $10^{-3}$ \\
+Weight decay & $5\times 10^{-4}$ \\
+Max epochs & 200 \\
+Early stopping & patience $40$ on validation AP \\
+Gradient clip & $1.0$ (global norm) \\
+Normalization & LayerNorm in HGT/decoder blocks~\cite{ba2016layernorm} \\
+HGT & $d=32$, $L=2$, $H=4$, dropout $0.25$~\cite{hu2020hgt} \\
+Decoder & Fusion88-stat + S10 HCR FULL40 \\
+Training seeds (FINAL) & $\{20260721,\ldots,20260725\}$ \\
+Candidate-table seed & $20260722$ \\
+Selection metric & validation AP (logged as AUPRC) \\
+Official macro & mean over five scenarios; excludes hidden confounder \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Six scenarios are evaluated.
+The \emph{prespecified official macro} averages the five scenarios other than hidden confounder; that sixth scenario is reported for completeness but does not enter the official macro.
+
+Chapter~\ref{ch:taskA-benchmark} reports the ablation stages and final results obtained under this protocol.

@@ -1,0 +1,31 @@
+\chapter{Synthetic Endpoint Oracle Reference}
+\label{app:taskb-endpoints}
+
+Table~\ref{tab:app_endpoints} lists the thirteen clinical endpoints in the synthetic cohort together with prevalence and generator-based oracle AUC on the complete dataset.
+Task~B macro-averaged reporting uses the eight endpoints that exclude \texttt{Hospitalization}, \texttt{Falls}, \texttt{Serotonin\_syndrome}, \texttt{Rhabdomyolysis}, and \texttt{Lactic\_acidosis}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Endpoint prevalence and generator-based oracle AUC in the complete synthetic cohort.}
+\label{tab:app_endpoints}
+\begin{tabular}{lrrrl}
+\toprule
+Endpoint & Positive cases & Prevalence (\%) & Oracle AUC (\%) & Parents \\
+\midrule
+AKI & 2{,}620 & 13.10 & 81.20 & 6 \\
+DILI & 361 & 1.81 & 69.30 & 7 \\
+Delirium & 739 & 3.70 & 65.73 & 4 \\
+Depression & 1{,}693 & 8.47 & 66.27 & 6 \\
+Falls & 1{,}558 & 7.79 & 68.09 & 7 \\
+GI bleeding & 425 & 2.13 & 61.28 & 5 \\
+Hospitalization & 4{,}502 & 22.51 & 76.23 & 14 \\
+Hyperkalemia & 969 & 4.85 & 59.63 & 2 \\
+Hyponatremia & 1{,}574 & 7.87 & 62.69 & 3 \\
+QT arrhythmia & 319 & 1.60 & 61.66 & 4 \\
+Serotonin syndrome & 51 & 0.26 & 52.16 & 1 \\
+Rhabdomyolysis & 69 & 0.35 & 58.64 & 1 \\
+Lactic acidosis & 111 & 0.56 & 52.45 & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}

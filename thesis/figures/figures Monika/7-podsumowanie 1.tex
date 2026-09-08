@@ -1,0 +1,39 @@
+\newpage % Rozdziały zaczynamy od nowej strony.
+\section{Conclusions}
+
+As a follow-up to the endpoint-prediction task, the following directions
+could be pursued:
+
+\begin{itemize}[label=\textendash]
+  \item \textbf{Causal paths.}
+  Greater emphasis could be placed on predictions along directed causal
+  paths from drug exposure and patient context to clinical endpoints, together
+  with a deeper analysis of what the model learns along those routes.
+
+  \item \textbf{Real-world benchmarking.}
+  Benchmarking the approach on MIMIC Clinical Database\footnote{%
+    The MIMIC-III Clinical Database (v1.4) is a patient's dataset linking demographics, diagnoses, procedures, medications, and
+    laboratory measurements that is used commonly in deep learning research.
+    \url{https://physionet.org/content/mimiciii/1.4/}.%
+  }
+  could be a next step that would allow the pipeline to be validated on real clinical data.
+
+  \item \textbf{GNN architectures.}
+   Task~B was benchmarked with GraphSAGE, R-GCN, and TransformerConv; HGT was
+    used in Task~A but not evaluated on endpoint prediction. A natural extension
+    is to compare meta-relation attention (HGT) against TransformerConv on the
+    same patient graph.
+
+   \item \textbf{Statistical channel and HCR development.}
+    Early experiments focused on pairwise dependence, while third-order evidence
+    was implemented in a limited form, restricted to fully binary paths. Further
+    work should devote more attention to triple-path evidence, and a dataset with
+    richer numerical measurements at patient level would allow the Legendre
+    expansion to be tested in larger scale.
+
+  \item \textbf{Task~A--B loop.}
+  Task~B currently uses a fixed graph; integrating it with Task~A link
+  prediction would enable the closed-loop mechanism outlined in
+  \cref{fig:loop}, in which graph updates and endpoint prediction inform one
+  another iteratively.
+\end{itemize}

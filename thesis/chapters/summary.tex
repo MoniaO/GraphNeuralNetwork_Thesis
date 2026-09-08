@@ -1,0 +1,133 @@
+\chapter{Conclusions and Future Work}
+\label{ch:conclusions}
+
+\section{Conclusions}
+\label{sec:conclusions}
+
+This thesis investigated whether structured graph knowledge and explicit empirical
+statistical evidence can be integrated within a common modelling framework for two
+complementary problems: reconstruction of directed graph relations and prediction of
+patient-level clinical endpoints.
+
+In Task~A, a heterogeneous graph encoder was combined with a candidate-specific
+HCR-inspired statistical representation derived from patient observations. The results
+showed that explicit empirical context provided substantial predictive information beyond
+graph topology alone. The Last-FM* proxy demonstrated that the same broad modelling
+principle could be transferred to a different domain and ranking objective, while the sealed
+benchmark also showed that improvements within a neural graph model do not necessarily
+translate into superiority over strong classical methods.
+
+In Task~B, patient-specific observations were propagated over a shared pharmacotherapy
+graph and complemented with endpoint-oriented statistical evidence. The results showed
+that the value of this evidence depends on the ability of the graph neural network to
+preserve predictive information across message-passing layers. Residual connections and
+the statistical evidence branch can address related information-loss mechanisms on the
+synthetic graph, while the Hetionet-derived proxy showed that their effects may become
+complementary when relevant information must traverse longer or partially latent paths.
+
+Taken together, the experiments support a methodological rather than clinical conclusion.
+Structured graph representations and explicit empirical dependence can provide
+complementary information, but their contribution depends on the graph topology,
+prediction task, information pathway and evaluation protocol. The synthetic and proxy
+experiments establish a foundation for further investigation on real clinical data; they do
+not establish clinical utility or causal validity.
+
+\section{Future Work}
+\label{sec:future-work}
+
+\paragraph{Real-world clinical validation.}
+The most important next step is evaluation on real longitudinal clinical data. Such studies
+would need to address irregular observation, missingness, heterogeneous coding,
+treatment-selection effects, institutional variation and unmeasured confounding. The
+primary question would be which components of the architecture remain useful when both
+the graph structure and empirical evidence are uncertain.
+Multicentre validation would be especially important for distinguishing relationships that
+remain stable across institutions from correlations that reflect local observation or treatment
+practice.
+
+\paragraph{Higher-order statistical dependence.}
+The present experiments make limited use of higher-order HCR coefficients, particularly
+for continuous and mixed variables. Richer clinical datasets containing laboratory
+measurements and longitudinal physiological variables would provide a more informative
+setting in which to evaluate whether higher-order orthonormal coefficients capture
+dependence patterns that cannot be represented adequately by first-order association
+measures.
+
+\paragraph{Causal discovery and graph refinement.}
+A further direction is to combine mechanistic graph priors with dedicated causal-discovery
+methods. HCR should remain an empirical dependence representation rather than a causal
+estimator, but its coefficients could provide candidate statistical evidence to methods that
+introduce the additional assumptions required for directional inference. Approaches based
+on additive-noise models, LiNGAM-type methods, or other suitable causal-discovery
+frameworks could therefore be investigated alongside graph priors, with careful attention to
+variable type and assumption validity rather than automatic application across the graph.
+
+\paragraph{Patient-specific mechanistic path activation.}
+Clinical endpoint prediction alone does not identify which mechanisms are responsible
+for the predicted risk. A natural extension is therefore to move from endpoint prediction
+toward patient-specific activation of mechanistic paths.
+For patient $p$ and endpoint $Y$, let
+\begin{equation}
+\mathcal{P}_p(Y)=\{\pi_1,\pi_2,\ldots,\pi_K\}
+\end{equation}
+denote plausible mechanistic routes, with patient-conditioned activation weights
+$w_p(\pi_k)$.
+Several routes should be allowed to remain simultaneously active. This is particularly
+important in polypharmacy, where multiple drugs, risk factors and intermediate mechanisms
+may contribute concurrently to the same adverse endpoint.
+A future temporal aggregation layer could model how these routes accumulate, interact
+and converge over time rather than forcing the system to select a single dominant pathway.
+
+\paragraph{Active information acquisition and missing evidence.}
+Missing information could also be treated as part of the reasoning problem rather than an
+incidental preprocessing detail. When several mechanistic paths remain compatible with the
+observed patient state, the model could identify which unobserved variable or clinical
+measurement would be most informative for distinguishing between them.
+Such an approach would connect prediction with targeted information acquisition:
+the system would not only estimate risk, but identify which additional observation could
+most reduce uncertainty about the mechanism responsible for that risk.
+
+\paragraph{Entropy-based path weighting.}
+Entropy-based graph-walk methods, including maximal-entropy random walks, provide one
+possible starting point for weighting alternative routes through a mechanistic graph.
+Standard topology-driven random walks would, however, require modification for the
+present setting because clinical path relevance should depend on patient-specific evidence,
+not graph structure alone.
+A future patient-conditioned finite-path formulation could therefore combine structural
+accessibility with observed activation of the variables along a route. Such a method should
+permit several routes to contribute simultaneously to the same endpoint.
+
+\paragraph{KAN as an alternative nonlinear encoder.}
+Kolmogorov--Arnold Networks (KANs) could be evaluated more systematically as an
+alternative to the MLP blocks used for statistical encoding and fusion. Their learnable
+univariate transformations may be attractive for heterogeneous statistical descriptors and
+nonlinear interactions.
+Exploratory MLP-versus-KAN comparisons for Task~A role encoders did not establish an
+advantage of KAN over MLPs under the reported protocol, so this remains an open
+architectural comparison rather than a settled design choice.
+
+\paragraph{Towards mechanistic digital twins.}
+The combination of patient-specific graph instantiation, mechanistic prior knowledge and
+explicit empirical evidence is conceptually related to emerging medical digital-twin
+research. The goal should not be understood as constructing a complete virtual replica of
+a human patient. A more realistic intermediate objective is a dynamically updated
+representation of the clinically relevant mechanisms, exposures, observations and
+uncertainties associated with a specific decision problem.
+A clinically useful digital-twin framework would ultimately require temporal updating,
+intervention modelling, uncertainty quantification, external validation and careful
+governance. The present thesis addresses only some of the representational prerequisites
+for such a system.
+
+\paragraph{Iterative Task~A--Task~B loop.}
+Finally, Task~A and Task~B could be connected into an iterative framework. High-confidence
+candidate relations identified during graph reconstruction could be introduced into a
+provisional graph and subsequently evaluated through patient-level endpoint prediction.
+Conversely, systematic endpoint-prediction errors could identify regions of the graph in
+which structural knowledge requires further examination.
+Such a loop would move the framework from static graph reconstruction and endpoint
+prediction toward continual evaluation of mechanistic knowledge against accumulating
+empirical evidence.
+
+The longer-term objective is therefore not only to predict what may happen, but to connect
+prediction with the mechanisms, uncertainty and potentially modifiable pathways that make
+the prediction clinically meaningful.

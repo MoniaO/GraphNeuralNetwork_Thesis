@@ -1,0 +1,154 @@
+\chapter{Last-FM* Experimental Results and Ablation Analysis}
+\label{ch:lastfm-benchmark}
+
+This chapter reports controlled Last-FM* experiments organized by scientific question:
+structural capacity, contribution of explicit candidate context, routing criterion, and full-catalog seed stability.
+All numbers are development validation results on frozen checkpoints.
+The sealed external test is outside the scope of this chapter.
+
+\section{HGT Backbone Selection}
+\label{sec:lastfm-backbone}
+
+To select the structural capacity under the common development protocol, HGT width, depth and number of attention heads were compared while holding the decoder family and training protocol fixed.
+To isolate backbone capacity from explicit-context effects, selection used the shared sampled-validation checkpoint metric before freezing the explicit-context ablations.
+
+The selected configuration is
+\begin{equation}
+d=64,\qquad L=2,\qquad H=2,
+\end{equation}
+with dropout $0.1$.
+Larger width, deeper stacks or additional heads did not justify replacing this setting under the frozen development protocol.
+
+\section{Contribution of Explicit Candidate Context}
+\label{sec:lastfm-ablation}
+
+With the HGT backbone fixed, the controlled ablation ladder isolates the contribution of explicit candidate context:
+\begin{enumerate}
+\item HGT only (257-dimensional structural input);
+\item HGT + A5 (262-dimensional main input);
+\item HGT + A5 + H3 (265-dimensional main input);
+\item TRUE FINAL (265-dimensional main input plus the LEG$_{K2}$ residual).
+\end{enumerate}
+All variants use the same HGT capacity, the same frozen training candidate tables, the same optimizer family and the seeds $\{101,202,303\}$.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Progressive addition of explicit candidate context.
+Sampled NDCG@20 is the checkpoint-selection metric; full-catalog NDCG@20 and Recall@20 evaluate the same frozen checkpoints on the eligible catalog.}
+\label{tab:lastfm-ablation}
+\setlength{\tabcolsep}{2.6pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Variant & Main decoder & Sampled NDCG@20 & Full-cat.\ NDCG@20 & Full-cat.\ Recall@20 \\
+\midrule
+HGT only & 257D & \(0.4755\) & \(0.0093\) & \(0.0169\) \\
+HGT + A5 & 262D & \(0.7908\) & \(0.0640\) & \(0.1128\) \\
+HGT + A5 + H3 & 265D & \(0.8729\) & \(0.2321\) & \(0.3647\) \\
+TRUE FINAL (+ LEG) & 265D + residual & \(0.8733\) & \(0.2764\) & \(0.3768\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Per-seed sampled NDCG@20 values were:
+HGT only \(0.475024\), \(0.475407\), \(0.475953\);
+HGT+A5 \(0.791067\), \(0.790560\), \(0.790768\);
+HGT+A5+H3 \(0.872794\), \(0.872930\), \(0.873007\);
+TRUE FINAL \(0.873224\), \(0.873253\), \(0.873515\).
+
+A5 introduces the first large improvement on both protocols.
+H3 produces the largest full-catalog increase.
+LEG changes sampled NDCG@20 by only about $0.0004$ relative to HGT+A5+H3, while adding a further full-catalog gain of about $0.044$ NDCG@20.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_lastfm_ablation_bars.pdf}
+\caption{Last-FM* ablation ladder.
+Panel~(a): sampled validation NDCG@20 used for checkpoint selection.
+Panel~(b): full-catalog NDCG@20 of the same frozen checkpoints.
+Error bars show the seed standard deviation over three training seeds.
+The panels use different $y$-axis scales because they evaluate different candidate universes under the same NDCG@20 formula.}
+\label{fig:lastfm-ablation-bars}
+\end{figure}
+
+\section{Routing Criterion Ablation}
+\label{sec:lastfm-routing}
+
+The routing stage chooses which history items enter the Top25 local context.
+After a Top25 set is chosen, the selected items are represented using signed A11/Pearson $\phi$ values in H3 and LEG$_{K2}$.
+Alternative routing criteria therefore change only the selection rule, not the downstream H3 construction.
+
+To identify the most useful candidate-conditioned history context, the following item--pair association criteria were compared under a fixed Top25 budget:
+\begin{align}
+J_{\mathrm{pair}}(h,X)
+&=
+\frac{n_{11}}{n_h+n_X-n_{11}},
+\label{eq:lastfm-Jpair}\\
+C_{\mathrm{pair}}(h,X)
+&=
+\frac{n_{11}}{\sqrt{n_h n_X}},
+\label{eq:lastfm-Cpair}
+\end{align}
+together with raw co-occurrence $n_{11}$, mutual information (MI), normalized pointwise mutual information (NPMI), and the unsigned $G^{2}$ likelihood-ratio statistic.
+These quantities are distinct from the set-level A5 overlaps $J_{\mathrm{set}}$ and $C_{\mathrm{set}}$ of Section~\ref{sec:lastfm-A5}.
+
+Held fixed across routing variants:
+the candidate pairs, the Top25 budget $K=\min(25,|H_u\setminus\{X\}|)$, the downstream signed-A11 H3/LEG construction, and the main architecture.
+Only the routing criterion changes.
+
+The frozen routing policy retained for TRUE FINAL is signed A11/Pearson $\phi$.
+Quantitative full-catalog tables for every routing alternative are not included here because corresponding frozen result artefacts were not located in the sealed development archive; the methodological comparison and the frozen winner are stated above.
+
+\section{Full-Catalog Results and Seed Stability}
+\label{sec:lastfm-fullrank}
+
+Epochs were selected using sampled validation NDCG@20.
+Full-catalog evaluation was then applied to the resulting frozen checkpoints without re-selection.
+All full-ranking runs used 23{,}163 validation users with at least one positive.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{TRUE FINAL full-catalog metrics by seed.
+Sampled NDCG@20 selected the epoch; full-catalog metrics are evaluation only.}
+\label{tab:lastfm-true-final}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}crrrrr@{}}
+\toprule
+Seed & Best epoch & Sampled NDCG@20 & Full-cat.\ NDCG@20 & Recall@20 & MRR \\
+\midrule
+101 & 36 & 0.873224 & 0.277432 & 0.375599 & 0.356988 \\
+202 & 34 & 0.873253 & 0.279879 & 0.378722 & 0.359681 \\
+303 & 43 & 0.873515 & 0.271886 & 0.376197 & 0.343391 \\
+\midrule
+Mean \(\pm\) SD & --- & \(0.8733\pm 0.0002\) & \(0.2764\pm 0.0041\) & \(0.3768\) & \(0.3534\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Full-catalog NDCG@20 by seed for the ablation layers without LEG.}
+\label{tab:lastfm-fullrank-ablation}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{crrr}
+\toprule
+Seed & HGT only & HGT+A5 & HGT+A5+H3 \\
+\midrule
+101 & 0.008548 & 0.064571 & 0.227969 \\
+202 & 0.009520 & 0.060866 & 0.241332 \\
+303 & 0.009935 & 0.066630 & 0.227054 \\
+\midrule
+Mean & \(0.0093\) & \(0.0640\) & \(0.2321\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For TRUE FINAL, mean full-catalog NDCG values were additionally $\mathrm{NDCG}@5=0.2336$ and $\mathrm{NDCG}@10=0.2503$; HitRate@20 was approximately $0.664$.
+
+Under the full-catalog development protocol, the controlled ablations support three factual conclusions:
+A5 supplies the first large ranking gain;
+H3 supplies the largest full-catalog gain among the explicit-context components;
+LEG$_{K2}$ leaves the sampled checkpoint metric nearly unchanged while providing an additional full-catalog refinement.
+External baseline head-to-head numbers are omitted until the sealed external evaluation protocol is completed and approved for inclusion.

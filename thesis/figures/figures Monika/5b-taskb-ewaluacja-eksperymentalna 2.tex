@@ -1,0 +1,473 @@
+\newpage
+\subsection{Endpoint prediction}
+
+\subsubsection{Architecture}
+
+The first set of experiments established how much the choice of
+convolution architecture matters for this task. Three convolutions were
+compared: R-GCN, GraphSAGE and TransformerConv. All three are defined for
+homogeneous graphs, so each was wrapped in \texttt{HeteroConv}, which
+instantiates a separate convolution for every relation type and aggregates
+the results at the target node and allows to preserve the heterogenous structure. 
+
+All experiments share the same encoder structure and differ only in a small
+number of hyperparameters: the number of layers $L$, the presence of a
+residual connection and the HCR variant. Everything
+else was held fixed. The shared settings are listed in
+\cref{tab:hparams-common}, and the parameters specific to individual
+convolutions in \cref{tab:hparams-arch}.
+
+% =====================================================================
+%  HYPERPARAMETERS
+% =====================================================================
+\begin{table}[htbp]
+  \centering
+  \caption{Hyperparameters shared by all architectures. Values were fixed
+    across the experiments reported in this chapter}
+  \label{tab:hparams-common}
+  \begin{tabular}{lll}
+    \toprule
+    Group & Hyperparameter & Value \\
+    \midrule
+    \multirow{5}{*}{Encoder}
+      & Hidden units per convolutional layer & 64 \\
+      & Number of layers $L$                 & 1, 2, 3, 4, 5, 6 \\
+      & Aggregation across relations         & sum \\
+      & Activation                           & ReLU \\
+      & Batch normalisation                  & yes \\
+    \midrule
+    \multirow{2}{*}{Regularisation}
+      & Dropout                              & 0.2 \\
+      & Weight decay                         & $5\times10^{-4}$ \\
+    \midrule
+    \multirow{3}{*}{Classification head}
+      & Number of layers                     & 2 \\
+      & Hidden units                         & 64 (equal to encoder width) \\
+      & Output units                         & 1 per endpoint \\
+    \midrule
+    \multirow{8}{*}{Optimisation}
+      & Optimiser                            & Adam \\
+      & Learning rate                        & $1\times10^{-3}$ \\
+      & Batch size                           & 128 \\
+      & Epochs (maximum)                     & 200 \\
+      & Loss                                 & weighted BCE with logits \\
+      & Positive weight cap                  & 30 \\
+      & Gradient clipping                    & disabled \\
+      & Seed                                 & 42 \\
+    \midrule
+    \multirow{3}{*}{Model selection}
+      & Selection metric                     & validation AP \\
+      & Early-stopping patience              & 20 epochs \\
+      & Minimum improvement                  & 0.001 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+All three convolutions are wrapped in \texttt{HeteroConv}, which instantiates a separate
+    convolution for each of the 19 relation types in the graph. The
+    parameter counts therefore scale with the number of relations. In
+    attention-based layers the hidden width is split across heads, so the
+    output width stays at 64 regardless of the number of heads.
+    \begin{table}[H]
+      \centering
+      \small
+      \caption{Architecture-specific hyperparameters.}
+      \label{tab:hparams-arch}
+      \begin{tabularx}{\textwidth}{l >{\raggedright\arraybackslash}X
+                                     >{\raggedright\arraybackslash}X
+                                     >{\raggedright\arraybackslash}X}
+        \toprule
+        Hyperparameter & R-GCN & GraphSAGE & TransformerConv \\
+        \midrule
+        Attention heads              & --- & --- & 4 \\
+        Units per head               & --- & --- & 16 \\
+        Output width per relation    & 64 & 64 & $4\times16=64$ \\
+        Basis decomposition          & 8 bases & --- & --- \\
+        Uses edge attributes         & relation id only & none (stored, unused) & full \texttt{edge\_attr} \\
+        Weight matrices per relation & shared through bases & 2 & 3 (query, key, value) \\
+        \bottomrule
+      \end{tabularx}
+    \end{table}
+
+The results for those experiments are reported in \cref{tab:arch-nores-update}.
+All of metrics reported are described in \cref{subsubsec:oversmoothing}.
+The epoch is selected on the validation set and
+test metrics are reported from that epoch.
+%R-GCN with residual connections was only run with mean aggregation and is therefore absent from the lower block.
+The experiments were conducted with multiple number of layers as 
+patient path is up to 6 degrees and it is assumed that every point
+can have an influence in casual path. For each experiment all number of layers were calculated, 
+but for reporting reasons in \cref{tab:arch-nores-update} there are included layers 
+1,3 and 6 to show the trend with the increased number of layers. The convention is liked that unless 
+the results from other layers are significant for conclusion. 
+
+% The range of depths follows the assumption that 
+% %the longest path from a drug exposure to an endpoint in
+% %the audited DAG spans up to six hops, and 
+% every node along such a path may
+% contribute to the causal chain. Models with one to six layers were therefore
+% trained for every configuration. For readability only $L \in \{1, 3, 6\}$ are
+% listed in \cref{tab:arch-nores-update}, which is sufficient to show the trend.
+% Intermediate depths are reported only where they are relevant to a specific
+% conclusion.
+
+Without residual connections the three architectures diverge sharply at
+L=6, collapse to constant predictions (AUC=0.50). 
+%refreshed results with 8 endpoints evaluated
+    \begin{table}[H]
+      \centering
+      \small
+      \caption{Message-passing architectures without residual connections.}
+      \label{tab:arch-nores-update}
+      {\sisetup{table-format=1.3}
+      \begin{tabular}{l c SSS S[table-format=2.1] SSS S[table-format=2.1]}
+        \toprule
+        & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
+        \cmidrule(lr){3-6}\cmidrule(lr){7-10}
+        Architecture & $L$ & {AUC} & {AP} & {Lift} & {\% ceil.} & {AUC} & {AP} & {Lift} & {\% ceil.} \\
+        \midrule
+        R-GCN            & 1 & 0.623 & 0.124 & 2.28 & 81.6 & 0.624 & 0.120 & 2.21 & 82.0 \\
+        GraphSAGE        & 1 & 0.622 & 0.124 & 2.28 & 80.9 & 0.619 & 0.120 & 2.21 & 78.9 \\
+        TransformerConv  & 1 & 0.622 & 0.125 & 2.30 & 81.2 & 0.620 & 0.120 & 2.20 & 79.6 \\
+        \addlinespace[2pt]
+        R-GCN            & 3 & 0.542 & 0.076 & 1.40 & 28.0 & 0.542 & 0.068 & 1.26 & 27.7 \\
+        GraphSAGE        & 3 & 0.549 & 0.079 & 1.45 & 32.2 & 0.549 & 0.072 & 1.32 & 32.8 \\
+        TransformerConv  & 3 & 0.550 & 0.083 & 1.53 & 33.2 & 0.552 & 0.073 & 1.35 & 34.5 \\
+        \addlinespace[2pt]
+        R-GCN            & 6 & 0.503 & 0.055 & 1.00 &  2.2 & 0.500 & 0.054 & 1.00 &  0.0 \\
+        GraphSAGE        & 6 & 0.530 & 0.065 & 1.20 & 20.0 & 0.510 & 0.061 & 1.12 &  6.6 \\
+        TransformerConv  & 6 & 0.527 & 0.065 & 1.20 & 18.0 & 0.500 & 0.054 & 1.00 &  0.0 \\
+        \bottomrule
+      \end{tabular}}
+    \end{table}
+
+    That's why the next step was application of residual connections
+    to see the capabilities of models with higher number of layers. The results are presented 
+    in \cref{tab:arch-res}.
+    
+    \begin{table}[H]
+      \centering
+      \caption{The same architectures with residual connections.}
+      \label{tab:arch-res}
+      {\sisetup{table-format=1.3}
+      \begin{tabular}{l c SSS S[table-format=2.1] SSS S[table-format=2.1]}
+        \toprule
+        & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
+        \cmidrule(lr){3-6}\cmidrule(lr){7-10}
+        Architecture & $L$ & {AUC} & {AP} & {Lift} & {\% ceil.} & {AUC} & {AP} & {Lift} & {\% ceil.} \\
+        \midrule
+        R-GCN            & 1 & 0.625 & 0.125 & 2.30 & 82.7 & 0.625 & 0.121 & 2.22 & 83.2 \\
+        GraphSAGE        & 1 & 0.621 & 0.124 & 2.27 & 80.6 & 0.619 & 0.120 & 2.21 & 78.7 \\
+        TransformerConv  & 1 & 0.623 & 0.126 & 2.31 & 81.3 & 0.619 & 0.120 & 2.21 & 79.0 \\
+        \addlinespace[2pt]
+        R-GCN            & 3 & 0.630 & 0.133 & 2.44 & 86.0 & 0.627 & 0.125 & 2.29 & 84.2 \\
+        GraphSAGE        & 3 & 0.623 & 0.132 & 2.42 & 81.4 & 0.616 & 0.124 & 2.27 & 77.0 \\
+        TransformerConv  & 3 & 0.628 & 0.135 & 2.47 & 85.2 & 0.620 & 0.123 & 2.27 & 79.7 \\
+        \addlinespace[2pt]
+        R-GCN            & 6 & 0.629 & 0.135 & 2.48 & 85.6 & 0.626 & 0.123 & 2.27 & 83.9 \\
+        GraphSAGE        & 6 & 0.628 & 0.134 & 2.46 & 84.9 & 0.624 & 0.127 & 2.33 & 82.3 \\
+        TransformerConv  & 6 & 0.627 & 0.134 & 2.46 & 84.2 & 0.620 & 0.122 & 2.24 & 79.4 \\
+        \bottomrule
+      \end{tabular}}
+    \end{table}
+
+    With residual connections all three architectures converge to comparable
+    performance (\cref{tab:arch-res}): 77--86\% of the oracle AUC
+    (\cref{eq:pct-ceiling}) on the test
+    set, with differences of about 0.01 AUC. The more informative factors for model assessment are AP and 
+    Lift, which show that the model performs nearly 2.3 times better than a random baseline. 
+    Since the architectures achieve comparable performance, the choice of architecture
+    for 
+    the remaining experiments 
+    was therefore made on structural grounds. TransformerConv is the only one of the three
+    backbones benchmarked here that consumes the full \texttt{edge\_attr} vector in message
+    passing (see \cref{tab:edge_attr_by_conv}).
+    %signed effect
+    %(\texttt{effect\_size}$\times$\texttt{effect\_sign}), audit scalars
+    %(\texttt{activation\_frequency}, \texttt{mechanistic\_confidence},
+    %\texttt{evidence\_weight}), and the one-hot \texttt{edge\_type} block.
+   %GraphSAGE ignores edge features; R-GCN conditions on relation identity
+  %hrough separate relation modules rather than on \texttt{edge\_attr}.
+    Since edge-level audit evidence is important for graph representation, 
+    TransformerConv was
+    selected for all subsequent experiments with the statistical evidence branch.
+
+\subsubsection{HCR configuration}
+
+HCR was introduced to supply the model with statistical evidence about
+grandparent/parent--endpoint dependence that the message-passing path has to infer on
+its own (\cref{subsec:hcr_application}). The configurations examined here
+vary along three axes, each addressing a separate question. The first is the
+form of the wide branch: a single learned coefficient per endpoint applied
+to a precomputed dependence score, against a small nonlinear encoder applied
+to each parent separately. The second is the scope of the evidence: binary
+parents only, or all node types, in which case continuous and count
+variables are expanded in a Legendre basis. The third is the order of the
+statistic: pairwise coefficients between a parent and an endpoint, or
+third-order moments over grandparent--parent--endpoint paths, which capture
+interactions that pairwise coefficients cannot represent. The relevant 
+configurations are listed in \cref{tab:hcr-nores} -- the following abbreviation applies
+to a configuration type.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Notation used for the HCR configurations in the result tables.}
+  \label{tab:hcr-legend}
+  \begin{tabularx}{\textwidth}{l l >{\raggedright\arraybackslash}X}
+    \toprule
+    Label & Join point & Description \\
+    \midrule
+    ---
+      & {--}
+      & No HCR branch \\
+    \addlinespace[3pt]
+    linear
+      & sum at logit
+      & Precomputed dependence score, all parent types; one learned scalar
+        per endpoint, no encoder \\
+    \addlinespace[3pt]
+    nonlin.\ all 42D
+      & sum at logit
+      & 42 evidence channels, all parent types; shared pair encoder \\
+    \addlinespace[3pt]
+    nonlin.\ bin.\ 10D
+      & sum at logit
+      & 10 evidence channels, binary parents only; shared pair encoder \\
+    \addlinespace[3pt]
+    nonlin.\ bin.\ 42D
+      & sum at logit
+      & 42 evidence channels, binary parents only; shared pair encoder \\
+    \addlinespace[3pt]
+    triple
+      & sum at logit
+      & 13 channels of third-order moments over
+        grandparent--parent--endpoint paths, replacing the pairwise
+        evidence \\
+    \addlinespace[3pt]
+    typed+triple
+      & concatenation
+      & 42 pairwise channels split across four non-shared encoders, one per
+        parent type, each with a learned per-endpoint gate, plus a
+        third-order block with its own per-endpoint gate column \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Without HCR the model degrades sharply with depth and predicts a constant at
+$L=6$. Every HCR variant recovers a substantial part of the lost performance,
+and the gain grows with depth: $+1.8$, $+42.5$ and $+74.5$ percentage points
+of the oracle AUC (\cref{eq:pct-ceiling}) at $L=1$, $3$ and $6$ respectively.
+The concatenated
+variant is the only one that remains flat across all six depths.
+
+The reason for improved results with HCR is that HCR branch reads the
+dependence statistics of the direct parents and grandparents from a precomputed tensor and
+never passes through a graph convolution, so its contribution is identical at
+$L=1$ and at $L=6$. 
+
+
+% =====================================================================
+%  HCR variants on TransformerConv, synthetic dataset.
+% =====================================================================
+
+% \begin{table}[htbp]
+%   \centering
+%   \small
+%   \setlength{\tabcolsep}{4pt}
+%   \caption{HCR variants on TransformerConv \emph{without} residual
+%     connections.}
+%   \label{tab:hcr-nores}
+%   \begin{tabular}{clcccccccc}
+%     \toprule
+%     & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
+%     \cmidrule(lr){3-6}\cmidrule(lr){7-10}
+%     $L$ & HCR & AUC & AUPRC & Lift & \% ceil. & AUC & AUPRC & Lift & \% ceil. \\
+%     \midrule
+%     1 & ---            & 0.622 & 0.1251 & 2.30 & 81.19 & 0.620 & 0.1197 & 2.20 & 79.61 \\
+%     1 & linear 42D     & 0.622 & 0.1247 & 2.29 & 81.10 & 0.617 & 0.1191 & 2.19 & 77.83 \\
+%     1 & typed+triple   & \textbf{0.630} & 0.1331 & 2.44 & \textbf{86.30} & \textbf{0.623} & 0.1229 & 2.26 & \textbf{81.40} \\
+%     \addlinespace[4pt]
+%     2 & typed+triple   & 0.628 & 0.1314 & 2.41 & 84.67 & 0.621 & 0.1228 & 2.26 & 80.13 \\
+%     \addlinespace[4pt]
+%     3 & ---            & 0.550 & 0.0833 & 1.53 & 33.19 & 0.552 & 0.0734 & 1.35 & 34.49 \\
+%     3 & linear 42D     & 0.604 & 0.1173 & 2.15 & 69.28 & 0.612 & 0.1031 & 1.90 & 74.51 \\
+%     3 & triple         & 0.602 & 0.1131 & 2.08 & 67.92 & 0.590 & 0.1021 & 1.88 & 59.81 \\
+%     3 & typed+triple   & 0.618 & 0.1265 & 2.32 & 78.41 & 0.616 & 0.1214 & 2.23 & 77.02 \\
+%     \addlinespace[4pt]
+%     4 & typed+triple   & \textbf{0.630} & \textbf{0.1369} & \textbf{2.51} & 86.09 & 0.616 & \textbf{0.1239} & \textbf{2.28} & 76.97 \\
+%     \addlinespace[4pt]
+%     5 & typed+triple   & 0.627 & 0.1308 & 2.40 & 84.25 & 0.617 & 0.1222 & 2.25 & 77.61 \\
+%     \addlinespace[4pt]
+%     6 & ---            & 0.527 & 0.0653 & 1.20 & 17.96 & 0.500 & 0.0544 & 1.00 &  0.00 \\
+%     6 & linear 42D     & 0.616 & 0.1206 & 2.21 & 76.91 & 0.603 & 0.0955 & 1.76 & 68.22 \\
+%     6 & triple         & 0.607 & 0.1154 & 2.12 & 70.71 & 0.579 & 0.0967 & 1.78 & 52.56 \\
+%     6 & typed+triple   & 0.622 & 0.1222 & 2.24 & 80.91 & 0.612 & 0.1179 & 2.17 & 74.53 \\
+%     \bottomrule
+%   \end{tabular}
+% \end{table}
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \caption{HCR variants on TransformerConv \emph{without} residual
+    connections.}
+  \label{tab:hcr-nores}
+  \begin{tabular}{clcccccccc}
+    \toprule
+    & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
+    \cmidrule(lr){3-6}\cmidrule(lr){7-10}
+    $L$ & HCR & AUC & AP & Lift & \% ceil. & AUC & AP & Lift & \% ceil. \\
+    \midrule
+    1 & ---              & 0.622 & 0.1251 & 2.30 & 81.19 & 0.620 & 0.1197 & 2.20 & 79.61 \\
+    1 & linear 42D       & 0.622 & 0.1247 & 2.29 & 81.10 & 0.617 & 0.1191 & 2.19 & 77.83 \\
+    1 & nonlin. all 42D  & 0.622 & 0.1243 & 2.28 & 81.17 & 0.618 & 0.1192 & 2.19 & 78.57 \\
+    1 & typed+triple     & 0.634 & \textbf{0.1348} & 2.48 & \textbf{89.05} & 0.626 & 0.1241 & 2.28 & \textbf{83.46} \\
+    \addlinespace[4pt]
+    2 & nonlin. all 42D  & 0.625 & 0.1242 & 2.28 & 82.77 & 0.615 & 0.1180 & 2.17 & 76.15 \\
+    2 & typed+triple     & 0.628 & 0.1328 & 2.44 & 84.91 & 0.621 & 0.1235 & 2.27 & 80.16 \\
+    \addlinespace[4pt]
+    3 & ---              & 0.550 & 0.0833 & 1.53 & 33.19 & 0.552 & 0.0734 & 1.35 & 34.49 \\
+    3 & linear 42D       & 0.604 & 0.1173 & 2.15 & 69.28 & 0.612 & 0.1031 & 1.90 & 74.51 \\
+    3 & triple           & 0.602 & 0.1131 & 2.08 & 67.92 & 0.590 & 0.1021 & 1.88 & 59.81 \\
+    3 & nonlin. all 42D  & 0.621 & 0.1310 & 2.41 & 80.13 & 0.629 & 0.1197 & 2.20 & 85.63 \\
+    3 & typed+triple     & 0.625 & \textbf{0.1362} & 2.50 & \textbf{82.90} & 0.620 & \textbf{0.1252} & 2.30 & 79.54 \\
+    \addlinespace[4pt]
+    4 & nonlin. all 42D  & 0.616 & 0.1214 & 2.23 & 76.90 & 0.609 & 0.1168 & 2.15 & 72.30 \\
+    4 & typed+triple     & 0.631 & 0.1350 & 2.48 & 86.65 & 0.614 & 0.1237 & 2.27 & 75.53 \\
+    \addlinespace[4pt]
+    5 & nonlin. all 42D  & 0.617 & 0.1183 & 2.17 & 77.67 & 0.611 & 0.1132 & 2.08 & 73.37 \\
+    5 & typed+triple     & 0.627 & 0.1320 & 2.42 & 84.31 & 0.617 & 0.1225 & 2.25 & 77.58 \\
+    \addlinespace[4pt]
+    6 & ---              & 0.527 & 0.0653 & 1.20 & 17.96 & 0.500 & 0.0544 & 1.00 &  0.00 \\
+    6 & linear 42D       & 0.616 & 0.1206 & 2.21 & 76.91 & 0.603 & 0.0955 & 1.76 & 68.22 \\
+    6 & triple           & 0.607 & 0.1154 & 2.12 & 70.71 & 0.579 & 0.0967 & 1.78 & 52.56 \\
+    6 & nonlin. all 42D  & 0.569 & 0.0955 & 1.75 & 45.53 & 0.500 & 0.0544 & 1.00 &  0.00 \\
+    6 & typed+triple     & 0.630 & 0.1326 & 2.43 & 86.53 & 0.618 & 0.1218 & 2.24 & 78.35 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+    Residual connections address the same failure from the opposite side: they
+    preserve the signal inside the propagation channel instead of bypassing it.
+    Based on results of experiments, we can observed that both (HCR and residual connections) are effective, but they are not complementary.
+    Comparing models with enabled residual connections, no HCR variant improves on the model without HCR
+    (\cref{tab:hcr-res}), and combining the two does not yield models alone.
+    Once the propagation path with residual connections is repaired HCR does not provide any contribution. 
+
+    \begin{table}[H]
+      \centering
+      \small
+      \setlength{\tabcolsep}{4pt}
+      \caption{HCR variants on TransformerConv \emph{with} residual connections.}
+      \label{tab:hcr-res}
+      \begin{tabular}{clcccccccc}
+        \toprule
+        & & \multicolumn{4}{c}{Validation} & \multicolumn{4}{c}{Test} \\
+        \cmidrule(lr){3-6}\cmidrule(lr){7-10}
+        $L$ & HCR & AUC & AP & Lift & \% ceil. & AUC & AP & Lift & \% ceil. \\
+        \midrule
+        1 & ---            & 0.623 & 0.1255 & 2.31 & 81.30 & 0.619 & 0.1202 & 2.21 & 79.02 \\
+        1 & nonlin. bin.   & 0.622 & 0.1238 & 2.27 & 81.12 & 0.617 & 0.1176 & 2.16 & 77.82 \\
+        1 & nonlin. 42D    & 0.621 & 0.1250 & 2.30 & 80.56 & 0.616 & 0.1186 & 2.18 & 76.95 \\
+        1 & typed+triple   & \textbf{0.631} & 0.1335 & 2.45 & \textbf{86.94} & \textbf{0.621} & 0.1240 & 2.28 & \textbf{80.30} \\
+        \addlinespace[4pt]
+        2 & typed+triple   & 0.631 & 0.1322 & 2.43 & 86.77 & 0.619 & 0.1230 & 2.26 & 79.05 \\
+        \addlinespace[4pt]
+        3 & ---            & 0.628 & 0.1346 & 2.47 & 85.23 & 0.620 & 0.1233 & 2.27 & 79.66 \\
+        3 & nonlin. bin.   & 0.627 & 0.1339 & 2.46 & 84.06 & 0.617 & 0.1242 & 2.28 & 77.48 \\
+        3 & nonlin. 42D    & 0.630 & 0.1343 & 2.47 & 85.95 & 0.619 & \textbf{0.1247} & 2.29 & 78.80 \\
+        3 & typed+triple   & 0.629 & 0.1350 & 2.48 & 85.64 & 0.618 & 0.1246 & 2.29 & 78.05 \\
+        \addlinespace[4pt]
+        4 & typed+triple   & 0.627 & \textbf{0.1367} & \textbf{2.51} & 84.10 & 0.621 & \textbf{0.1256} & \textbf{2.31} & 80.08 \\
+        \addlinespace[4pt]
+        5 & typed+triple   & 0.626 & 0.1361 & 2.50 & 83.88 & \textbf{0.623} & \textbf{0.1256} & \textbf{2.31} & \textbf{81.54} \\
+        \addlinespace[4pt]
+        6 & ---            & 0.627 & 0.1337 & 2.46 & 84.19 & 0.620 & 0.1219 & 2.24 & 79.37 \\
+        6 & nonlin. bin.   & 0.614 & 0.1177 & 2.16 & 75.90 & 0.605 & 0.1082 & 1.99 & 69.84 \\
+        6 & nonlin. 42D    & 0.624 & 0.1301 & 2.39 & 82.21 & 0.618 & 0.1214 & 2.23 & 78.23 \\
+        6 & typed+triple   & 0.629 & 0.1347 & 2.47 & 85.62 & 0.620 & 0.1244 & 2.29 & 79.34 \\
+        \bottomrule
+      \end{tabular}
+    \end{table}
+    
+%triple najlepsze i dodac do tego te macierz sciezek 
+%dodac wyniki per endpoint
+
+For understanding how HCR branch contributes to individual endpoints prediction, the learned
+gate weights are shown in \cref{fig:influence}. Each cell gives the scalar by
+which the model scales the evidence block of one parent type before it enters
+the classification head; the gates were initialised at $1.0$, so values below
+unity indicate reduced reliance on that channel.
+
+The gate ordering aligns with the number of endpoints that 
+have at least one direct parent of each type in the graph, 
+suggesting that the model allocates more weight to parent types 
+that are structurally more informative.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth, height=0.45\textheight]{rysunki/hcr_gate_matrix.pdf}
+  \caption{HCR gate matrix - influence of nodes type per endpoint}
+  \label{fig:influence}
+\end{figure}
+
+
+To sump up, it is worth to emphasize that all of models with HCR reached a satisfactory results 
+comparable to models with residual connections applied. 
+The gate matrix indicates that the evidence branch is used
+unevenly across endpoints and parent types, in line with differences in
+parent availability and predictive utility on the synthetic task. 
+In general the value of the HCR branch therefore does not lie in raising the peak, but
+in bringing stability to learning acros all depths and additional information valid for the clinical
+event prediction.
+Across the six depths evaluated, \emph{typed+triple} is the only variant that
+never collapses, retaining between $82\%$ and $89\%$ of the oracle AUC, while
+both the baseline and \emph{nonlin.\ all 42D} fall below $80.00\%$ at $L=6$. 
+The configuration \emph{typed+triple} is mostly stable on depth
+and additionally bring the most informative value.
+The highest validation score in \cref{tab:hcr-nores} is obtained by
+\emph{typed+triple} at $L=1$ and $L=4$ ($89.05\%$ and $86.65\%$ of the oracle AUC). 
+Bringing all together \emph{typed+triple} HCR variant is chosen as the best.
+
+
+\subsubsection{Results per endpoint}
+
+Endpoints are ordered by prevalence. \%~ceil.\ is
+    \eqref{eq:pct-ceiling} computed against the per-endpoint generator-based
+    oracle AUC; values above $100\%$ should be read as saturation 
+    not 
+    Bayes-optimal limit.
+
+    \begin{table}[htbp]
+      \centering
+      \small
+      \setlength{\tabcolsep}{4pt}
+      \caption{Per-endpoint results of the \emph{typed+triple} configuration at
+        $L=4$ without residual connections.}
+      \label{tab:per-endpoint}
+      \begin{tabular}{lccc ccc ccc}
+        \toprule
+        & & \multicolumn{2}{c}{Oracle} & \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
+        \cmidrule(lr){3-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+        Endpoint & Prev. & AUC & AP & AUC & AP & \%~ceil. & AUC & AP & \%~ceil. \\
+        \midrule
+        AKI                & 0.131 & 0.811 & 0.454 & 0.794 & 0.406 & 94.3  & 0.785 & 0.421 & 91.6 \\
+        Depression         & 0.085 & 0.652 & 0.166 & 0.655 & 0.165 & 101.6 & 0.639 & 0.170 & 91.0 \\
+        Hyponatremia       & 0.079 & 0.638 & 0.168 & 0.613 & 0.132 & 81.5  & 0.607 & 0.142 & 77.5 \\
+        Hyperkalemia       & 0.049 & 0.590 & 0.083 & 0.595 & 0.080 & 105.7 & 0.550 & 0.074 & 55.2 \\
+        Delirium           & 0.037 & 0.668 & 0.100 & 0.649 & 0.093 & 89.0  & 0.687 & 0.098 & 93.0 \\
+        GI bleeding        & 0.021 & 0.570 & 0.080 & 0.570 & 0.080 & 99.0  & 0.528 & 0.029 & 39.6 \\
+        DILI               & 0.018 & 0.653 & 0.086 & 0.563 & 0.067 & 41.3  & 0.579 & 0.036 & 51.6 \\
+        QT arrhythmia      & 0.016 & 0.622 & 0.075 & 0.591 & 0.050 & 74.1  & 0.536 & 0.019 & 29.4 \\
+        \midrule
+        \textbf{Macro}     & 0.055 & 0.651 & 0.151 & 0.629 & 0.134 & 85.4  & 0.614 & 0.124 & 75.5 \\
+        \midrule
+        \multicolumn{10}{l}{\emph{Trained but excluded from the macro average}} \\
+        Lactic acidosis    & 0.0057 & 0.523 & 0.011 & 0.560 & 0.009 & {--} & 0.549 & 0.008 & {--} \\
+        Rhabdomyolysis     & 0.0037 & 0.530 & 0.011 & 0.536 & 0.005 & {--} & 0.724 & 0.033 & {--} \\
+        Serotonin syndrome & 0.0027 & 0.554 & 0.008 & 0.646 & 0.010 & {--} & 0.642 & 0.008 & {--} \\
+        \bottomrule
+      \end{tabular}
+    \end{table}

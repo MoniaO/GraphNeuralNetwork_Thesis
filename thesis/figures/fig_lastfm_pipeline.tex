@@ -1,0 +1,28 @@
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >=Stealth,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=3pt, minimum height=0.7cm, minimum width=1.45cm},
+  g/.style={box, fill=blue!12},
+  s/.style={box, fill=orange!14},
+  f/.style={box, fill=green!12},
+  arr/.style={->, thick, draw=gray!65}
+]
+\node[font=\bfseries\normalsize] at (4.2,3.55) {Last-FM* frozen pipeline};
+\node[g] (ckg) at (0.0,2.35) {CKG};
+\node[g] (hgt) at (1.9,2.35) {HGT};
+\node[g] (pair) at (3.9,2.35) {$q$+dot};
+\node[s] (ctx) at (0.0,0.7) {$H_u,X$};
+\node[s] (a5) at (1.9,0.7) {A5};
+\node[s] (h3) at (3.8,0.7) {H3};
+\node[s] (leg) at (5.5,0.7) {LEG};
+\node[f] (fuse) at (7.4,1.55) {Late fuse};
+\node[box, fill=white] (out) at (7.4,2.85) {$s(u,X)$};
+\draw[arr] (ckg) -- (hgt);
+\draw[arr] (hgt) -- (pair);
+\draw[arr] (pair.east) -- ++(0.25,0) |- (fuse.west);
+\draw[arr] (ctx) -- (a5);
+\draw[arr] (a5) -- (h3);
+\draw[arr] (h3) -- (leg);
+\draw[arr] (leg.east) -- ++(0.2,0) |- (fuse.west);
+\draw[arr] (fuse.north) -- (out.south);
+\end{tikzpicture}
