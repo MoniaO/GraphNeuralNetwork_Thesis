@@ -18,9 +18,9 @@ functions, cellular components, pharmacologic classes, side effects, and
 symptoms. This heterogeneous structure makes Hetionet suitable for node classification task described further. 
 The proxy construction and experimental protocol are specified in the remainder of this chapter.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth, height=0.45\textheight, keepaspectratio]{elife-26726-fig1-v2.jpg}
+    \includegraphics[width=\textwidth,keepaspectratio]{elife-26726-fig1-v2.jpg}
     \caption{Hetionet v1.0 knowledge graph (adapted from~\cite{himmelstein2017hetionet}).}
     \label{fig:hetionet-original}
 \end{figure}
@@ -72,7 +72,7 @@ The reconstruction proceeds as follows.
 %  Mapping of Hetionet node types onto the layers of the synthetic schema.
 %  PREAMBLE: \usepackage{booktabs}\usepackage{tabularx}\usepackage{array}
 % =====================================================================
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \small
   \caption{Mapping of Hetionet entities onto the synthetic layer schema.}
@@ -92,7 +92,7 @@ The reconstruction proceeds as follows.
 
 Figure~\ref{fig:updated_hetionet} shows the updated layer mapping. 
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.92\textwidth,keepaspectratio]{hetionet_layer_mapping.pdf}
   \caption{Hetionet layer mapping after reconstruction onto the synthetic schema.}
@@ -107,7 +107,7 @@ Experiments use the TransformerConv backbone with hidden width $64$, batch size 
 The proxy cut comprises $1{,}552$ compounds and twenty disease endpoints.
 Model selection follows the same validation-driven protocol as on the synthetic Task~B cohort; oracle metrics are not available on Hetionet.
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \small
   \caption{Hetionet proxy: model and training configuration
