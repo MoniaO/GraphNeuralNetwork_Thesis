@@ -165,21 +165,23 @@ The resulting reporting hierarchy is therefore 13 graph endpoints $\rightarrow$ 
 \section{Model Architecture}
 \label{sec:taskB-architecture}
 
-The core architecture is a stack of \texttt{HeteroConv} layers (\cref{subsec:related-gnn}) 
+The core architecture is a stack of \texttt{HeteroConv} layers (\texttt{HeteroConv} layers (a wrapper applying a homogeneous message-passing operator per 
+relation type; \cref{subsec:related-gnn}) 
 applied to the
-SGP~v3. Each layer instantiates a separate graph convolution per
-relation type; the same backbone weights are shared across all patient graphs
+SGP~v3. 
+Each layer instantiates a separate message-passing operator per relation type; 
+the same backbone weights are shared across all patient graphs
 in the cohort. Three operators 
 were benchmarked against each other: GraphSAGE, R-GCN, and
 TransformerConv.
-All three are applied to the heterogeneous patient DAG via \texttt{HeteroConv}.
+All three are applied to SGP~v3 via \texttt{HeteroConv}.
 Each directed edge in the graph carries a fixed \texttt{edge\_attr} vector 
 assembled at
 graph-build phase from the audited edge table (\cref{tab:edge_attr_layout}).
 In model design relations are grouped by node-type pairs \texttt{(src\_type, to, dst\_type)}
 and the semantic \texttt{edge\_type} is
 retained as a one-hot suffix in \texttt{edge\_attr}. 
-This vector is consumed differently depending on the convolution
+This vector is consumed differently depending on the message-passing
 operator (\cref{tab:edge_attr_by_conv}).
 
 \begin{table}[H]
@@ -226,11 +228,15 @@ operator (\cref{tab:edge_attr_by_conv}).
   \end{tabularx}
 \end{table}
 
-A design issue handled during the experiments is the duplication of the self-transform across relations. 
-Several PyG convolution layers (SAGEConv, TransformerConv) internally add their own linear self-loop term,
- wrapped per-relation inside \texttt{HeteroConv}, this term is silently duplicated once per incoming 
-relation type for a given node type. The implementation removes this internal duplication 
-(internal self-loop weights disabled for SAGE/Transformer) and replaces it with a single, explicit, 
+A design issue handled during the experiments is the duplication of the self-transform 
+across relations. 
+Several PyG message-passing layers (SAGEConv, TransformerConv) internally add their 
+own linear self-loop term,
+ wrapped per-relation inside \texttt{HeteroConv}. This contribution of the node’s 
+ own representation is duplicated once 
+ per incoming relation type. The implementation applied removes this internal duplication 
+(internal self-loop weights disabled for SAGE/Transformer) and replaces it with a single, 
+explicit, 
 controlled self-transform per layer per node type. 
 % For GAT-family layers, where the self-dependency is baked into the attention query and cannot be disabled, the explicit self-transform 
 % acts as an additional controlled term on top of the irreducible built-in dependency. GraphConv/GCN, which has no 
@@ -238,25 +244,71 @@ controlled self-transform per layer per node type.
 % cannot be removed without reimplementing the layer.
 %node identity 
 
-A node-identity embedding, added after the input projection, was introduced to resolve a specific representational 
-collapse. Message-passing GNNs are bounded in expressive power by the 1-dimensional Weisfeiler-Lehman graph 
-isomorphism test. In the dataset, several 
-endpoint nodes of the same type (e.g. Serotonin syndrome, Rhabdomyolysis, Lactic acidosis) share 
-identical static audited attributes and comparable topological 
-positions, and were therefore indistinguishable to the model except through such positional cues.
-To break this symmetry, a learnable embedding table is maintained per node type, 
-indexed by each node's fixed local index in the shared DAG,and added 
-to the projected input features before the first convolutional layer.
+The architecture begins with the linear layer that maps each node’s raw features into a hidden vector of fixed width (the input projection). 
+Several clinical endpoints in SPG~v3---serotonin syndrome, rhabdomyolysis, and lactic acidosis---share identical 
+audited attributes and similar neighbourhoods, so a message-passing GNN cannot recognise them apart. 
+This limitation is the one-dimensional Weisfeiler--Lehman colouring: nodes with equal features and equivalent neighbourhoods 
+receive the same representation~\cite{wojcik2026grafowe}. To break the symmetry, a learnable node-identity 
+embedding $x'$ is added after the input projection and before the first message-passing layer:
+% To break this symmetry, a learnable embedding table is maintained per node type,
+% indexed by each node's fixed local index in the shared DAG, and added
+% to the projected input features before the first message-passing layer:
+\begin{equation}
+\begin{gathered}
+x' = Wx + e_{\mathrm{type}}[\mathrm{index}], \\[0.3em]
+{\scriptstyle
+x\text{ --- raw node features},\ 
+W\text{ --- input projection},\ 
+e_{\mathrm{type}}[\mathrm{index}]\text{ --- identity vector for that node in the shared DAG}
+}
+\end{gathered}
+\label{eq:node-identity}
+\end{equation}
+% Equation~\eqref{eq:node-identity} is applied after the input projection and before message passing; the endpoint head
+%  reads the resulting node representations.
+For each node type, a table of vectors is indexed by the node's fixed local index
+$e_{\mathrm{type}}[\mathrm{index}]$ in SPG~v3 and
+the looked-up vector is added to the projected features so that similar endpoints remain 
+distinguishable even
+when their static attributes coincide. The sequence is presented in \cref{fig:node-identity}.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=5pt, minimum height=1.35cm},
+  arr/.style={-{Stealth}, thick}
+]
+\node[box, fill=black!6] (raw) {Raw features $x$\\[-1pt]{\scriptsize identical for three endpoints}};
+\node[box, fill=blue!8, right=0.55cm of raw] (proj) {Input projection\\[-1pt]$Wx$};
+\node[box, fill=orange!15, right=0.55cm of proj] (id) {Node-identity\\[-1pt]embedding $e[\mathrm{index}]$};
+\node[box, fill=green!10, right=0.55cm of id] (mp) {Message-passing\\[-1pt]layers (\texttt{HeteroConv})};
+\node[box, fill=black!6, right=0.55cm of mp] (head) {Endpoint\\[-1pt]head};
+
+\draw[arr] (raw) -- (proj);
+\draw[arr] (proj) -- (id);
+\draw[arr] (id) -- (mp);
+\draw[arr] (mp) -- (head);
+
+\node[below=0.45cm of id, font=\scriptsize, align=center] (tab) {%
+  lookup in shared DAG:\\[-1pt]
+  serotonin syndrome $\mapsto e_7$,
+  rhabdomyolysis $\mapsto e_8$,
+  lactic acidosis $\mapsto e_9$};
+\draw[arr, thin] (tab) -- (id);
+\end{tikzpicture}%
+}
+\caption{Order of operations in the Task~B encoder.}
+\label{fig:node-identity}
+\end{figure}
 %oversmoothing
 \label{subsubsec:oversmoothing}
 
-This connects directly to the model's handling of oversmoothing. Using multiple message-passing 
-layers, repeated aggregation causes node representations to converge toward 
-indistinguishability. To mitigate this, several oversmoothing countermeasures were 
-tested like
-residual connections, Jumping Knowledge, DropEdge, and PairNorm, from which only 
-residual connections were found the most effective and were used in the final results presented
-in the thesis.
+A separate issue at greater depth is oversmoothing. When several message-passing layers are stacked,
+repeated aggregation can make node representations increasingly similar~\cite{rusch2023oversmoothing}.
+Residual connections, Jumping Knowledge, DropEdge, and PairNorm were tested as countermeasures;
+residual connections were the most effective and are used in the results reported below.
 
 %These methods were evaluated both 
 %individually and in combination with the HCR enrichment described in \cref{subsec:hcr_application}.
@@ -310,36 +362,52 @@ in the thesis.
 \section{Statistical Evidence Branch}
 \label{subsec:hcr_application}
 
-In addition to the deep graph representation learned by the GNN, the endpoint
-prediction approach includes a statistical evidence branch---a wide
-side-channel that supplies cohort-level dependence statistics.
-The branch is a \emph{HCR-inspired} way of representing dependencies
-(\cref{subsec:hcr_def}).
-The HCR construction---a cohort coefficient multiplied by a
-patient-specific activation and summed over parents---is retained as one
-implementation mode (\emph{linear}).
-Figure~\ref{fig:taskB-hcr-arch} summarises the dual-path layout: a heterogeneous GNN producing endpoint embeddings, and an HCR-inspired evidence branch that can be concatenated into the classification head or added at the logit level.
+In addition to the deep graph representation learned by the GNN, endpoint
+prediction includes a statistical evidence branch: a wide side-channel that
+supplies cohort-level pairwise dependence statistics.
+The construction is \emph{HCR-inspired} (\cref{subsec:hcr_def}):
+some parent--endpoint dependencies are well captured by interpretable
+statistics computed on the training cohort, and combining them with the GNN
+representation keeps a direct-parent signal that message passing can dilute.
+% The exposition follows the conceptual progression of pairwise dependence,
+% type-specific evidence encoding, higher-order triple-path evidence, and
+% fusion with the GNN representation.
+%Each mode is described in the subsections that follow.
+%The HCR construction---a cohort coefficient multiplied by a
+%patient-specific activation and summed over parents---is retained as one
+%implementation mode (\emph{linear}).
+% Figure~\ref{fig:taskB-hcr-arch} summarises the dual-path layout
+% : a heterogeneous GNN producing endpoint embeddings, and an 
+% HCR-inspired evidence branch that can be concatenated into the 
+% classification head or added at the logit level.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{architecture_slide_multilabel_hcr.png}
-\caption{Task~B architecture: heterogeneous GNN path with shared endpoint head, HCR-inspired evidence tensors with pair encoders, and optional concatenation or logit-level fusion.}
+\caption{Task~B architecture: heterogeneous GNN path with a shared endpoint head, 
+HCR-inspired evidence tensors with pair encoders, and optional concatenation or 
+logit-level fusion.}
 \label{fig:taskB-hcr-arch}
 \end{figure}
 
-The remaining configurations extend this idea with additional
-contingency-table statistics, non-binary parent handling, higher-order path
-moments, and learned fusion with the GNN head.
+% The remaining configurations extend this idea with additional
+% contingency-table statistics, non-binary parent handling, higher-order path
+% moments, and learned fusion with the GNN head.
+Figure~\ref{fig:taskB-hcr-arch} summarises the dual-path layout.
+The GNN produces an endpoint embedding \(z_{\mathrm{graph}}\).
+In the nonlinear and typed configurations, a pair encoder (a small MLP)
+maps each parent--endpoint evidence vector to an embedding and
+mean-pools over parents.
+There may be a single encoder for all parents, or one encoder per parent
+type (drug, mechanism, ADR, patient context) --
+\(e_{\mathrm{drug}}\), \(e_{\mathrm{mech}}\), \(e_{\mathrm{adr}}\) and
+\(e_{\mathrm{ctx}}\) presented at the bottom of the figure.
+The resulting embeddings are either concatenated with \(z_{\mathrm{graph}}\)
+as input to the classification head, or reduced to a scalar and added to the
+GNN logit.
+The different fusion modes tested are specified below (\cref{tab:fusion_modes}) 
+and subsections below represents detailed info about configurations.
 
-This channel is motivated by the 
-observation that some parent-endpoint dependencies are well captured by simple, 
-well-understood pairwise 
-statistics computed directly from the training cohort, and that combining such statistics
- with the deep GNN 
-representation captures the strong signal from direct parents and smoothed signal 
-from further layers.
-The exposition follows the conceptual progression pairwise dependence, type-specific evidence encoding, higher-order triple-path evidence, and fusion with the GNN representation.
-Each mode is described in the subsections that follow.
 
 \subsection{Scope of variables and parents}
 For each target endpoint, evidence is computed over its \emph{direct parents}
@@ -348,25 +416,24 @@ in the patient graph (subject to the structural exclusions described in
 Pairwise statistics relate one parent to one endpoint at a single hop.
 Higher-order evidence over \emph{grandparent--parent--endpoint} paths
 (\(G \rightarrow P \rightarrow Y\), where \(G\), \(P\), and \(Y\) denote the
-grandparent, parent, and endpoint \emph{nodes} on a DAG-consistent triple) is computed separately in the
-\emph{triple} extension.  It is
-stored in its own evidence tensor (13 channels per triple slot), and fused 
+grandparent, parent, and endpoint nodes on SGP~v3).
+is computed separately in the \emph{triple} extension.
+It is stored in its own evidence tensor (13 channels per triple slot) and fused
 through a dedicated encoder block.
 Several evidence dimensionalities were evaluated, including binary-only
 parents (compact 10-channel evidence) and all parent value types (binary,
 count, and continuous; 42-channel evidence).
 
 \subsection{Pairwise HCR core coefficients}
-For a binary parent \(P\) and binary endpoint node \(Y\), the primary association
-coefficient is the \(\varphi\)-coefficient 
-%(equivalently denoted \(a_{11}\) in the implementation) 
-derived from the training-cohort contingency table. For
-each patient \(p\), the parent activation is the standardized binary score
-\(\phi_1(R)\). The HCR
-patient evidence for that parent--endpoint pair is the product
-\(s_{p,rv} = a_{11,rv}\,\phi_1(R_p)\) (channel \texttt{s\_evidence}). 
-In
-\emph{linear} mode the endpoint-wide score is the sum over eligible direct
+For a binary parent \(P\) and a binary endpoint \(Y\), the primary association
+coefficient is the \(\varphi\)-coefficient
+%(equivalently denoted \(a_{11}\) in the implementation)
+derived from the training-cohort contingency table.
+For each patient \(p\), the parent activation is the standardized binary score
+\(\phi_1(R)\), where \(R\) denotes the parent.
+The HCR patient evidence for that parent--endpoint pair is the product
+\(s_{p,rv} = a_{11,rv}\,\phi_1(R_p)\) (channel \texttt{s\_evidence}).
+In \emph{linear} mode the endpoint-wide score is the sum over eligible direct
 parents,
 \[
   s_{p,v} = \sum_{r \in \mathrm{Pa}(v)} a_{11,rv}\,\phi_1(R_p),
@@ -394,13 +461,17 @@ These are assembled into a fixed-order evidence vector per
         entropies, type indicators, and the patient activation channel.
 \end{itemize}
 \subsection{Type-specific encoders and endpoint-specific fusion}
-In \emph{nonlinear} and \emph{triple} modes, a shared pairwise evidence encoder
-processes each evidence slot with the same MLP
+In \emph{nonlinear} and \emph{triple} modes, a shared pairwise evidence encoder 
+(PairEncoder in \cref{fig:taskB-hcr-arch})
+processes each evidence slot with a two-layer MLP
 (\texttt{Linear}$\rightarrow$\texttt{ReLU}$\rightarrow$\texttt{Linear}),
 mean-pools over parent or triple slots using a padding mask, and collapses
-the pooled embedding to a scalar logit contribution.
+the pooled embedding to a scalar logit contribution. ReLU activation
+is used as in the graph encoder. The MLP widths (hidden 32, output 8) were 
+selected after preliminary runs with a narrower encoder (hidden 8, output 4) 
+performed worse; they were then held fixed (\cref{tab:hparams-common}). 
 In \emph{nonlinear} mode only, that contribution is further scaled by a
-learned per-endpoint weight (learned per-endpoint scale).
+learned per-endpoint weight.
 
 In \emph{typed\_concat} (and \emph{typed+triple}), the architecture differs
 in two respects.
@@ -412,7 +483,8 @@ by its own pairwise evidence encoder applied to a separate evidence
 tensor (type-specific evidence tensors).
 These encoders are shared across endpoints; they differ only in the semantic
 role of the parents they read.
-Second, fusion is \emph{endpoint-specific}: a learnable endpoint-specific gate matrix $\in \mathbb{R}^{|\mathcal{V}_{\text{target}}| \times B}$
+Second, fusion is \emph{endpoint-specific}: a learnable gate matrix
+\(\in \mathbb{R}^{|\mathcal{V}_{\mathrm{target}}| \times B}\)
 (with $B=4$ parent-type blocks, or $B=5$ when a triple block is enabled)
 scales each type-level embedding separately for every target endpoint before
 concatenation.
@@ -428,16 +500,16 @@ Count- and continuous-valued direct parents are handled outside the binary
 pseudo-uniform scores via a train-only empirical CDF transform; count
 variables receive deterministic, patient-ID-seeded jitter before
 transformation. Non-linear dependence on continuous parents is represented
-through a Legendre polynomial basis. These channels extend  the binary \emph{patient activation} 
+through a Legendre polynomial basis. These channels extend the binary \emph{patient activation}
 in the 42-dimensional branch.
 
 \subsection{Higher-order triple-path evidence}
-In order to capture more complex dependencies,
+To capture higher-order dependencies,
 third-order moments are computed over graph-consistent
-triples \(G \rightarrow P \rightarrow Y\). The main coefficient $a_{111}$ 
-is estimated from a $2 \times 2 \times 2$
+triples \(G \rightarrow P \rightarrow Y\).
+The main coefficient \(a_{111}\) is estimated from a \(2 \times 2 \times 2\)
 contingency table over three binary nodes on each DAG-consistent path
-$G \rightarrow P \rightarrow Y$ (grandparent, parent, and endpoint node).
+\(G \rightarrow P \rightarrow Y\) (grandparent, parent, and endpoint).
 It generalizes the pairwise $\varphi$-coefficient, which uses only two
 variables at a time.
 The triple vector also retains the three pairwise marginals
@@ -447,7 +519,7 @@ patient activations, and an explicit patient evidence product
 Triple evidence uses the same slot-based encoder
 interface as pairwise evidence.
 
-Four fusion modes connect the statistical branch to the GNN; they differ in
+The fusion modes connect the statistical branch to the GNN; they differ in
 what evidence tensor is built and how it is combined with the deep
 representation (\cref{tab:fusion_modes}).
 
@@ -601,6 +673,11 @@ convolutions in \cref{tab:hparams-arch}.
       & Activation                           & ReLU \\
       & Batch normalisation                  & yes \\
     \midrule
+    \multirow{3}{*}{Pair encoder}
+      & Hidden units                         & 32 \\
+      & Output embedding                     & 8 \\
+      & Dropout                              & 0.0 \\
+    \midrule
     \multirow{2}{*}{Regularisation}
       & Dropout                              & 0.2 \\
       & Weight decay                         & $5\times10^{-4}$ \\
@@ -655,6 +732,22 @@ All three convolutions are wrapped in \texttt{HeteroConv}, which instantiates a 
     attention-based layers the hidden width is split across heads, so the
     output width stays at 64 regardless of the number of heads.
 
+The entries in \cref{tab:hparams-common,tab:hparams-arch} were held fixed so that
+the reported comparisons isolate depth, residual connections, and the
+statistical-evidence variant.
+Adam with learning rate \(10^{-3}\) follows the standard setting of
+Kingma and Ba~\cite{kingma2015adam}; ReLU, batch normalisation, and the
+64-dimensional width are the same conventions as in the graph encoder, so
+that R-GCN, GraphSAGE, and TransformerConv differ only in the
+message-passing operator.
+\texttt{HeteroConv} uses sum aggregation across relation types after
+preliminary checks in which mean and max aggregation did not change the
+conclusions.
+The pair-encoder widths are those selected in \cref{subsec:hcr_application}.
+Batch size 128 was used as a stable setting for patient-graph batches; the
+remaining optimisation details (including the choice of Adam) were not
+ablated.
+
 \section{Experimental Results}
 \label{sec:taskB-results}
 
@@ -662,10 +755,10 @@ All three convolutions are wrapped in \texttt{HeteroConv}, which instantiates a 
 \label{sec:taskB-depth}
 
 The first set of experiments established how much the choice of
-convolution architecture matters for this task. Three convolutions were
+GNN architecture matters for this task. Three message-passing layers were
 compared: R-GCN, GraphSAGE and TransformerConv. All three are defined for
 homogeneous graphs, so each was wrapped in \texttt{HeteroConv}, which
-instantiates a separate convolution for every relation type and aggregates
+instantiates a separate embedding for every relation type and aggregates
 the results at the target node and allows to preserve the heterogenous structure.
 
 The results for those experiments are reported in \cref{tab:arch-nores-update}.
@@ -703,9 +796,11 @@ test metrics are reported from that epoch.
 
 The experiments were conducted with multiple number of layers as 
 patient path is up to 6 degrees and it is assumed that every point
-can have an influence in casual path. For each experiment all number of layers were calculated, 
+can have an influence in casual path. For each experiment all number 
+of layers were calculated, 
 but for reporting reasons in \cref{tab:arch-nores-update} there are included layers 
-1,3 and 6 to show the trend with the increased number of layers. The reporting convention is that unless 
+1,3 and 6 to show the trend with the increased number of layers. The reporting 
+convention is that unless 
 the results from other layers are significant for conclusion. 
 
 % The range of depths follows the assumption that 

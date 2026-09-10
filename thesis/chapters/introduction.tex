@@ -1,18 +1,23 @@
 \chapter{Introduction}
 \label{ch:introduction}
 
-Modern pharmacotherapy involves complex interactions between drugs, patient characteristics,
-biological mechanisms, intermediate physiological states, and clinical outcomes.
-Representing such knowledge using knowledge graphs provides a natural way to organize
-clinically relevant entities and their relationships into an explicit relational structure.
+Modern pharmacotherapy requires the integration of well-established pharmacological 
+knowledge across multiple biological and clinical levels. Medical knowledge graphs provide a 
+structured representation of this knowledge, capturing the complex mechanisms through 
+which drugs interact with the human organism, with one another, and with intermediate 
+biological processes. These interactions may propagate through multiple mechanistic pathways 
+and ultimately converge on a observable clinical endpoint, particularly in the context of 
+suboptimal or complex pharmacotherapy.
 
-The topology of a knowledge graph describes which relationships are considered plausible or
+The topology of a knowledge graph describes which pathways and relationships are considered plausible or
 mechanistically meaningful based on literature, but it does not by itself determine
 how strongly these relationships are supported by observations in a particular population,
 nor how the represented mechanisms are expressed in an individual patient.
-On the other hand, patient-level data contain empirical information about drug exposure,
-patient context, intermediate states, and clinical outcomes,
-but these observations do not directly provide the mechanistic structure connecting them.
+On the other hand, patient-level data provide empirical information on drug exposure, laboratory 
+outcomes, and diagnoses, but these observations are often incomplete, noisy, and 
+affected by selection artifacts. As a result, the observed data do not directly reveal the 
+underlying mechanistic structure linking drug exposures to intermediate processes and, ultimately, 
+to clinical endpoints.
 This creates a natural methodological distinction between two complementary sources of information
 -- graph-structured knowledge and patient-level empirical evidence.
 
@@ -21,7 +26,8 @@ a unified framework so that they interact synergistically.
 Based on this aim, we formulate the following theses:
 
 \paragraph{Thesis 1.}
-Empirical patient-level data can improve the prediction of missing directed links in a knowledge graph.
+Empirical patient-level data, when integrated with the structural information encoded in a 
+knowledge graph, can improve the prediction of missing directed links.
 
 \paragraph{Thesis 2.}
 The directed causal graph can serve as a shared scaffold for predicting multiple
@@ -37,7 +43,7 @@ Inspired by the Wide \& Deep framework proposed by Cheng et al.~\cite{cheng2016w
 we formulate the third thesis:
 
 \paragraph{Thesis 3.}
-Explicit empirical associations can provide additional signal to GNNs and improve prediction performance.
+Explicit empirical associations can provide additional signal to GNNs and improve prediction performance of GNNs.
 
 \medskip
 
@@ -70,7 +76,7 @@ associations~\cite{mesinovic2025causal}.
 % In this thesis the associational component is a Hierarchical Correlation Reconstruction
 % (HCR) representation of empirical dependence.
 
-Based on that and taking into consideration formulated thesis,
+Based on that and taking into consideration formulated theses,
 there are defined two complementary prediction tasks.
 
 \paragraph{Task~A.}
@@ -101,11 +107,11 @@ at scale.
 % This loop is the intended research direction. The experiments test both of its legs;
 % they do not implement a closed, self-updating cycle.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{fig_loop_task_a_b.png}
+    \includegraphics[width=0.92\textwidth,height=0.32\textheight,keepaspectratio]{fig_loop_task_a_b.png}
     \caption{Intended research direction: an iterative loop between Task~A
     (evaluation of graph relations) and Task~B (patient-level endpoint prediction).}
     \label{fig:loop}
     \label{fig:intro-task-loop}
-    \end{figure}
+\end{figure}

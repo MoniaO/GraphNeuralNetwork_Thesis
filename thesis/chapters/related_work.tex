@@ -1,9 +1,10 @@
 \chapter{Related Work}
 \label{ch:related-work}
 
-This chapter reviews the background that motivates combining structured knowledge graphs with explicit statistical dependence estimates:
-biomedical knowledge graphs, graph neural networks for heterogeneous relational data, 
-Hierarchical Correlation Reconstruction, and knowledge-aware recommendation with evaluation reliability.
+This chapter reviews the background that motivates combining structured knowledge graphs with explicit statistical dependence estimates 
+-- starting from
+biomedical knowledge graphs, graph neural networks for heterogeneous data structure and 
+Hierarchical Correlation Reconstruction served as inspiration to statistical dependence branch in this work.
 
 \section{Knowledge Graphs in Biomedicine}
 \label{sec:related-kg}
@@ -369,10 +370,30 @@ graph-based branch. The wide branch memorises direct, low-order
 statistical dependencies that message passing may dilute through
 neighbourhood aggregation, while the deep branch generalises through
 learned relational representations.  
-In this thesis, the wide branch is introduced using
-Hierarchical Correlation Reconstruction (HCR) described in this section.
 
-HCR, proposed by Jaros\l{}aw Duda, represents probability distributions and statistical dependencies through coefficients of an orthonormal basis expansion~\cite{duda2018hcr,duda2018hcr-ts,duda2020hcr-income,duda2023hcr-wolfram,duda2025hcr-mi}.
+Several statistical dependence measures were considered for this role. 
+In particular the Hilbert–Schmidt Independence Criterion (HSIC) as it provides a well-established, 
+non-parametric approach for detecting broad classes of statistical dependence, 
+including nonlinear relationships. However, in its standard form HSIC summarizes 
+dependence primarily through an aggregate statistic. This is useful for testing 
+whether dependence is present, but provides less direct information about the components 
+of the joint distribution in which that dependence is expressed.
+Finally, Hierarchical Correlation Reconstruction (HCR), proposed by proposed by Jaros\l{}aw Duda,
+ was selected because its orthonormal-basis representation provides a more explicit 
+decomposition of statistical dependence. HCR represents it through a collection of coefficients 
+associated with specific combinations of basis functions. This makes it possible to inspect which 
+low- and higher-order components contribute to the observed dependence and therefore provides 
+a richer and more interpretable statistical representation for downstream modelling. This property 
+is particularly relevant in the present thesis to provide an explicit representation 
+that can be combined with the topology-based graph encoder.
+A further practical advantage is computational simplicity. 
+HCR coefficients are estimated directly as sample averages of basis-function products and can 
+be computed independently, without iterative optimisation. The representation can therefore be 
+expanded progressively by adding higher-order coefficients when more detail is required. 
+These properties make HCR attractive in settings where statistical dependence must be estimated 
+repeatedly across many candidate relations.
+
+HCR represents probability distributions and statistical dependencies through coefficients of an orthonormal basis expansion~\cite{duda2018hcr,duda2018hcr-ts,duda2020hcr-income,duda2023hcr-wolfram,duda2025hcr-mi}.
 Lower-order coefficients describe broad dependence patterns; higher-order coefficients capture more complex departures from independence.
 
 For variables $X$ and $Y$ with orthonormal bases $\{\phi_j^{(X)}\}$ and $\{\phi_k^{(Y)}\}$, empirical cross-dependence coefficients are

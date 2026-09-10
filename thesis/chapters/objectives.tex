@@ -7,10 +7,19 @@ The problem is studied through two complementary tasks: graph reconstruction and
 The specific contributions of the thesis are:
 
 \paragraph{Task A. Directed link prediction.}
-A method is developed for evaluating candidate directed relations in a heterogeneous pharmacotherapy graph by combining two sources of information: a graph representation learned from the available topology and an explicit statistical representation derived from patient-level observations.
-The graph component is based on a Heterogeneous Graph Transformer (HGT), while the statistical component describes local dependence around each candidate relation using HCR coefficients together with additional statistical descriptors.
-Both components are combined in a common decoder.
-The same general principle is additionally tested in the Last-FM* proxy task under a different graph structure and ranking objective in order to examine whether the value of combining structural and explicit empirical information is specific to the pharmacotherapy graph or can persist after a substantial change of domain.
+A method is developed for evaluating candidate directed relations in a heterogeneous pharmacotherapy 
+graph by combining graph structure with explicit empirical evidence from patient-level data. 
+The graph component, implemented with a Heterogeneous Graph Transformer (HGT), provides a 
+topology-constrained representation of the candidate relation and its local typed context. 
+The statistical component characterizes the geometry and strength of dependence observed in 
+patient-level data using coefficients derived from Hierarchical Correlation Reconstruction (HCR), 
+together with additional statistical descriptors. Both representations are then combined and passed 
+to a common decoder for directed link prediction. The same principle is additionally examined using 
+Last-FM, a corrected music recommendation benchmark represented as a user–artist interaction graph, 
+which serves as a proxy task under a substantially different graph structure and ranking objective. 
+This allows us to assess whether the value of combining structural and explicit empirical 
+information is specific to the pharmacotherapy setting or persists after a substantial change 
+of domain.
 
 \paragraph{Task B. Patient-level endpoint prediction.}
 A patient-specific prediction framework is developed in which the shared pharmacotherapy graph provides the structural representation and patient observations provide individual input information.
