@@ -1,11 +1,28 @@
-\chapter{Cross-Domain Validation of Task B. Hetionet}
+\chapter{Cross-Domain Validation of Task B}
 \label{ch:taskB-benchmark}
 \label{subsec:benchmark-endpoint}
 
-\section{Problem Formulation and Proxy Construction}
+This chapter presents the cross-domain validation of Task~B on two datasets:
+Hetionet~\cite{hetionet}, a biomedical knowledge graph of compounds, genes and diseases,
+and {H2GB} {IEEE-CIS-G}~\cite{lin2025h2gb,h2gb}, a heterogeneous graph of card-fraud 
+transactions.
+Hetionet allows the models to be assessed on a graph structure close to the synthetic task
+(a directed heterogeneous graph with multiple target nodes), but it cannot be compared
+against external performance metrics because the graph was reconstructed.
+{H2GB} {IEEE-CIS-G}, by contrast, does support comparison against external performance
+metrics and is also a heterogeneous graph for class-imbalanced node classification,
+but it is a single-label task on a bipartite star graph.
+Taken together, the two settings test whether extending the GNN with a
+statistical evidence branch remains useful for node classification under different
+graph structures and domains.
+
+\section{Hetionet}
+\label{sec:hetionet}
+
+\subsection{Problem Formulation and Proxy Construction}
 \label{sec:hetionet-problem}
 
-Task~B is evaluated on a benchmark dataset derived from Hetionet. 
+Task~B is evaluated on a benchmark dataset derived from Hetionet~\cite{hetionet}. 
 Hetionet is a heterogeneous network
 (\emph{hetnet}) that integrates biomedical knowledge from 29 publicly
 available resources. It represents biological and pharmacological entities
@@ -16,11 +33,11 @@ Hetionet v1.0 contains 47{,}031 nodes belonging to 11 node types and
 diseases, genes, anatomies, pathways, biological processes, molecular
 functions, cellular components, pharmacologic classes, side effects, and
 symptoms. This heterogeneous structure makes Hetionet suitable for node classification task described further. 
-The proxy construction and experimental protocol are specified in the remainder of this chapter.
+The proxy construction and experimental protocol are specified in the following subsections.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth, height=0.45\textheight, keepaspectratio]{elife-26726-fig1-v2.jpg}
+    \includegraphics[width=\textwidth,keepaspectratio]{elife-26726-fig1-v2.jpg}
     \caption{Hetionet v1.0 knowledge graph (adapted from~\cite{himmelstein2017hetionet}).}
     \label{fig:hetionet-original}
 \end{figure}
@@ -29,7 +46,7 @@ Hetionet was selected because it is heterogeneous and supports a
 multi-label prediction setup analogous to the synthetic
 task.
 
-\section{Data Representation}
+\subsection{Data Representation}
 \label{sec:hetionet-data}
 
 The
@@ -41,7 +58,7 @@ The reconstruction proceeds as follows.
 \begin{enumerate}[label=(\roman*)]
   \item \textbf{Instance.} A compound takes the role of the patient: the
     topology is shared and a compound is described by the edges linking it to
-    the remaining entities. A compound is therefore \emph{not} a node of the
+    the remaining entities. A compound is therefore not a node of the
     graph, which means an entity can serve as a feature column only if it
     connects to compounds directly.
 
@@ -72,7 +89,7 @@ The reconstruction proceeds as follows.
 %  Mapping of Hetionet node types onto the layers of the synthetic schema.
 %  PREAMBLE: \usepackage{booktabs}\usepackage{tabularx}\usepackage{array}
 % =====================================================================
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \small
   \caption{Mapping of Hetionet entities onto the synthetic layer schema.}
@@ -92,22 +109,22 @@ The reconstruction proceeds as follows.
 
 Figure~\ref{fig:updated_hetionet} shows the updated layer mapping. 
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth,keepaspectratio]{hetionet_layer_mapping.pdf}
+  \includegraphics[width=0.78\textwidth,keepaspectratio]{hetionet_layer_mapping.pdf}
   \caption{Hetionet layer mapping after reconstruction onto the synthetic schema.}
   \label{fig:updated_hetionet}
 \end{figure}
 
-\section{Training and Evaluation}
+\subsection{Training and Evaluation}
 \label{sec:hetionet-protocol}
 
 The Hetionet proxy reuses the Task~B pipeline, layer slots, and statistical evidence branch.
-Experiments use the TransformerConv backbone with hidden width $64$, batch size $8$, learning rate $1\times10^{-3}$, DropEdge disabled, and seed $42$.
+Experiments use the TransformerConv backbone with hidden width $64$, batch size $8$, learning rate $1\times10^{-3}$, DropEdge disabled, and three random seeds ($42$, $20256$, $202567$).
 The proxy cut comprises $1{,}552$ compounds and twenty disease endpoints.
-Model selection follows the same validation-driven protocol as on the synthetic Task~B cohort; oracle metrics are not available on Hetionet.
+Model selection follows the same validation-driven protocol as on the synthetic Task~B cohort.
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \small
   \caption{Hetionet proxy: model and training configuration
@@ -122,15 +139,14 @@ Model selection follows the same validation-driven protocol as on the synthetic 
     Batch size & 8 \\
     Learning rate & $1\times10^{-3}$ \\
     DropEdge & disabled \\
-    Seed & 42 \\
+    Seeds & $42$, $20256$, $202567$ \\
     Compounds (instances) & $1{,}552$ \\
     Disease endpoints & 20 \\
-    Oracle metrics & not available \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\section{Experimental Results}
+\subsection{Experimental Results}
 \label{sec:hetionet-results}
 
 % The models on benchmark dataset shows the same trend as on synthethic dataset. 
@@ -139,21 +155,26 @@ Model selection follows the same validation-driven protocol as on the synthetic 
 % HCR combined with residual connections reaches the higher results than separated approach. 
 
 The benchmark reproduces several trends
-observed on the synthetic dataset---depth sensitivity without stabilisers,
-partial recovery with the statistical evidence branch---under a different graph semantics and without
-oracle metrics. The gain from statistical evidence is conditional on the state of the
-propagation path: at $L=6$ without
-residual connections the baseline collapses to $0.585$ AUROC on test, while every
-statistical-evidence variant recovers a substantial part of it, up to $0.757$ for
-\emph{typed+triple}. At $L=1$, where the receptive field of an endpoint
-coincides with the input of the statistical evidence branch, no variant improves on the
-baseline, and the concatenated variants are slightly worse.
+observed on the synthetic dataset -- depth sensitivity without stabilisers,
+partial recovery with the statistical evidence branch -- under a different graph semantics 
+and without
+oracle metrics.
+Reported scores in \cref{tab:proxy-full} are the mean $\pm$ sample standard deviation
+over up to three seeds.
+The gain from statistical evidence is conditional on the state of the
+propagation path: at $L=6$ without residual connections the graph-only model
+reaches $0.615 \pm 0.026$ test AUROC, while statistical-evidence variants recover
+part of the lost ranking quality ($0.703$--$0.712$).
+At $L=1$, where the receptive field of an endpoint coincides with the input of
+the statistical evidence branch, graph-only and statistical-evidence variants remain close
+(test AUROC $0.667$--$0.672$).
 
-In the benchmark dataset, residual connections and the statistical evidence branch combine additively at
-$L=6$. The baseline
-reaches $0.585$ without either mechanism, $0.680$--$0.757$ with statistical evidence alone,
-$0.728$ with residual alone, and $0.760$ with both. The combination is
-therefore better than either component in isolation.
+At $L=6$, residual connections already restore much of the graph pathway
+($0.728 \pm 0.010$ without the statistical branch).
+Adding statistical evidence on top of residuals yields $0.726$--$0.742$, so the
+two mechanisms are only weakly additive on this proxy: the residual path carries
+most of the depth-related gain, while the statistical branch helps mainly when
+that path is absent.
 
 The reason is the structure of the two graphs. In the synthetic graph the direct
 parents of an endpoint are observed, so the statistical evidence branch and the one-hop
@@ -172,72 +193,347 @@ evidence enters the model.
 
 % =====================================================================
 %  PROXY DATASET RESULTS (Hetionet, cut A, proxy3_clean)
-%  1552 compounds, 20 endpoints, seed 42, conv_type = transformer,
-%  hidden = 64, batch = 8, lr = 1e-3, dropedge = 0.0
+%  seeds 42 + 20256 + 202567; mean ± sample SD; n=3 unless noted
 % =====================================================================
 \begin{table}[H]
   \centering
-  \small
-  \setlength{\tabcolsep}{4pt}
+  \scriptsize
+  \setlength{\tabcolsep}{3pt}
   \caption{Hetionet proxy: endpoint-prediction results under the reconstructed layer schema.}
   \label{tab:proxy-full}
-  \sisetup{table-format=1.3}
-  \begin{tabular}{ccl SSS SSS}
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{ccl ccc ccc}
     \toprule
     & & & \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
     \cmidrule(lr){4-6}\cmidrule(lr){7-9}
     $L$ & Res. & Evidence variant & {AUROC} & {AP} & {Lift} & {AUROC} & {AP} & {Lift} \\
     \midrule
-    1 & no  & ---              & 0.757 & 0.188 & 7.92  & 0.664 & 0.120 & 6.49 \\
-    1 & no  & nonlin.\ bin.    & 0.763 & 0.207 & 8.75  & 0.657 & 0.120 & 6.47 \\
-    1 & no  & nonlin.\ all     & 0.761 & 0.206 & 8.69  & 0.665 & 0.140 & 7.55 \\
-    1 & no  & typed+triple     & 0.765 & 0.160 & 6.75  & 0.662 & 0.104 & 5.63 \\
+    1 & no  & ---              & $0.757{\scriptstyle\,\pm\,0.005}$ & $0.218{\scriptstyle\,\pm\,0.027}$ & $9.20{\scriptstyle\,\pm\,1.15}$ & $0.668{\scriptstyle\,\pm\,0.006}$ & $0.125{\scriptstyle\,\pm\,0.010}$ & $6.78{\scriptstyle\,\pm\,0.53}$ \\
+    1 & no  & nonlin.\ bin.    & $0.758{\scriptstyle\,\pm\,0.005}$ & $0.219{\scriptstyle\,\pm\,0.020}$ & $9.23{\scriptstyle\,\pm\,0.83}$ & $0.667{\scriptstyle\,\pm\,0.008}$ & $0.128{\scriptstyle\,\pm\,0.007}$ & $6.90{\scriptstyle\,\pm\,0.39}$ \\
+    1 & no  & nonlin.\ all     & $0.757{\scriptstyle\,\pm\,0.004}$ & $0.213{\scriptstyle\,\pm\,0.012}$ & $8.99{\scriptstyle\,\pm\,0.52}$ & $0.667{\scriptstyle\,\pm\,0.002}$ & $0.135{\scriptstyle\,\pm\,0.005}$ & $7.27{\scriptstyle\,\pm\,0.24}$ \\
+    1 & no  & typed+triple     & $0.765{\scriptstyle\,\pm\,0.011}$ & $0.216{\scriptstyle\,\pm\,0.049}$ & $9.10{\scriptstyle\,\pm\,2.05}$ & $0.668{\scriptstyle\,\pm\,0.006}$ & $0.132{\scriptstyle\,\pm\,0.026}$ & $7.17{\scriptstyle\,\pm\,1.40}$ \\
     \addlinespace[2pt]
-    1 & yes & ---              & 0.756 & 0.196 & 8.26  & 0.669 & 0.106 & 5.72 \\
-    1 & yes & nonlin.\ bin.    & 0.756 & 0.201 & 8.49  & 0.670 & 0.135 & 7.31 \\
-    1 & yes & nonlin.\ all     & 0.758 & 0.206 & 8.69  & 0.664 & 0.135 & 7.32 \\
-    1 & yes & typed+triple     & 0.750 & 0.157 & 6.61  & 0.661 & 0.098 & 5.30 \\
+    1 & yes & ---              & $0.756{\scriptstyle\,\pm\,0.002}$ & $0.213{\scriptstyle\,\pm\,0.014}$ & $8.96{\scriptstyle\,\pm\,0.61}$ & $0.671{\scriptstyle\,\pm\,0.004}$ & $0.132{\scriptstyle\,\pm\,0.029}$ & $7.13{\scriptstyle\,\pm\,1.55}$ \\
+    1 & yes & nonlin.\ bin.    & $0.756{\scriptstyle\,\pm\,0.005}$ & $0.215{\scriptstyle\,\pm\,0.019}$ & $9.06{\scriptstyle\,\pm\,0.81}$ & $0.672{\scriptstyle\,\pm\,0.007}$ & $0.142{\scriptstyle\,\pm\,0.006}$ & $7.69{\scriptstyle\,\pm\,0.35}$ \\
+    1 & yes & nonlin.\ all     & $0.757{\scriptstyle\,\pm\,0.001}$ & $0.222{\scriptstyle\,\pm\,0.018}$ & $9.38{\scriptstyle\,\pm\,0.77}$ & $0.667{\scriptstyle\,\pm\,0.003}$ & $0.137{\scriptstyle\,\pm\,0.002}$ & $7.41{\scriptstyle\,\pm\,0.08}$ \\
+    1 & yes & typed+triple     & $0.755{\scriptstyle\,\pm\,0.004}$ & $0.210{\scriptstyle\,\pm\,0.046}$ & $8.84{\scriptstyle\,\pm\,1.94}$ & $0.671{\scriptstyle\,\pm\,0.009}$ & $0.136{\scriptstyle\,\pm\,0.034}$ & $7.37{\scriptstyle\,\pm\,1.83}$ \\
     \midrule
-    2 & no  & nonlin.\ all     & 0.763 & 0.263 & 11.10 & 0.694 & 0.173 & 9.34 \\
-    2 & no  & typed+triple     & 0.778 & 0.263 & 11.10 & 0.677 & 0.175 & 9.46 \\
+    %2 & no  & ---$^*$          & $0.754{\scriptstyle\,\pm\,0.002}$ & $0.234{\scriptstyle\,\pm\,0.005}$ & $9.87{\scriptstyle\,\pm\,0.21}$ & $0.686{\scriptstyle\,\pm\,0.006}$ & $0.118{\scriptstyle\,\pm\,0.015}$ & $6.38{\scriptstyle\,\pm\,0.82}$ \\
+    % & no  & nonlin.\ bin.$^*$ & $0.761{\scriptstyle\,\pm\,0.004}$ & $0.254{\scriptstyle\,\pm\,0.000}$ & $10.70{\scriptstyle\,\pm\,0.01}$ & $0.683{\scriptstyle\,\pm\,0.007}$ & $0.160{\scriptstyle\,\pm\,0.004}$ & $8.66{\scriptstyle\,\pm\,0.20}$ \\
+    2 & no  & nonlin.\ all     & $0.760{\scriptstyle\,\pm\,0.005}$ & $0.261{\scriptstyle\,\pm\,0.018}$ & $11.03{\scriptstyle\,\pm\,0.75}$ & $0.686{\scriptstyle\,\pm\,0.009}$ & $0.165{\scriptstyle\,\pm\,0.029}$ & $8.93{\scriptstyle\,\pm\,1.56}$ \\
+    2 & no  & typed+triple     & $0.768{\scriptstyle\,\pm\,0.008}$ & $0.262{\scriptstyle\,\pm\,0.002}$ & $11.06{\scriptstyle\,\pm\,0.07}$ & $0.685{\scriptstyle\,\pm\,0.007}$ & $0.169{\scriptstyle\,\pm\,0.005}$ & $9.14{\scriptstyle\,\pm\,0.28}$ \\
     \addlinespace[2pt]
-    2 & yes & nonlin.\ all     & 0.760 & 0.224 & 9.44  & 0.684 & 0.154 & 8.31 \\
-    2 & yes & typed+triple     & 0.765 & 0.232 & 9.79  & 0.690 & 0.174 & 9.43 \\
+    %2 & yes & ---$^*$          & $0.756{\scriptstyle\,\pm\,0.003}$ & $0.247{\scriptstyle\,\pm\,0.008}$ & $10.40{\scriptstyle\,\pm\,0.36}$ & $0.685{\scriptstyle\,\pm\,0.004}$ & $0.153{\scriptstyle\,\pm\,0.046}$ & $8.26{\scriptstyle\,\pm\,2.49}$ \\
+    %2 & yes & nonlin.\ bin.$^*$ & $0.764{\scriptstyle\,\pm\,0.004}$ & $0.277{\scriptstyle\,\pm\,0.004}$ & $11.70{\scriptstyle\,\pm\,0.17}$ & $0.691{\scriptstyle\,\pm\,0.009}$ & $0.181{\scriptstyle\,\pm\,0.011}$ & $9.78{\scriptstyle\,\pm\,0.58}$ \\
+    2 & yes & nonlin.\ all     & $0.758{\scriptstyle\,\pm\,0.003}$ & $0.241{\scriptstyle\,\pm\,0.015}$ & $10.15{\scriptstyle\,\pm\,0.62}$ & $0.685{\scriptstyle\,\pm\,0.004}$ & $0.162{\scriptstyle\,\pm\,0.007}$ & $8.75{\scriptstyle\,\pm\,0.39}$ \\
+    2 & yes & typed+triple     & $0.768{\scriptstyle\,\pm\,0.004}$ & $0.258{\scriptstyle\,\pm\,0.022}$ & $10.86{\scriptstyle\,\pm\,0.93}$ & $0.691{\scriptstyle\,\pm\,0.001}$ & $0.189{\scriptstyle\,\pm\,0.014}$ & $10.21{\scriptstyle\,\pm\,0.75}$ \\
     \midrule
-    3 & no  & ---              & 0.756 & 0.199 & 8.38  & 0.722 & 0.152 & 8.24 \\
-    3 & no  & nonlin.\ bin.    & 0.805 & 0.275 & 11.62 & 0.686 & 0.169 & 9.14 \\
-    3 & no  & nonlin.\ all     & 0.800 & 0.259 & 10.91 & 0.700 & 0.166 & 8.99 \\
-    3 & no  & typed+triple     & 0.794 & 0.237 & 10.01 & 0.702 & 0.168 & 9.11 \\
+    3 & no  & ---              & $0.742{\scriptstyle\,\pm\,0.012}$ & $0.200{\scriptstyle\,\pm\,0.008}$ & $8.45{\scriptstyle\,\pm\,0.35}$ & $0.689{\scriptstyle\,\pm\,0.029}$ & $0.132{\scriptstyle\,\pm\,0.027}$ & $7.13{\scriptstyle\,\pm\,1.46}$ \\
+    3 & no  & nonlin.\ bin.    & $0.798{\scriptstyle\,\pm\,0.009}$ & $0.275{\scriptstyle\,\pm\,0.003}$ & $11.59{\scriptstyle\,\pm\,0.13}$ & $0.692{\scriptstyle\,\pm\,0.008}$ & $0.172{\scriptstyle\,\pm\,0.005}$ & $9.28{\scriptstyle\,\pm\,0.28}$ \\
+    3 & no  & nonlin.\ all     & $0.791{\scriptstyle\,\pm\,0.016}$ & $0.264{\scriptstyle\,\pm\,0.006}$ & $11.13{\scriptstyle\,\pm\,0.24}$ & $0.700{\scriptstyle\,\pm\,0.002}$ & $0.165{\scriptstyle\,\pm\,0.001}$ & $8.91{\scriptstyle\,\pm\,0.08}$ \\
+    3 & no  & typed+triple     & $0.801{\scriptstyle\,\pm\,0.006}$ & $0.266{\scriptstyle\,\pm\,0.025}$ & $11.23{\scriptstyle\,\pm\,1.06}$ & $0.702{\scriptstyle\,\pm\,0.002}$ & $0.167{\scriptstyle\,\pm\,0.001}$ & $9.05{\scriptstyle\,\pm\,0.06}$ \\
     \addlinespace[2pt]
-    3 & yes & ---              & 0.799 & 0.225 & 9.48  & 0.685 & 0.166 & 8.97 \\
-    3 & yes & nonlin.\ bin.    & 0.814 & 0.235 & 9.90  & 0.714 & 0.183 & 9.92 \\
-    3 & yes & nonlin.\ all     & 0.807 & 0.259 & 10.91 & 0.677 & 0.174 & 9.39 \\
-    3 & yes & typed+triple     & 0.805 & 0.248 & 10.45 & 0.708 & 0.180 & 9.72 \\
+    3 & yes & ---              & $0.802{\scriptstyle\,\pm\,0.004}$ & $0.270{\scriptstyle\,\pm\,0.045}$ & $11.41{\scriptstyle\,\pm\,1.90}$ & $0.700{\scriptstyle\,\pm\,0.014}$ & $0.179{\scriptstyle\,\pm\,0.014}$ & $9.70{\scriptstyle\,\pm\,0.76}$ \\
+    3 & yes & nonlin.\ bin.    & $0.799{\scriptstyle\,\pm\,0.020}$ & $0.270{\scriptstyle\,\pm\,0.036}$ & $11.40{\scriptstyle\,\pm\,1.54}$ & $0.712{\scriptstyle\,\pm\,0.003}$ & $0.179{\scriptstyle\,\pm\,0.023}$ & $9.67{\scriptstyle\,\pm\,1.25}$ \\
+    3 & yes & nonlin.\ all     & $0.805{\scriptstyle\,\pm\,0.004}$ & $0.274{\scriptstyle\,\pm\,0.013}$ & $11.54{\scriptstyle\,\pm\,0.54}$ & $0.696{\scriptstyle\,\pm\,0.017}$ & $0.177{\scriptstyle\,\pm\,0.005}$ & $9.59{\scriptstyle\,\pm\,0.30}$ \\
+    3 & yes & typed+triple     & $0.803{\scriptstyle\,\pm\,0.003}$ & $0.289{\scriptstyle\,\pm\,0.036}$ & $12.20{\scriptstyle\,\pm\,1.52}$ & $0.711{\scriptstyle\,\pm\,0.004}$ & $0.185{\scriptstyle\,\pm\,0.006}$ & $10.00{\scriptstyle\,\pm\,0.34}$ \\
     \midrule
-    4 & no  & nonlin.\ all     & 0.757 & 0.230 & 9.70  & 0.678 & 0.151 & 8.14 \\
-    4 & no  & typed+triple     & 0.807 & 0.262 & 11.06 & 0.747 & 0.181 & 9.79 \\
+    %4 & no  & ---$^*$          & $0.610{\scriptstyle\,\pm\,0.008}$ & $0.133{\scriptstyle\,\pm\,0.000}$ & $5.60{\scriptstyle\,\pm\,0.01}$ & $0.624{\scriptstyle\,\pm\,0.003}$ & $0.078{\scriptstyle\,\pm\,0.003}$ & $4.20{\scriptstyle\,\pm\,0.14}$ \\
+    %4 & no  & nonlin.\ bin.$^*$ & $0.760{\scriptstyle\,\pm\,0.001}$ & $0.254{\scriptstyle\,\pm\,0.005}$ & $10.71{\scriptstyle\,\pm\,0.20}$ & $0.683{\scriptstyle\,\pm\,0.006}$ & $0.169{\scriptstyle\,\pm\,0.002}$ & $9.13{\scriptstyle\,\pm\,0.12}$ \\
+    4 & no  & nonlin.\ all     & $0.774{\scriptstyle\,\pm\,0.016}$ & $0.237{\scriptstyle\,\pm\,0.006}$ & $9.99{\scriptstyle\,\pm\,0.26}$ & $0.702{\scriptstyle\,\pm\,0.022}$ & $0.152{\scriptstyle\,\pm\,0.001}$ & $8.21{\scriptstyle\,\pm\,0.06}$ \\
+    4 & no  & typed+triple     & $0.778{\scriptstyle\,\pm\,0.025}$ & $0.264{\scriptstyle\,\pm\,0.004}$ & $11.12{\scriptstyle\,\pm\,0.17}$ & $0.708{\scriptstyle\,\pm\,0.033}$ & $0.172{\scriptstyle\,\pm\,0.008}$ & $9.30{\scriptstyle\,\pm\,0.46}$ \\
     \addlinespace[2pt]
-    4 & yes & nonlin.\ all     & 0.814 & 0.238 & 10.05 & 0.715 & 0.180 & 9.76 \\
-    4 & yes & typed+triple     & 0.806 & 0.240 & 10.12 & 0.713 & 0.168 & 9.06 \\
+    %4 & yes & ---$^*$          & $0.804{\scriptstyle\,\pm\,0.002}$ & $0.266{\scriptstyle\,\pm\,0.010}$ & $11.20{\scriptstyle\,\pm\,0.42}$ & $0.711{\scriptstyle\,\pm\,0.014}$ & $0.176{\scriptstyle\,\pm\,0.020}$ & $9.51{\scriptstyle\,\pm\,1.10}$ \\
+    %4 & yes & nonlin.\ bin.$^*$ & $0.815{\scriptstyle\,\pm\,0.003}$ & $0.297{\scriptstyle\,\pm\,0.002}$ & $12.52{\scriptstyle\,\pm\,0.09}$ & $0.729{\scriptstyle\,\pm\,0.007}$ & $0.198{\scriptstyle\,\pm\,0.001}$ & $10.70{\scriptstyle\,\pm\,0.03}$ \\
+    4 & yes & nonlin.\ all     & $0.798{\scriptstyle\,\pm\,0.022}$ & $0.264{\scriptstyle\,\pm\,0.022}$ & $11.14{\scriptstyle\,\pm\,0.94}$ & $0.709{\scriptstyle\,\pm\,0.015}$ & $0.188{\scriptstyle\,\pm\,0.022}$ & $10.16{\scriptstyle\,\pm\,1.18}$ \\
+    4 & yes & typed+triple     & $0.808{\scriptstyle\,\pm\,0.008}$ & $0.285{\scriptstyle\,\pm\,0.039}$ & $12.03{\scriptstyle\,\pm\,1.67}$ & $0.737{\scriptstyle\,\pm\,0.023}$ & $0.185{\scriptstyle\,\pm\,0.015}$ & $9.99{\scriptstyle\,\pm\,0.85}$ \\
     \midrule
-    5 & no  & nonlin.\ all     & 0.783 & 0.239 & 10.08 & 0.680 & 0.158 & 8.52 \\
-    5 & no  & typed+triple     & 0.807 & 0.246 & 10.37 & 0.746 & 0.163 & 8.84 \\
+    5 & no  & nonlin.\ all     & $0.775{\scriptstyle\,\pm\,0.017}$ & $0.241{\scriptstyle\,\pm\,0.002}$ & $10.15{\scriptstyle\,\pm\,0.07}$ & $0.693{\scriptstyle\,\pm\,0.021}$ & $0.159{\scriptstyle\,\pm\,0.007}$ & $8.59{\scriptstyle\,\pm\,0.36}$ \\
+    5 & no  & typed+triple     & $0.792{\scriptstyle\,\pm\,0.013}$ & $0.262{\scriptstyle\,\pm\,0.016}$ & $11.06{\scriptstyle\,\pm\,0.69}$ & $0.714{\scriptstyle\,\pm\,0.038}$ & $0.165{\scriptstyle\,\pm\,0.002}$ & $8.92{\scriptstyle\,\pm\,0.12}$ \\
     \addlinespace[2pt]
-    5 & yes & nonlin.\ all     & 0.815 & 0.291 & 12.29 & 0.727 & 0.179 & 9.71 \\
-    5 & yes & typed+triple     & 0.813 & 0.270 & 11.37 & 0.724 & 0.211 & 11.41 \\
+    5 & yes & nonlin.\ all     & $0.812{\scriptstyle\,\pm\,0.004}$ & $0.299{\scriptstyle\,\pm\,0.008}$ & $12.60{\scriptstyle\,\pm\,0.31}$ & $0.728{\scriptstyle\,\pm\,0.001}$ & $0.179{\scriptstyle\,\pm\,0.009}$ & $9.67{\scriptstyle\,\pm\,0.48}$ \\
+    5 & yes & typed+triple     & $0.820{\scriptstyle\,\pm\,0.010}$ & $0.292{\scriptstyle\,\pm\,0.023}$ & $12.29{\scriptstyle\,\pm\,0.97}$ & $0.731{\scriptstyle\,\pm\,0.014}$ & $0.197{\scriptstyle\,\pm\,0.021}$ & $10.67{\scriptstyle\,\pm\,1.13}$ \\
     \midrule
-    6 & no  & ---              & 0.610 & 0.121 & 5.11  & 0.585 & 0.077 & 4.14 \\
-    6 & no  & nonlin.\ bin.    & 0.782 & 0.210 & 8.86  & 0.680 & 0.174 & 9.42 \\
-    6 & no  & nonlin.\ all     & 0.794 & 0.237 & 9.99  & 0.682 & 0.157 & 8.51 \\
-    6 & no  & typed+triple     & 0.803 & 0.263 & 11.11 & 0.757 & 0.175 & 9.45 \\
+    6 & no  & ---              & $0.608{\scriptstyle\,\pm\,0.002}$ & $0.128{\scriptstyle\,\pm\,0.006}$ & $5.40{\scriptstyle\,\pm\,0.25}$ & $0.615{\scriptstyle\,\pm\,0.026}$ & $0.079{\scriptstyle\,\pm\,0.002}$ & $4.27{\scriptstyle\,\pm\,0.11}$ \\
+    6 & no  & nonlin.\ bin.    & $0.782{\scriptstyle\,\pm\,0.013}$ & $0.237{\scriptstyle\,\pm\,0.023}$ & $9.98{\scriptstyle\,\pm\,0.97}$ & $0.707{\scriptstyle\,\pm\,0.038}$ & $0.165{\scriptstyle\,\pm\,0.009}$ & $8.94{\scriptstyle\,\pm\,0.48}$ \\
+    6 & no  & nonlin.\ all     & $0.771{\scriptstyle\,\pm\,0.028}$ & $0.239{\scriptstyle\,\pm\,0.005}$ & $10.07{\scriptstyle\,\pm\,0.23}$ & $0.703{\scriptstyle\,\pm\,0.020}$ & $0.153{\scriptstyle\,\pm\,0.004}$ & $8.29{\scriptstyle\,\pm\,0.20}$ \\
+    6 & no  & typed+triple     & $0.777{\scriptstyle\,\pm\,0.022}$ & $0.261{\scriptstyle\,\pm\,0.002}$ & $11.01{\scriptstyle\,\pm\,0.09}$ & $0.712{\scriptstyle\,\pm\,0.039}$ & $0.167{\scriptstyle\,\pm\,0.007}$ & $9.05{\scriptstyle\,\pm\,0.35}$ \\
     \addlinespace[2pt]
-    6 & yes & ---              & 0.817 & 0.255 & 10.77 & 0.728 & 0.173 & 9.36 \\
-    6 & yes & nonlin.\ bin.    & 0.832 & 0.310 & 13.06 & 0.760 & 0.179 & 9.70 \\
-    6 & yes & nonlin.\ all     & 0.812 & 0.235 & 9.92  & 0.734 & 0.166 & 8.96 \\
-    6 & yes & typed+triple     & 0.808 & 0.251 & 10.59 & 0.730 & 0.205 & 11.10 \\
+    6 & yes & ---              & $0.811{\scriptstyle\,\pm\,0.006}$ & $0.263{\scriptstyle\,\pm\,0.029}$ & $11.11{\scriptstyle\,\pm\,1.20}$ & $0.728{\scriptstyle\,\pm\,0.010}$ & $0.168{\scriptstyle\,\pm\,0.022}$ & $9.09{\scriptstyle\,\pm\,1.20}$ \\
+    6 & yes & nonlin.\ bin.    & $0.820{\scriptstyle\,\pm\,0.011}$ & $0.302{\scriptstyle\,\pm\,0.023}$ & $12.74{\scriptstyle\,\pm\,0.97}$ & $0.742{\scriptstyle\,\pm\,0.016}$ & $0.186{\scriptstyle\,\pm\,0.015}$ & $10.06{\scriptstyle\,\pm\,0.81}$ \\
+    6 & yes & nonlin.\ all     & $0.814{\scriptstyle\,\pm\,0.005}$ & $0.278{\scriptstyle\,\pm\,0.037}$ & $11.71{\scriptstyle\,\pm\,1.56}$ & $0.739{\scriptstyle\,\pm\,0.009}$ & $0.180{\scriptstyle\,\pm\,0.014}$ & $9.71{\scriptstyle\,\pm\,0.76}$ \\
+    6 & yes & typed+triple     & $0.815{\scriptstyle\,\pm\,0.006}$ & $0.298{\scriptstyle\,\pm\,0.042}$ & $12.57{\scriptstyle\,\pm\,1.78}$ & $0.726{\scriptstyle\,\pm\,0.010}$ & $0.204{\scriptstyle\,\pm\,0.007}$ & $11.05{\scriptstyle\,\pm\,0.38}$ \\
+    \bottomrule
+  \end{tabular}%
+  }
+\end{table}
+
+\section{H2GB IEEE-CIS-G}
+\label{sec:ieee-cis}
+
+\subsection{Problem Formulation}
+\label{sec:ieee-problem}
+
+The H2GB IEEE-CIS-G dataset is one of the graph datasets assembled for the H2GB project~\cite{lin2025h2gb,h2gb}, whose purpose is to study heterogeneity and heterophily in graph structure and modelling.
+The project comprises nine datasets across five domains (academia, e-commerce, finance, cybersecurity, 
+and social science) and benchmarks 28 baseline models under both properties simultaneously.
+For the Task~B benchmark, the card-fraud dataset IEEE-CIS-G was chosen.
+
+IEEE-CIS-G originates from the IEEE-CIS Fraud Detection Kaggle
+competition~\cite{howard2019ieeecis}, based on verified transaction data from Vesta Corporation, a
+payment-services company.
+The original release is tabular and contains $590{,}540$ card transactions, of which $20{,}663$ ($3.50\%$) 
+are fraudulent, and an accompanying identity table covers $144{,}233$ of these transactions ($24.4\%$).
+The target in dataset is whether a transaction is fraudulent.
+
+Lin et al.~\cite{lin2025h2gb} restructure the labelled records that have identity information as 
+a heterogeneous bipartite graph.
+The final IEEE-CIS-G reconstructure includes $144{,}233$ transactions, , of 
+which $11{,}318$ ($7.85\%$) are fraudulent, matching the $12{:}1$ class imbalance in 
+Table~1 of~\cite{lin2025h2gb}.
+The graph stucture 
+ comprises $153{,}880$ nodes of $12$ types and $2{,}873{,}472$ edges of $22$ relation types.
+Each transaction node is linked to eleven metadata entity types (card information, product code, 
+purchaser and recipient email domain, and related attributes).
+Transaction nodes carry a $4823$-dimensional feature vector and a binary fraud label.
+% Restricting to the identity-linked labelled subset yields $144{,}233$ transaction nodes, of 
+% which $11{,}318$ ($7.85\%$) are fraudulent, matching the $12{:}1$ class imbalance in 
+% Table~1 of~\cite{lin2025h2gb}.
+% The $\approx 4\%$ positive rate quoted in the H2GB dataset description is the original 
+% Kaggle training table ($3.50\%$), before this identity filter.
+
+\subsection{Data Representation}
+\label{sec:ieee-data}
+
+Unlike the Hetionet proxy, IEEE-CIS-G construction is copied from H2GB project in order
+to perform the comparison with project results. 
+The Task~B pipeline and statistical evidence branch are reused, but node-type
+roles are mapped onto the released H2GB bipartite graph. 
+
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Instance.} A transaction takes the role of the patient.
+    The transaction is a graph node and
+    carries the $4823$-dimensional feature vector.
+
+  \item \textbf{Target.} The predicted endpoint is the binary fraud label
+    \texttt{isFraud} on the transaction node ($7.85\%$ positive).
+
+  \item \textbf{Layer mapping.} Only graph node types are assigned to synthetic
+    slots (\cref{tab:ieee-cis-mapping}), by the same roles as in Task~B.
+    \texttt{patient\_context} is the stable identity of the instance
+    (age, sex, comorbidities on the synthetic graph).
+    Here that role is the shared payment identity: \texttt{card1}--\texttt{card6},
+    \texttt{addr1}--\texttt{addr2} and email domains group many transactions
+    and are not the event being classified.
+    \texttt{drug\_exposure} is the observed action (which drug was taken).
+    The analogue is \texttt{ProductCD}, the product code of the purchase.
+    \texttt{mechanism} is a latent process on the path to the endpoint
+    (for example reduced kidney blood flow), not an identity token and not
+    the action itself.
+    IEEE-CIS-G has no such node type: the fraud modus operandi is not
+    materialised, and inventing one would break the H2GB schema.
+    Vesta fields (\texttt{V*}, \texttt{C*}, \texttt{D*}, amount) and identity
+    fields (\texttt{DeviceType}, \texttt{DeviceInfo}, \texttt{id\_*}) are
+    channels of the transaction feature vector, so they are not mapped onto
+    layers~4--5 either.
+
+  \item \textbf{Direction.} IEEE-CIS-G is a bipartite star stored as a directed
+    heterogeneous graph: each of the eleven transaction--metadata associations
+    is kept in both directions (\texttt{to} and \texttt{rev\_to}), giving the
+    $22$ relation types of H2GB.
+    The reverse copies let messages reach the transaction node; they are not a
+    causal layer order as in the synthetic DAG.
+\end{enumerate}
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Mapping of IEEE-CIS-G \emph{node types} onto the synthetic layer schema.
+    Transaction-level variables that live in $x$ are omitted: they are features,
+    not entities.}
+  \label{tab:ieee-cis-mapping}
+  \begin{tabular}{clll}
+    \toprule
+    Layer & Slot & IEEE-CIS-G node type & Observed \\
+    \midrule
+    1 & \texttt{patient\_context}            & \texttt{card1}--\texttt{card6}, \texttt{addr1}--\texttt{addr2}, email domains & yes \\
+    2 & \texttt{drug\_exposure}              & \texttt{ProductCD} & yes \\
+    3 & \texttt{mechanism}                   & --- & no \\
+    4 & \texttt{adr\_or\_intermediate\_state} & --- & no \\
+    5 & \texttt{observation\_or\_selection}  & --- & no \\
+    6 & \texttt{clinical\_endpoint}          & \texttt{isFraud} on \texttt{transaction} & target (label) \\
     \bottomrule
   \end{tabular}
 \end{table}
+
+\subsection{Training and Evaluation}
+\label{sec:ieee-protocol}
+
+H2GB evaluates a suite of graph architectures on IEEE-CIS-G, including
+GCN, GraphSAGE, GAT, HGT, R-GCN, SHGN and $\mathrm{H}^{2}$G-former, under a
+common protocol whose focus is heterophily in heterogeneous graphs~\cite{lin2025h2gb}.
+The present is to repeat the Task~B \emph{deep and wide} design on the same IEEE-CIS-G
+input -- a TransformerConv encoder enriched with the
+HCR-inspired statistical evidence branch -- and compare it against models results from H2GB.
+
+Instead of calculating evidence based on parent-endpoint relationship, evidence is
+computed as pairwise transaction-level statistics. Each slot pairs one
+covariate of that transaction with the fraud label.
+The covariates are Vesta and identity columns that are not already graph node
+types (\texttt{V*}, \texttt{C*}, \texttt{D*}, amount, and low-cardinality
+\texttt{M*}/device dummies).
+Card, address, email and \texttt{ProductCD} are the part of GNN and are not considered part of
+evidence branch.
+Grandparent--parent--endpoint \emph{triple} statistics from the synthetic
+pipeline are omitted -- there is no typed three-hop causal chain, and the
+HCR slots are not parent nodes.
+
+Pairwise evidence uses the $42$-channel layout of Task~B
+(\cref{subsec:hcr_application}): matrix-energy summaries, marginals, type
+indicators and the instance activation channel, with leave-one-out coefficients
+on the training split.
+On the training transactions, $408$ candidate columns pass support and variance
+filters; the $64$ strongest by a unified association rank
+($\varphi$-coefficient for binary columns, point-biserial for continuous)
+form the covariate vocabulary.
+Each transaction is then packed into $K=16$ pair-encoder slots, keeping the
+highest-ranked active covariates.
+A shared pair encoder, as in Task~B, embeds every slot,
+mean-pools over the mask, and adds a learned scalar to the fraud logit of the
+TransformerConv head.
+% The $42$-channel evidence layout is unchanged
+% (\cref{subsec:hcr_application}), but the MLP is narrower:
+% $42 \rightarrow 16 \rightarrow 4$ here, versus $42 \rightarrow 32 \rightarrow 8$
+% in \cref{tab:hparams-common}.
+% IEEE-CIS-G has a single endpoint and $K=16$ covariate slots rather than typed
+% parent tensors, and the widths follow the IEEE HCR implementation rather than a
+% retune of the synthetic encoder.
+
+During training sampling of neighbourhood follows the H2GB loader -- \texttt{HGTLoader} with a
+per-type neighbourhood budget, class weights $1{:}5$, and L1
+\texttt{NormalizeFeatures}.
+The labelled graph is split chronologically $80/10/10$ by \texttt{TransactionDT},
+as in Table~1 of~\cite{lin2025h2gb}: training transactions precede validation,
+which precede test.
+The checkpoint is selected on validation binary F1 as it was metric chosen by authors. 
+Test F1 uses threshold $0.5$.
+Depth $L\in\{2,3,6\}$ is crossed with residual connections and with or without
+the statistical branch.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{IEEE-CIS-G: model and training configuration.}
+  \label{tab:ieee-cis-config}
+  \begin{tabular}{ll}
+    \toprule
+    Setting & Value \\
+    \midrule
+    Backbone & TransformerConv (as in Task~B) \\
+    Hidden width / heads / dropout & $128$ / $4$ / $0.2$ \\
+    Depth $L$ & $2$, $3$, $6$ \\
+    Statistical branch & nonlinear HCR, $42$ channels, $K=16$ transaction covariates \\
+    Pair encoder & $42 \rightarrow 16 \rightarrow 4$ \\
+    %Triple evidence & omitted \\
+    Sampler & HGTLoader (H2GB \texttt{hgt} budget) \\
+    Class weights & $1$, $5$ \\
+    Split & chronological $80/10/10$ (by \texttt{TransactionDT}) \\
+    Selection metric & validation binary F1 \\
+    Seeds & $42$, $202$, $568$, $20256$, $202567$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Experimental Results}
+\label{sec:ieee-results}
+
+% Reported scores in \cref{tab:ieee-cis-full} are the mean $\pm$ sample standard deviation
+% over five seeds ($42$, $202$, $568$, $20256$, $202567$).
+% The checkpoint is selected on validation binary F1; test metrics are taken from that checkpoint,
+% and F1 uses a decision threshold of $0.5$.
+Without residual connections the graph-only model is unstable: test F1 is
+$0.011 \pm 0.024$ at $L=2$ and $0.019 \pm 0.025$ at $L=6$.
+Residual connections restore a stable graph pathway
+($0.297$--$0.307$ test F1; $0.760$--$0.764$ test AUROC).
+Adding the statistical evidence branch on top of residuals raises the mean test F1 to
+$0.439$--$0.471$
+%, but the seed spread remains large
+(\cref{fig:ieee-cis-ablation}).
+%At $L=3$, three seeds sit near $0.50$ while $20256$ and $568$ stay close to the residual-only band.
+
+\begin{table}[H]
+  \centering
+  \scriptsize
+  \setlength{\tabcolsep}{3pt}
+  \caption{IEEE-CIS-G: fraud node-classification results.}
+  \label{tab:ieee-cis-full}
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{ccl ccc ccc}
+    \toprule
+    & & & \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
+    \cmidrule(lr){4-6}\cmidrule(lr){7-9}
+    $L$ & Res. & Evidence variant & {F1} & {AUROC} & {AP} & {F1} & {AUROC} & {AP} \\
+    \midrule
+    2 & no  & ---      & $0.010{\scriptstyle\,\pm\,0.023}$ & $0.590{\scriptstyle\,\pm\,0.017}$ & $0.115{\scriptstyle\,\pm\,0.005}$ & $0.011{\scriptstyle\,\pm\,0.024}$ & $0.643{\scriptstyle\,\pm\,0.006}$ & $0.137{\scriptstyle\,\pm\,0.002}$ \\
+    \addlinespace[2pt]
+    2 & yes & ---      & $0.393{\scriptstyle\,\pm\,0.005}$ & $0.786{\scriptstyle\,\pm\,0.002}$ & $0.309{\scriptstyle\,\pm\,0.010}$ & $0.307{\scriptstyle\,\pm\,0.003}$ & $0.764{\scriptstyle\,\pm\,0.003}$ & $0.241{\scriptstyle\,\pm\,0.005}$ \\
+    2 & yes & HCR 40d  & $0.488{\scriptstyle\,\pm\,0.045}$ & $0.825{\scriptstyle\,\pm\,0.017}$ & $0.469{\scriptstyle\,\pm\,0.077}$ & $0.471{\scriptstyle\,\pm\,0.077}$ & $0.824{\scriptstyle\,\pm\,0.027}$ & $0.436{\scriptstyle\,\pm\,0.094}$ \\
+    \midrule
+    3 & no  & ---      & $0.284{\scriptstyle\,\pm\,0.013}$ & $0.713{\scriptstyle\,\pm\,0.008}$ & $0.230{\scriptstyle\,\pm\,0.010}$ & $0.231{\scriptstyle\,\pm\,0.030}$ & $0.697{\scriptstyle\,\pm\,0.030}$ & $0.191{\scriptstyle\,\pm\,0.027}$ \\
+    \addlinespace[2pt]
+    3 & yes & ---      & $0.397{\scriptstyle\,\pm\,0.007}$ & $0.789{\scriptstyle\,\pm\,0.004}$ & $0.313{\scriptstyle\,\pm\,0.011}$ & $0.297{\scriptstyle\,\pm\,0.012}$ & $0.762{\scriptstyle\,\pm\,0.007}$ & $0.245{\scriptstyle\,\pm\,0.012}$ \\
+    3 & yes & HCR 40d  & $\mathbf{0.466}{\scriptstyle\,\pm\,0.058}$ & $\mathbf{0.818}{\scriptstyle\,\pm\,0.023}$ & $\mathbf{0.428}{\scriptstyle\,\pm\,0.096}$ & $\mathbf{0.439}{\scriptstyle\,\pm\,0.088}$ & $\mathbf{0.810}{\scriptstyle\,\pm\,0.030}$ & $\mathbf{0.387}{\scriptstyle\,\pm\,0.107}$ \\
+    \midrule
+    6 & no  & ---      & $0.020{\scriptstyle\,\pm\,0.018}$ & $0.612{\scriptstyle\,\pm\,0.022}$ & $0.125{\scriptstyle\,\pm\,0.007}$ & $0.019{\scriptstyle\,\pm\,0.025}$ & $0.634{\scriptstyle\,\pm\,0.010}$ & $0.142{\scriptstyle\,\pm\,0.007}$ \\
+    \addlinespace[2pt]
+    6 & yes & ---      & $0.388{\scriptstyle\,\pm\,0.004}$ & $0.788{\scriptstyle\,\pm\,0.005}$ & $0.305{\scriptstyle\,\pm\,0.007}$ & $0.297{\scriptstyle\,\pm\,0.010}$ & $0.760{\scriptstyle\,\pm\,0.007}$ & $0.235{\scriptstyle\,\pm\,0.008}$ \\
+    6 & yes & HCR 40d  & $0.463{\scriptstyle\,\pm\,0.056}$ & $0.819{\scriptstyle\,\pm\,0.023}$ & $0.425{\scriptstyle\,\pm\,0.102}$ & $0.440{\scriptstyle\,\pm\,0.103}$ & $0.815{\scriptstyle\,\pm\,0.035}$ & $0.397{\scriptstyle\,\pm\,0.124}$ \\
+    \bottomrule
+  \end{tabular}%
+  }
+\end{table}
+
+Additionally, the proposed wide \& deep approach achieves better mean results than
+the models reported in the H2GB project.
+\Cref{fig:ieee-cis-h2gb} places the $L=3$ HCR model next to the IEEE-CIS-G F1 numbers published
+ with H2GB~\cite{lin2025h2gb}.
+The comparison is on the same IEEE-CIS-G input 
+(HGT own reimplementation matching the 
+H2GB IEEE-CIS-HGT configuration recovered the published HGT F1, 
+which confirms that the graph, splits, sampler and metric agree with the benchmark)
+and present run over five seeds like H2GB. 
+The $L=3$ HCR mean test F1 is $0.439 \pm 0.088$, above HGT ($0.309$), SHGN ($0.317$)
+and $\mathrm{H}^{2}$G-former ($0.316$), but the interval still overlaps that band.
+HCR combined with residual connections
+effectively boosts the performance over just graph structure.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{fig_ieee_cis_ablation.pdf}
+  \caption{IEEE-CIS-G ablation of residual connections and the statistical evidence branch.}
+  \label{fig:ieee-cis-ablation}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{fig_ieee_cis_h2gb_comparison.pdf}
+  \caption{IEEE-CIS-G test F1 against selected H2GB baselines from Table~3 of~\cite{lin2025h2gb}}
+  \label{fig:ieee-cis-h2gb}
+\end{figure}
+
+On IEEE-CIS-G the same Task~B pattern holds under a different graph contract:
+residual connections stabilize the TransformerConv pathway, and the statistical
+evidence branch raises mean test F1 above the graph-only residual model
+($0.439 \pm 0.088$ at $L=3$ versus $0.297 \pm 0.012$).
+% The mean also lies above the published H2GB F1 band (about $0.31$), on the same
+% input and five-seed count, but two of five seeds remain near the residual-only
+% regime, so the comparison is a mean gain with a wide interval, not a clean ranking
+% win.
+
+In summary, Hetionet and IEEE-CIS-G show that extending the GNN with a
+statistical evidence branch remains useful outside the synthetic experiments.
+The value of the branch is complementary to residual message passing and depends
+on the graph.
 
 % ---------------------------------------------------------------------
 % TABLE 1 - full observability regime

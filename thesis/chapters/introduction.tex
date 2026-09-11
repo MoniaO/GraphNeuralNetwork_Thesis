@@ -1,57 +1,117 @@
 \chapter{Introduction}
 \label{ch:introduction}
 
-Modern pharmacotherapy involves complex interactions between drugs, patient characteristics, biological mechanisms, intermediate physiological states, and clinical outcomes.
-Representing such knowledge using knowledge graphs provides a natural way to organize clinically relevant entities and their relationships into an explicit relational structure.
-Clinically relevant entities can be represented as nodes, while directed and typed edges encode relationships between them.
-Knowledge graphs are increasingly used as a framework for organizing heterogeneous information, representing relationships between domain concepts, and supporting machine-learning-based reasoning over structured knowledge~\cite{negro2025kg}.
+Modern pharmacotherapy requires the integration of well-established pharmacological 
+knowledge across multiple biological and clinical levels. Medical knowledge graphs provide a 
+structured representation of this knowledge, capturing the complex mechanisms through 
+which drugs interact with the human organism, with one another, and with intermediate 
+biological processes. These interactions may propagate through multiple mechanistic pathways 
+and ultimately converge on a observable clinical endpoint, particularly in the context of 
+suboptimal or complex pharmacotherapy.
 
-A knowledge graph, however, represents primarily structured domain knowledge.
-Its topology describes which relationships are considered plausible or mechanistically meaningful, but it does not by itself determine how strongly these relationships are supported by observations in a particular population, nor how the represented mechanisms are expressed in an individual patient.
-Conversely, patient-level data contain empirical information about drug exposure, patient context, intermediate states, and clinical outcomes, but these observations do not directly provide the mechanistic structure connecting them.
+The topology of a knowledge graph describes which pathways and relationships are considered plausible or
+mechanistically meaningful based on literature, but it does not by itself determine
+how strongly these relationships are supported by observations in a particular population,
+nor how the represented mechanisms are expressed in an individual patient.
+On the other hand, patient-level data provide empirical information on drug exposure, laboratory 
+outcomes, and diagnoses, but these observations are often incomplete, noisy, and 
+affected by selection artifacts. As a result, the observed data do not directly reveal the 
+underlying mechanistic structure linking drug exposures to intermediate processes and, ultimately, 
+to clinical endpoints.
+This creates a natural methodological distinction between two complementary sources of information
+-- graph-structured knowledge and patient-level empirical evidence.
 
-This creates a natural methodological distinction between two complementary sources of information:
-\begin{quote}
-\textit{structured mechanistic knowledge} and \textit{patient-level empirical evidence}.
-\end{quote}
+The central aim of this thesis is to investigate how these two sources can be integrated within
+a unified framework so that they interact synergistically.
+Based on this aim, we formulate the following theses:
 
-The central question addressed in this thesis is how these two sources can be integrated within a unified framework so that their respective strengths interact synergistically rather than being used in isolation.
-Graph-based learning provides representations derived from the topology and semantics of the knowledge graph, while statistical information derived from patient-level observations can provide direct evidence about dependencies between variables.
+\paragraph{Thesis 1.}
+Empirical patient-level data, when integrated with the structural information encoded in a 
+knowledge graph, can improve the prediction of missing directed links.
 
-The broader importance of this problem is also reflected in current research on patient-specific modelling and digital twins.
-Models relying predominantly on statistical associations may be sensitive to changes between populations, institutions, and data-generating environments, while approaches incorporating causal or mechanistic structure aim to identify representations that are more stable under such changes.
-Recent work on causal graph neural networks in healthcare explicitly connects this direction with patient-specific causal digital twins, while also emphasizing remaining challenges related to distribution shifts, validation, computational complexity, and the distinction between causal claims and statistical associations~\cite{mesinovic2025causal}.
+\paragraph{Thesis 2.}
+The directed causal graph can serve as a shared scaffold for predicting multiple
+clinical events in individual patients.
 
-A related idea appears more broadly in machine learning, where explicit statistical representations and learned neural representations do not necessarily have to compete with each other.
-The Wide \& Deep framework introduced by Cheng et al.\ combines a wide component, designed to exploit observed feature interactions, with a deep neural component that generalizes to previously unseen feature combinations.
-Although developed for recommender systems, it provides an important methodological example of jointly learning from explicit empirical relationships and learned representations rather than relying exclusively on increasingly complex neural architectures~\cite{cheng2016wide}.
+\medskip
 
-In healthcare, however, combining statistical and learned representations is not sufficient on its own.
+As we combine graph-based structure and empirical data, this leads us to use
+graph neural networks (GNNs) for prediction.
+As the signal in GNNs can be averaged out, we explore
+methods for incorporating additional signal into GNNs through associative statistics.
+Inspired by the Wide \& Deep framework proposed by Cheng et al.~\cite{cheng2016wide}, 
+we formulate the third thesis:
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{fig_loop_task_a_b.png}
-\caption{Iterative loop between Task~A (link prediction / graph enrichment) and Task~B (patient endpoint prediction).
-The shared knowledge graph provides the mechanistic scaffold; patient-level statistical evidence and learned graph encoders support both tasks; empirical feedback from prediction can, in principle, inform further evaluation and enrichment of the graph.}
-\label{fig:loop}
-\label{fig:intro-task-loop}
-\end{figure}
+\paragraph{Thesis 3.}
+Explicit empirical associations can provide additional signal to GNNs and improve prediction performance of GNNs.
 
-The organization of the variables and their relationships also matters.
-Recent work on causal graph neural networks argues that biomedical graph representations can be combined with causal and mechanistic assumptions in order to move beyond purely associational modelling and towards representations of more stable underlying mechanisms~\cite{mesinovic2025causal}.
-This motivates the framework investigated in this thesis, in which structured mechanistic knowledge, patient-level empirical evidence, and learned graph representations are treated as complementary sources of information.
+\medskip
 
-This problem is investigated through two complementary prediction tasks.
-In Task~A, patient-level observations are used together with the available graph structure to evaluate candidate directed relations and perform link prediction.
-The objective is to determine whether an unobserved or withheld relation is compatible both with its structural position in the heterogeneous graph and with statistical evidence derived from the corresponding patient variables.
+%A medical digital twin is here understood as an updatable, patient-specific representation
+%of the mechanisms, exposures and observations relevant to a clinical decision,
+%rather than as a complete virtual replica of a person.
+The importance of these theses is reflected in the current research on
+patient-specific modelling and digital twins (digital representations of patients).
+The direction proposed is discussed in work on causal graph neural networks in healthcare,
+which connects mechanistic graph structure with patient-specific data.
+That literature also notes that models relying predominantly on statistical associations
+may be sensitive to changes between populations, institutions, and data-generating
+environments, and that causal or mechanistic structure is hypothesized to yield
+representations that are more stable under such changes---while emphasizing remaining
+challenges related to distribution shifts, validation, computational complexity, and
+the distinction between causal claims and statistical
+associations~\cite{mesinovic2025causal}.
 
-In Task~B, the direction of inference is complementary.
-The graph structure is treated as a shared mechanistic scaffold, while patient-specific observations are used to predict clinical endpoints for individual patients.
-Rather than asking whether a relation should be present in the graph, Task~B asks whether the graph and the available patient information together support the prediction of a particular clinical outcome.
+% A related idea appears more broadly in machine learning, where explicit statistical
+% representations and learned neural representations do not
+% necessarily have to compete with each other.
+% The Wide \& Deep framework introduced by Cheng et al.\ combines a wide component, designed to 
+% exploit observed feature interactions, with a deep neural component that generalizes to previously 
+% unseen feature combinations.
+% Although developed for recommender systems, it provides an important methodological example
+% of jointly learning from explicit empirical relationships and learned representations
+% instead of relying exclusively on increasingly complex neural architectures~\cite{cheng2016wide}.
+% This combination of explicit statistics with a neural encoder is the setting of Thesis~3.
+
+% In this thesis the associational component is a Hierarchical Correlation Reconstruction
+% (HCR) representation of empirical dependence.
+
+Based on that and taking into consideration formulated theses,
+there are defined two complementary prediction tasks.
+
+\paragraph{Task~A.}
+Patient-level observations are used together with the available graph structure to
+evaluate candidate directed relations and perform link prediction.
+%The objective is to determine whether an unobserved or withheld relation is compatible both
+%with its structural position in the heterogeneous graph and with statistical evidence derived
+%from the corresponding patient variables.
+
+\paragraph{Task~B.}
+Patient-level clinical outcome prediction based on the graph structure.
+The graph structure is treated as a shared mechanistic scaffold, while patient-specific observations are
+used to predict clinical endpoints for individual patients.
+%Opposite to Task~A, Task~B asks whether 
+%the graph and the available patient information together support the prediction of a particular clinical outcome.
+\medskip
 
 Together, the two tasks can be viewed as complementary parts of a broader iterative framework.
-Patient-level evidence can be used systematically to evaluate and extend the structured knowledge representation, while the resulting graph can in turn provide mechanistic context for patient-level prediction.
-In this way, the knowledge graph is not treated only as a static repository of prior knowledge, but as a structured representation that can, in principle, be confronted with accumulating empirical evidence at scale.
-\begin{quote}
-\textit{mechanistic knowledge} $\rightarrow$ \textit{patient prediction} $\rightarrow$ \textit{empirical evidence} $\rightarrow$ \textit{evaluation/enrichment of knowledge}.
-\end{quote}
+In real-world applications, patient-level evidence can be used systematically to evaluate and 
+extend the structured knowledge representation, while the resulting graph can in turn provide context for 
+patient-level prediction.
+In this way, the knowledge graph is not treated only as a static repository of prior knowledge, 
+but as a structured representation that can, in principle, be confronted with accumulating empirical evidence 
+at scale.
+% \begin{quote}
+% \textit{mechanistic knowledge} $\rightarrow$ \textit{patient prediction} $\rightarrow$ \textit{empirical evidence} $\rightarrow$ \textit{evaluation/enrichment of knowledge}.
+% \end{quote}
+% This loop is the intended research direction. The experiments test both of its legs;
+% they do not implement a closed, self-updating cycle.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth,height=0.32\textheight,keepaspectratio]{fig_loop_task_a_b.png}
+    \caption{Intended research direction: an iterative loop between Task~A
+    (evaluation of graph relations) and Task~B (patient-level endpoint prediction).}
+    \label{fig:loop}
+    \label{fig:intro-task-loop}
+\end{figure}
