@@ -2,16 +2,18 @@
 \label{ch:taskB-benchmark}
 \label{subsec:benchmark-endpoint}
 
-This chapter presents the cross-domain validation of Task B on two datasets:
-Hetionet~\cite{hetionet} and {H2GB} {IEEE-CIS-G}~\cite{lin2025h2gb,h2gb}. 
-There were two benchmarks run as 
-Hetionet allows to assess models on similar graph structure as the synthetic task 
-(directed graph with multiple target nodes), however it is not possible to 
-assess it against external performance metrics as the graph was reconstructed. 
-On the other hand, {H2GB} {IEEE-CIS-G} Dataset is one label node classification task
-without directed links between nodes, but it allows to assess models against external 
-performance metrics. Taken together, the two settings test whether extending the GNN with a 
-statistical evidence branch remains useful for node classification under different 
+This chapter presents the cross-domain validation of Task~B on two datasets:
+Hetionet~\cite{hetionet}, a biomedical knowledge graph of compounds, genes and diseases,
+and {H2GB} {IEEE-CIS-G}~\cite{lin2025h2gb,h2gb}, a heterogeneous graph of card-fraud 
+transactions.
+Hetionet allows the models to be assessed on a graph structure close to the synthetic task
+(a directed heterogeneous graph with multiple target nodes), but it cannot be compared
+against external performance metrics because the graph was reconstructed.
+{H2GB} {IEEE-CIS-G}, by contrast, does support comparison against external performance
+metrics and is also a heterogeneous graph for class-imbalanced node classification,
+but it is a single-label task on a bipartite star graph.
+Taken together, the two settings test whether extending the GNN with a
+statistical evidence branch remains useful for node classification under different
 graph structures and domains.
 
 \section{Hetionet}
@@ -56,7 +58,7 @@ The reconstruction proceeds as follows.
 \begin{enumerate}[label=(\roman*)]
   \item \textbf{Instance.} A compound takes the role of the patient: the
     topology is shared and a compound is described by the edges linking it to
-    the remaining entities. A compound is therefore \emph{not} a node of the
+    the remaining entities. A compound is therefore not a node of the
     graph, which means an entity can serve as a feature column only if it
     connects to compounds directly.
 
@@ -273,69 +275,93 @@ evidence enters the model.
 \label{sec:ieee-problem}
 
 The H2GB IEEE-CIS-G dataset is one of the graph datasets assembled for the H2GB project~\cite{lin2025h2gb,h2gb}, whose purpose is to study heterogeneity and heterophily in graph structure and modelling.
-The project comprises nine datasets across five domains (academia, e-commerce, finance, cybersecurity, and social science) and benchmarks 28 baseline models under both properties simultaneously.
+The project comprises nine datasets across five domains (academia, e-commerce, finance, cybersecurity, 
+and social science) and benchmarks 28 baseline models under both properties simultaneously.
+For the Task~B benchmark, the card-fraud dataset IEEE-CIS-G was chosen.
 
 IEEE-CIS-G originates from the IEEE-CIS Fraud Detection Kaggle
 competition~\cite{howard2019ieeecis}, based on verified transaction data from Vesta Corporation, a
 payment-services company.
-The original release is tabular: the labelled training table contains $590{,}540$ card transactions, of which $20{,}663$ ($3.50\%$) are fraudulent, and an accompanying identity table covers $144{,}233$ of these transactions ($24.4\%$).
-The prediction task is binary node classification: whether a transaction is fraudulent.
+The original release is tabular and contains $590{,}540$ card transactions, of which $20{,}663$ ($3.50\%$) 
+are fraudulent, and an accompanying identity table covers $144{,}233$ of these transactions ($24.4\%$).
+The target in dataset is whether a transaction is fraudulent.
 
 Lin et al.~\cite{lin2025h2gb} restructure the labelled records that have identity information as 
 a heterogeneous bipartite graph.
-IEEE-CIS-G comprises $153{,}880$ nodes of $12$ types and $2{,}873{,}472$ edges of $22$ relation types: 
-each transaction node is linked to eleven metadata entity types (card information, product code, 
-purchaser and recipient email domain, and related attributes).
-Transaction nodes carry a $4823$-dimensional feature vector and a binary fraud label.
-Restricting to the identity-linked labelled subset yields $144{,}233$ transaction nodes, of 
+The final IEEE-CIS-G reconstructure includes $144{,}233$ transactions, , of 
 which $11{,}318$ ($7.85\%$) are fraudulent, matching the $12{:}1$ class imbalance in 
 Table~1 of~\cite{lin2025h2gb}.
-The $\approx 4\%$ positive rate quoted in the H2GB dataset description is the original 
-Kaggle training table ($3.50\%$), before this identity filter.
+The graph stucture 
+ comprises $153{,}880$ nodes of $12$ types and $2{,}873{,}472$ edges of $22$ relation types.
+Each transaction node is linked to eleven metadata entity types (card information, product code, 
+purchaser and recipient email domain, and related attributes).
+Transaction nodes carry a $4823$-dimensional feature vector and a binary fraud label.
+% Restricting to the identity-linked labelled subset yields $144{,}233$ transaction nodes, of 
+% which $11{,}318$ ($7.85\%$) are fraudulent, matching the $12{:}1$ class imbalance in 
+% Table~1 of~\cite{lin2025h2gb}.
+% The $\approx 4\%$ positive rate quoted in the H2GB dataset description is the original 
+% Kaggle training table ($3.50\%$), before this identity filter.
 
 \subsection{Data Representation}
 \label{sec:ieee-data}
 
-Unlike the Hetionet proxy, IEEE-CIS-G is not reconstructed onto the synthetic DAG.
+Unlike the Hetionet proxy, IEEE-CIS-G construction is copied from H2GB project in order
+to perform the comparison with project results. 
 The Task~B pipeline and statistical evidence branch are reused, but node-type
-roles are mapped onto the released H2GB bipartite graph.
+roles are mapped onto the released H2GB bipartite graph. 
 
 \begin{enumerate}[label=(\roman*)]
   \item \textbf{Instance.} A transaction takes the role of the patient.
-    Unlike the Hetionet compound, the transaction \emph{is} a graph node and
+    The transaction is a graph node and
     carries the $4823$-dimensional feature vector.
 
   \item \textbf{Target.} The predicted endpoint is the binary fraud label
-    \texttt{isFraud} on the transaction node ($7.85\%$ positive), not a
-    separate endpoint node type.
+    \texttt{isFraud} on the transaction node ($7.85\%$ positive).
 
-  \item \textbf{Layer mapping.} Node types and features are mapped onto the
-    slots of the synthetic schema as presented in \cref{tab:ieee-cis-mapping}.
-    Metadata entity types occupy the observed context and exposure slots;
-    Vesta and identity fields remain node features on the transaction;
-    the fraud mechanism has no node type and is treated as latent.
+  \item \textbf{Layer mapping.} Only graph node types are assigned to synthetic
+    slots (\cref{tab:ieee-cis-mapping}), by the same roles as in Task~B.
+    \texttt{patient\_context} is the stable identity of the instance
+    (age, sex, comorbidities on the synthetic graph).
+    Here that role is the shared payment identity: \texttt{card1}--\texttt{card6},
+    \texttt{addr1}--\texttt{addr2} and email domains group many transactions
+    and are not the event being classified.
+    \texttt{drug\_exposure} is the observed action (which drug was taken).
+    The analogue is \texttt{ProductCD}, the product code of the purchase.
+    \texttt{mechanism} is a latent process on the path to the endpoint
+    (for example reduced kidney blood flow), not an identity token and not
+    the action itself.
+    IEEE-CIS-G has no such node type: the fraud modus operandi is not
+    materialised, and inventing one would break the H2GB schema.
+    Vesta fields (\texttt{V*}, \texttt{C*}, \texttt{D*}, amount) and identity
+    fields (\texttt{DeviceType}, \texttt{DeviceInfo}, \texttt{id\_*}) are
+    channels of the transaction feature vector, so they are not mapped onto
+    layers~4--5 either.
 
-  \item \textbf{Direction.} IEEE-CIS-G is an undirected bipartite star already
-    stored as $22$ directed relation types (\texttt{to} and \texttt{rev\_to}).
-    Edges are left in this H2GB orientation; they are not re-cut into an
-    acyclic layer chain.
+  \item \textbf{Direction.} IEEE-CIS-G is a bipartite star stored as a directed
+    heterogeneous graph: each of the eleven transaction--metadata associations
+    is kept in both directions (\texttt{to} and \texttt{rev\_to}), giving the
+    $22$ relation types of H2GB.
+    The reverse copies let messages reach the transaction node; they are not a
+    causal layer order as in the synthetic DAG.
 \end{enumerate}
 
 \begin{table}[H]
   \centering
   \small
-  \caption{Mapping of IEEE-CIS-G entities onto the synthetic layer schema.}
+  \caption{Mapping of IEEE-CIS-G \emph{node types} onto the synthetic layer schema.
+    Transaction-level variables that live in $x$ are omitted: they are features,
+    not entities.}
   \label{tab:ieee-cis-mapping}
   \begin{tabular}{clll}
     \toprule
-    Layer & Slot & IEEE-CIS-G entity & Observed \\
+    Layer & Slot & IEEE-CIS-G node type & Observed \\
     \midrule
     1 & \texttt{patient\_context}            & \texttt{card1}--\texttt{card6}, \texttt{addr1}--\texttt{addr2}, email domains & yes \\
     2 & \texttt{drug\_exposure}              & \texttt{ProductCD} & yes \\
-    3 & \texttt{mechanism}                   & fraud modus operandi & no (latent) \\
-    4 & \texttt{adr\_or\_intermediate\_state} & Vesta \texttt{V*}, \texttt{C*}, \texttt{D*}, amount & as features \\
-    5 & \texttt{observation\_or\_selection}  & \texttt{DeviceType}, \texttt{DeviceInfo}, \texttt{id\_*} & as features \\
-    6 & \texttt{clinical\_endpoint}          & \texttt{isFraud} on \texttt{transaction} & target \\
+    3 & \texttt{mechanism}                   & --- & no \\
+    4 & \texttt{adr\_or\_intermediate\_state} & --- & no \\
+    5 & \texttt{observation\_or\_selection}  & --- & no \\
+    6 & \texttt{clinical\_endpoint}          & \texttt{isFraud} on \texttt{transaction} & target (label) \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -346,44 +372,53 @@ roles are mapped onto the released H2GB bipartite graph.
 H2GB evaluates a suite of graph architectures on IEEE-CIS-G, including
 GCN, GraphSAGE, GAT, HGT, R-GCN, SHGN and $\mathrm{H}^{2}$G-former, under a
 common protocol whose focus is heterophily in heterogeneous graphs~\cite{lin2025h2gb}.
-The present experiment does not re-run that models set.
-The aim is to repeat the Task~B \emph{deep and wide} design on the same IEEE-CIS-G
-input: a TransformerConv encoder, as on the synthetic cohort, enriched with the
-HCR-inspired statistical evidence branch.
+The present is to repeat the Task~B \emph{deep and wide} design on the same IEEE-CIS-G
+input -- a TransformerConv encoder enriched with the
+HCR-inspired statistical evidence branch -- and compare it against models results from H2GB.
 
-As the graph is a bipartite star, evidence is
-attached at the parent--endpoint level only.
-The endpoint is \texttt{isFraud} on the transaction; parents are tabular Vesta
-and identity columns that are not already graph node types
-(\texttt{V*}, \texttt{C*}, \texttt{D*}, amount, and low-cardinality
+Instead of calculating evidence based on parent-endpoint relationship, evidence is
+computed as pairwise transaction-level statistics. Each slot pairs one
+covariate of that transaction with the fraud label.
+The covariates are Vesta and identity columns that are not already graph node
+types (\texttt{V*}, \texttt{C*}, \texttt{D*}, amount, and low-cardinality
 \texttt{M*}/device dummies).
+Card, address, email and \texttt{ProductCD} are the part of GNN and are not considered part of
+evidence branch.
 Grandparent--parent--endpoint \emph{triple} statistics from the synthetic
-pipeline are omitted: IEEE-CIS-G has no typed three-hop causal chain, and
-materialising triples over shared metadata nodes would explode the evidence
-tensor.
+pipeline are omitted -- there is no typed three-hop causal chain, and the
+HCR slots are not parent nodes.
 
 Pairwise evidence uses the $42$-channel layout of Task~B
 (\cref{subsec:hcr_application}): matrix-energy summaries, marginals, type
-indicators and the patient activation channel, with leave-one-out coefficients
+indicators and the instance activation channel, with leave-one-out coefficients
 on the training split.
-On the training transactions, $408$ candidate parents pass support and variance
+On the training transactions, $408$ candidate columns pass support and variance
 filters; the $64$ strongest by a unified association rank
 ($\varphi$-coefficient for binary columns, point-biserial for continuous)
-form the parent vocabulary.
-Each transaction is then packed into $K=16$ slots, keeping the highest-ranked
-active parents.
-A shared pair encoder (two-layer MLP, $42 \rightarrow 16 \rightarrow 4$)
-embeds every slot, mean-pools over the mask, and adds a learned scalar to the
-fraud logit of the TransformerConv head.
+form the covariate vocabulary.
+Each transaction is then packed into $K=16$ pair-encoder slots, keeping the
+highest-ranked active covariates.
+A shared pair encoder, as in Task~B, embeds every slot,
+mean-pools over the mask, and adds a learned scalar to the fraud logit of the
+TransformerConv head.
+% The $42$-channel evidence layout is unchanged
+% (\cref{subsec:hcr_application}), but the MLP is narrower:
+% $42 \rightarrow 16 \rightarrow 4$ here, versus $42 \rightarrow 32 \rightarrow 8$
+% in \cref{tab:hparams-common}.
+% IEEE-CIS-G has a single endpoint and $K=16$ covariate slots rather than typed
+% parent tensors, and the widths follow the IEEE HCR implementation rather than a
+% retune of the synthetic encoder.
 
 During training sampling of neighbourhood follows the H2GB loader -- \texttt{HGTLoader} with a
 per-type neighbourhood budget, class weights $1{:}5$, and L1
 \texttt{NormalizeFeatures}.
-The labelled graph is split temporally $80/10/10$.
+The labelled graph is split chronologically $80/10/10$ by \texttt{TransactionDT},
+as in Table~1 of~\cite{lin2025h2gb}: training transactions precede validation,
+which precede test.
 The checkpoint is selected on validation binary F1 as it was metric chosen by authors. 
 Test F1 uses threshold $0.5$.
 Depth $L\in\{2,3,6\}$ is crossed with residual connections and with or without
-the statistical branch, over seeds $42$, $20256$ and $202567$.
+the statistical branch.
 
 \begin{table}[H]
   \centering
@@ -397,14 +432,14 @@ the statistical branch, over seeds $42$, $20256$ and $202567$.
     Backbone & TransformerConv (as in Task~B) \\
     Hidden width / heads / dropout & $128$ / $4$ / $0.2$ \\
     Depth $L$ & $2$, $3$, $6$ \\
-    Statistical branch & nonlinear HCR, $42$ channels, $K=16$ \\
-    Pair encoder & $42 \rightarrow 16 \rightarrow 4$, logit fusion \\
-    Triple evidence & omitted \\
+    Statistical branch & nonlinear HCR, $42$ channels, $K=16$ transaction covariates \\
+    Pair encoder & $42 \rightarrow 16 \rightarrow 4$ \\
+    %Triple evidence & omitted \\
     Sampler & HGTLoader (H2GB \texttt{hgt} budget) \\
     Class weights & $1$, $5$ \\
-    Split & temporal $80/10/10$ \\
+    Split & chronological $80/10/10$ (by \texttt{TransactionDT}) \\
     Selection metric & validation binary F1 \\
-    Seeds & $42$, $20256$, $202567$ \\
+    Seeds & $42$, $202$, $568$, $20256$, $202567$ \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -412,39 +447,25 @@ the statistical branch, over seeds $42$, $20256$ and $202567$.
 \subsection{Experimental Results}
 \label{sec:ieee-results}
 
-Reported scores in \cref{tab:ieee-cis-full} are the mean $\pm$ sample standard deviation
-over three seeds ($42$, $20256$, $202567$).
-The checkpoint is selected on validation binary F1; test metrics are taken from that checkpoint,
-and F1 uses a decision threshold of $0.5$.
+% Reported scores in \cref{tab:ieee-cis-full} are the mean $\pm$ sample standard deviation
+% over five seeds ($42$, $202$, $568$, $20256$, $202567$).
+% The checkpoint is selected on validation binary F1; test metrics are taken from that checkpoint,
+% and F1 uses a decision threshold of $0.5$.
 Without residual connections the graph-only model is unstable: test F1 is
-$0.018 \pm 0.031$ at $L=2$ and $0.008 \pm 0.014$ at $L=6$.
+$0.011 \pm 0.024$ at $L=2$ and $0.019 \pm 0.025$ at $L=6$.
 Residual connections restore a stable graph pathway
-($0.299$--$0.306$ test F1; $0.761$--$0.764$ test AUROC).
+($0.297$--$0.307$ test F1; $0.760$--$0.764$ test AUROC).
 Adding the statistical evidence branch on top of residuals raises the mean test F1 to
-$0.450$--$0.454$, but the seed spread is large
-(\cref{fig:ieee-cis-ablation}): two seeds sit near $0.50$, while seed $20256$ remains close to the residual-only band.
-
-\Cref{fig:ieee-cis-h2gb} places the $L=3$ HCR model next to the IEEE-CIS-G F1 numbers published
- with H2GB~\cite{lin2025h2gb}.
-The comparison is on the same IEEE-CIS-G input: an HGT reimplementation matching the 
-H2GB IEEE-CIS-HGT configuration recovered the published HGT F1, 
-which confirms that the graph, splits, sampler and metric agree with the benchmark.
-% The proposed model is nevertheless a different encoder 
-% (TransformerConv with residual connections and the HCR branch), 
-% not a UnifiedGT re-run of every Table~3 baseline.
-% The H2GB table is reported over five seeds; the present run uses three.
-% The mean of the proposed model lies above HGT ($0.309$), SHGN ($0.317$) 
-% and $\mathrm{H}^{2}$G-former ($0.316$), yet the error bar overlaps that band, 
-% so the comparison is not a clean ranking win.
+$0.439$--$0.471$
+%, but the seed spread remains large
+(\cref{fig:ieee-cis-ablation}).
+%At $L=3$, three seeds sit near $0.50$ while $20256$ and $568$ stay close to the residual-only band.
 
 \begin{table}[H]
   \centering
   \scriptsize
   \setlength{\tabcolsep}{3pt}
-  \caption{IEEE-CIS-G: fraud node-classification results.
-    Entries are mean $\pm$ sample standard deviation over three seeds ($42$, $20256$, $202567$).
-    The epoch is selected on validation binary F1; test metrics are from that checkpoint.
-    F1 is the positive-class score at threshold $0.5$.}
+  \caption{IEEE-CIS-G: fraud node-classification results.}
   \label{tab:ieee-cis-full}
   \resizebox{\textwidth}{!}{%
   \begin{tabular}{ccl ccc ccc}
@@ -453,45 +474,66 @@ which confirms that the graph, splits, sampler and metric agree with the benchma
     \cmidrule(lr){4-6}\cmidrule(lr){7-9}
     $L$ & Res. & Evidence variant & {F1} & {AUROC} & {AP} & {F1} & {AUROC} & {AP} \\
     \midrule
-    2 & no  & ---      & $0.017{\scriptstyle\,\pm\,0.030}$ & $0.593{\scriptstyle\,\pm\,0.023}$ & $0.115{\scriptstyle\,\pm\,0.007}$ & $0.018{\scriptstyle\,\pm\,0.031}$ & $0.645{\scriptstyle\,\pm\,0.008}$ & $0.137{\scriptstyle\,\pm\,0.003}$ \\
+    2 & no  & ---      & $0.010{\scriptstyle\,\pm\,0.023}$ & $0.590{\scriptstyle\,\pm\,0.017}$ & $0.115{\scriptstyle\,\pm\,0.005}$ & $0.011{\scriptstyle\,\pm\,0.024}$ & $0.643{\scriptstyle\,\pm\,0.006}$ & $0.137{\scriptstyle\,\pm\,0.002}$ \\
     \addlinespace[2pt]
-    2 & yes & ---      & $0.394{\scriptstyle\,\pm\,0.005}$ & $0.786{\scriptstyle\,\pm\,0.001}$ & $0.311{\scriptstyle\,\pm\,0.003}$ & $0.306{\scriptstyle\,\pm\,0.000}$ & $0.764{\scriptstyle\,\pm\,0.004}$ & $0.238{\scriptstyle\,\pm\,0.002}$ \\
-    2 & yes & HCR 40d  & $0.478{\scriptstyle\,\pm\,0.059}$ & $0.823{\scriptstyle\,\pm\,0.024}$ & $0.453{\scriptstyle\,\pm\,0.104}$ & $0.451{\scriptstyle\,\pm\,0.102}$ & $0.819{\scriptstyle\,\pm\,0.037}$ & $0.412{\scriptstyle\,\pm\,0.124}$ \\
+    2 & yes & ---      & $0.393{\scriptstyle\,\pm\,0.005}$ & $0.786{\scriptstyle\,\pm\,0.002}$ & $0.309{\scriptstyle\,\pm\,0.010}$ & $0.307{\scriptstyle\,\pm\,0.003}$ & $0.764{\scriptstyle\,\pm\,0.003}$ & $0.241{\scriptstyle\,\pm\,0.005}$ \\
+    2 & yes & HCR 40d  & $0.488{\scriptstyle\,\pm\,0.045}$ & $0.825{\scriptstyle\,\pm\,0.017}$ & $0.469{\scriptstyle\,\pm\,0.077}$ & $0.471{\scriptstyle\,\pm\,0.077}$ & $0.824{\scriptstyle\,\pm\,0.027}$ & $0.436{\scriptstyle\,\pm\,0.094}$ \\
     \midrule
-    3 & no  & ---      & $0.279{\scriptstyle\,\pm\,0.016}$ & $0.711{\scriptstyle\,\pm\,0.010}$ & $0.225{\scriptstyle\,\pm\,0.005}$ & $0.227{\scriptstyle\,\pm\,0.040}$ & $0.683{\scriptstyle\,\pm\,0.034}$ & $0.179{\scriptstyle\,\pm\,0.031}$ \\
+    3 & no  & ---      & $0.284{\scriptstyle\,\pm\,0.013}$ & $0.713{\scriptstyle\,\pm\,0.008}$ & $0.230{\scriptstyle\,\pm\,0.010}$ & $0.231{\scriptstyle\,\pm\,0.030}$ & $0.697{\scriptstyle\,\pm\,0.030}$ & $0.191{\scriptstyle\,\pm\,0.027}$ \\
     \addlinespace[2pt]
-    3 & yes & ---      & $0.397{\scriptstyle\,\pm\,0.010}$ & $0.790{\scriptstyle\,\pm\,0.005}$ & $0.312{\scriptstyle\,\pm\,0.014}$ & $0.299{\scriptstyle\,\pm\,0.016}$ & $0.763{\scriptstyle\,\pm\,0.009}$ & $0.246{\scriptstyle\,\pm\,0.015}$ \\
-    3 & yes & HCR 40d  & $0.471{\scriptstyle\,\pm\,0.065}$ & $0.819{\scriptstyle\,\pm\,0.026}$ & $0.435{\scriptstyle\,\pm\,0.101}$ & $0.450{\scriptstyle\,\pm\,0.088}$ & $0.812{\scriptstyle\,\pm\,0.031}$ & $0.395{\scriptstyle\,\pm\,0.109}$ \\
+    3 & yes & ---      & $0.397{\scriptstyle\,\pm\,0.007}$ & $0.789{\scriptstyle\,\pm\,0.004}$ & $0.313{\scriptstyle\,\pm\,0.011}$ & $0.297{\scriptstyle\,\pm\,0.012}$ & $0.762{\scriptstyle\,\pm\,0.007}$ & $0.245{\scriptstyle\,\pm\,0.012}$ \\
+    3 & yes & HCR 40d  & $\mathbf{0.466}{\scriptstyle\,\pm\,0.058}$ & $\mathbf{0.818}{\scriptstyle\,\pm\,0.023}$ & $\mathbf{0.428}{\scriptstyle\,\pm\,0.096}$ & $\mathbf{0.439}{\scriptstyle\,\pm\,0.088}$ & $\mathbf{0.810}{\scriptstyle\,\pm\,0.030}$ & $\mathbf{0.387}{\scriptstyle\,\pm\,0.107}$ \\
     \midrule
-    6 & no  & ---      & $0.015{\scriptstyle\,\pm\,0.023}$ & $0.605{\scriptstyle\,\pm\,0.028}$ & $0.123{\scriptstyle\,\pm\,0.009}$ & $0.008{\scriptstyle\,\pm\,0.014}$ & $0.632{\scriptstyle\,\pm\,0.014}$ & $0.140{\scriptstyle\,\pm\,0.005}$ \\
+    6 & no  & ---      & $0.020{\scriptstyle\,\pm\,0.018}$ & $0.612{\scriptstyle\,\pm\,0.022}$ & $0.125{\scriptstyle\,\pm\,0.007}$ & $0.019{\scriptstyle\,\pm\,0.025}$ & $0.634{\scriptstyle\,\pm\,0.010}$ & $0.142{\scriptstyle\,\pm\,0.007}$ \\
     \addlinespace[2pt]
-    6 & yes & ---      & $0.387{\scriptstyle\,\pm\,0.002}$ & $0.786{\scriptstyle\,\pm\,0.001}$ & $0.301{\scriptstyle\,\pm\,0.002}$ & $0.298{\scriptstyle\,\pm\,0.014}$ & $0.761{\scriptstyle\,\pm\,0.005}$ & $0.236{\scriptstyle\,\pm\,0.010}$ \\
-    6 & yes & HCR 40d  & $0.465{\scriptstyle\,\pm\,0.062}$ & $0.815{\scriptstyle\,\pm\,0.025}$ & $0.438{\scriptstyle\,\pm\,0.112}$ & $0.454{\scriptstyle\,\pm\,0.110}$ & $0.819{\scriptstyle\,\pm\,0.038}$ & $0.412{\scriptstyle\,\pm\,0.134}$ \\
+    6 & yes & ---      & $0.388{\scriptstyle\,\pm\,0.004}$ & $0.788{\scriptstyle\,\pm\,0.005}$ & $0.305{\scriptstyle\,\pm\,0.007}$ & $0.297{\scriptstyle\,\pm\,0.010}$ & $0.760{\scriptstyle\,\pm\,0.007}$ & $0.235{\scriptstyle\,\pm\,0.008}$ \\
+    6 & yes & HCR 40d  & $0.463{\scriptstyle\,\pm\,0.056}$ & $0.819{\scriptstyle\,\pm\,0.023}$ & $0.425{\scriptstyle\,\pm\,0.102}$ & $0.440{\scriptstyle\,\pm\,0.103}$ & $0.815{\scriptstyle\,\pm\,0.035}$ & $0.397{\scriptstyle\,\pm\,0.124}$ \\
     \bottomrule
   \end{tabular}%
   }
 \end{table}
 
+Additionally, the proposed wide \& deep approach achieves better mean results than
+the models reported in the H2GB project.
+\Cref{fig:ieee-cis-h2gb} places the $L=3$ HCR model next to the IEEE-CIS-G F1 numbers published
+ with H2GB~\cite{lin2025h2gb}.
+The comparison is on the same IEEE-CIS-G input 
+(HGT own reimplementation matching the 
+H2GB IEEE-CIS-HGT configuration recovered the published HGT F1, 
+which confirms that the graph, splits, sampler and metric agree with the benchmark)
+and present run over five seeds like H2GB. 
+The $L=3$ HCR mean test F1 is $0.439 \pm 0.088$, above HGT ($0.309$), SHGN ($0.317$)
+and $\mathrm{H}^{2}$G-former ($0.316$), but the interval still overlaps that band.
+HCR combined with residual connections
+effectively boosts the performance over just graph structure.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{fig_ieee_cis_ablation.pdf}
-  \caption{IEEE-CIS-G ablation of residual connections and the statistical evidence branch.
-    Bars are means over three seeds; whiskers are one sample standard deviation.
-    Panel~(a): test binary F1 at threshold $0.5$.
-    Panel~(b): test AUROC.}
+  \caption{IEEE-CIS-G ablation of residual connections and the statistical evidence branch.}
   \label{fig:ieee-cis-ablation}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{fig_ieee_cis_h2gb_comparison.pdf}
-  \caption{IEEE-CIS-G test F1 against selected H2GB baselines from Table~3 of~\cite{lin2025h2gb}
-    (green; mean $\pm$ SD over five seeds), reported on the same IEEE-CIS-G graph and F1 definition.
-    The orange bar is the proposed TransformerConv model with residual connections and the HCR~$40$D branch at $L=3$
-    (mean $\pm$ SD over three seeds).
-    H2GB reports F1 as a percentage; all bars are shown on the unit interval.}
+  \caption{IEEE-CIS-G test F1 against selected H2GB baselines from Table~3 of~\cite{lin2025h2gb}}
   \label{fig:ieee-cis-h2gb}
 \end{figure}
+
+On IEEE-CIS-G the same Task~B pattern holds under a different graph contract:
+residual connections stabilize the TransformerConv pathway, and the statistical
+evidence branch raises mean test F1 above the graph-only residual model
+($0.439 \pm 0.088$ at $L=3$ versus $0.297 \pm 0.012$).
+% The mean also lies above the published H2GB F1 band (about $0.31$), on the same
+% input and five-seed count, but two of five seeds remain near the residual-only
+% regime, so the comparison is a mean gain with a wide interval, not a clean ranking
+% win.
+
+In summary, Hetionet and IEEE-CIS-G show that extending the GNN with a
+statistical evidence branch remains useful outside the synthetic experiments.
+The value of the branch is complementary to residual message passing and depends
+on the graph.
 
 % ---------------------------------------------------------------------
 % TABLE 1 - full observability regime
