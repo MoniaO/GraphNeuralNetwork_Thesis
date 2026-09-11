@@ -1,25 +1,48 @@
 \begin{abstract}
 \noindent
-This thesis investigates how structured knowledge represented by a pharmacotherapy knowledge graph can be combined with explicit statistical evidence derived from patient-level data.
-The problem is studied through two complementary tasks operating on a shared synthetic pharmacotherapy benchmark.
-Task~A addresses directed link prediction, using patient-level observations to evaluate candidate relations in the graph.
-Task~B addresses patient-level clinical endpoint prediction, using the graph as a shared structural scaffold while individual patient observations instantiate the node-level input.
+Thesis title: Integrating Graph Neural Networks and Statistical Dependence for Pharmacotherapy Knowledge Graphs
+
+\medskip
+
+
+This thesis investigates how structured knowledge represented by a pharmacotherapy knowledge graph can
+ be combined with explicit statistical evidence derived from patient-level data.
+The problem is studied through two complementary tasks operating on a shared synthetic pharmacotherapy 
+benchmark.
+Task~A addresses directed link prediction, using patient-level observations to evaluate candidate 
+relations in the graph.
+Task~B addresses patient-level clinical endpoint prediction as node classification task, 
+using the graph as a shared structural scaffold while individual 
+patient observations instantiate the node-level input.
 
 Both tasks combine graph neural representations with explicit statistical dependence information.
-In Task~A, a heterogeneous graph encoder is fused with candidate-specific statistical context derived from patient observations.
-In Task~B, heterogeneous message passing is augmented with endpoint-oriented statistical evidence, while different graph architectures, propagation depths, and residual connections are evaluated.
+In Task~A, a heterogeneous graph encoder is fused with candidate-specific statistical context derived 
+from patient observations.
+In Task~B, heterogeneous message passing is augmented with endpoint-oriented statistical evidence, 
+while different graph architectures, propagation depths, and residual connections are evaluated.
 HCR-derived coefficients are used as representations of empirical dependence.
 
-On the synthetic benchmark, the final Task~A model reaches an official five-scenario macro validation Average Precision of approximately $0.915$ (clean-scenario validation AP approximately $0.919$), with ablation results showing that explicit statistical context provides a substantial improvement over the graph representation alone.
-In Task~B, the statistical branch is most beneficial when deeper message passing loses predictive information, whereas residual connections preserve the same information within the graph pathway; consequently, the two mechanisms are not always additive on the synthetic graph.
+On the synthetic benchmark, the final Task~A model is consistently strong under 
+the official five-scenario validation protocol, and ablations show that explicit 
+statistical context substantially improves link prediction over the graph representation alone.
+In Task~B, the statistical branch is most beneficial when deeper message passing loses predictive 
+information, whereas residual connections preserve the same information within the graph pathway. 
+%consequently, the two mechanisms are not always additive on the synthetic graph.
 
-The generality of these observations is further examined through two cross-domain proxy experiments.
-On leakage-corrected Last-FM*, progressive addition of explicit candidate-specific context increases sampled NDCG@20 from approximately $0.475$ for HGT alone to approximately $0.873$ for the frozen model, which achieves approximately $0.276$ NDCG@20 under full-catalog validation.
-On a Hetionet-derived endpoint-prediction proxy, the statistical branch again becomes particularly valuable for deeper models, increasing test AUROC at six layers from $0.585$ for the graph-only model to $0.757$, while combining statistical evidence with residual propagation reaches $0.760$.
+The generality of these observations is further examined through cross-domain experiments 
+on real-world datasets.
+On leakage-corrected Last-FM*, progressive addition of explicit candidate-specific context 
+systematically improves ranking quality over a heterogeneous graph encoder alone.
+On a Hetionet-derived endpoint-prediction proxy, the statistical branch is again 
+particularly valuable for deeper models.
+On the H2GB IEEE-CIS-G card-fraud graph, residual connections stabilise learning and the 
+statistical branch further improves fraud detection relative to residual message passing 
+alone on a graph structure different from the synthetic pharmacotherapy graph.
 
 The results support a common methodological conclusion: structured graph representations and explicit empirical dependence provide complementary sources of information for both graph reconstruction and patient-level prediction.
 Their relative contribution depends on the task and on how effectively the graph neural network preserves relevant information through message passing.
-The proxy experiments provide methodological stress tests, but their findings should be interpreted cautiously before any application to clinical settings.
+The proxy experiments provide methodological stress tests, but their 
+findings should be interpreted cautiously before any application to clinical settings.
 
 \medskip
 \noindent\textbf{Keywords:}
